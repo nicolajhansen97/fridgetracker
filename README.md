@@ -15,6 +15,7 @@ A beautiful React Native mobile application with Supabase authentication and fri
 - **Authentication with Supabase**
   - User registration with email verification
   - Secure login
+  - **Biometric authentication (Face ID/Touch ID)** - Quick and secure login
   - Password reset functionality
   - Persistent sessions
 - **Fridge Inventory Management**
@@ -75,6 +76,7 @@ Follow the detailed guides:
 - [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) - Authentication setup
 - [FRIDGE_DATABASE_SETUP.md](./FRIDGE_DATABASE_SETUP.md) - Database setup for fridge feature
 - [DRAWER_FEATURE_SETUP.md](./DRAWER_FEATURE_SETUP.md) - Custom drawers & date picker setup
+- [BIOMETRIC_AUTHENTICATION.md](./BIOMETRIC_AUTHENTICATION.md) - Face ID/Touch ID setup
 - [CREATE_DRAWERS_TABLE.sql](./CREATE_DRAWERS_TABLE.sql) - SQL script for drawers table
 
 **Quick Setup:**
@@ -190,6 +192,21 @@ fridgetracker/
 6. Swipe down to refresh the list
 7. Click the trash icon to delete an item
 
+### Using Biometric Authentication
+1. **First Time Setup:**
+   - Login with email and password
+   - Toggle "Enable Face ID/Touch ID login" ON
+   - Click "Login"
+2. **Next Time:**
+   - Open app
+   - Biometric prompt appears automatically
+   - Authenticate and you're in!
+3. **Manage in Settings:**
+   - Tap "Settings" from Home
+   - Toggle biometric login on/off anytime
+
+See [BIOMETRIC_AUTHENTICATION.md](./BIOMETRIC_AUTHENTICATION.md) for complete guide.
+
 ## Technologies Used
 
 - **React Native** - Mobile framework
@@ -199,6 +216,8 @@ fridgetracker/
 - **Expo Linear Gradient** - Beautiful gradients
 - **AsyncStorage** - Persistent storage
 - **Context API** - State management
+- **expo-local-authentication** - Biometric authentication (Face ID/Touch ID)
+- **expo-secure-store** - Encrypted credential storage
 - **react-native-modal-datetime-picker** - Date picker with European format
 - **@react-native-community/datetimepicker** - Native date/time picker
 
