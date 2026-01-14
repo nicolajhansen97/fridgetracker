@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,77 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
+import { useFridge } from '../context/FridgeContext';
 
 const HomeScreen = ({ navigation }) => {
   const { user, logout } = useAuth();
+  const { items } = useFridge();
+  const [stats, setStats] = useState({
+    totalItems: 0,
+    expiringItems: 0,
+    drawersUsed: 0,
+  });
+  const [recentActivity, setRecentActivity] = useState([]);
+
+  useEffect(() => {
+    calculateStats();
+  }, [items]);
+
+  const calculateStats = () => {
+    if (!items || items.length === 0) {
+      setStats({ totalItems: 0, expiringItems: 0, drawersUsed: 0 });
+      setRecentActivity([]);
+      return;
+    }
+
+    // Calculate total items
+    const totalItems = items.length;
+
+    // Calculate items expiring within 7 days
+    const today = new Date();
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(today.getDate() + 7);
+
+    const expiringItems = items.filter(item => {
+      if (!item.expiry_date) return false;
+      const expiryDate = new Date(item.expiry_date);
+      return expiryDate >= today && expiryDate <= sevenDaysFromNow;
+    }).length;
+
+    // Calculate unique drawers
+    const uniqueDrawers = new Set(items.map(item => item.drawer));
+    const drawersUsed = uniqueDrawers.size;
+
+    setStats({ totalItems, expiringItems, drawersUsed });
+
+    // Get recent activity (last 3 items added)
+    const sortedItems = [...items]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, 3);
+
+    const activity = sortedItems.map(item => ({
+      title: `Added ${item.name}`,
+      description: `to ${item.drawer}`,
+      time: getTimeAgo(item.created_at),
+    }));
+
+    setRecentActivity(activity);
+  };
+
+  const getTimeAgo = (timestamp) => {
+    const now = new Date();
+    const past = new Date(timestamp);
+    const diffInMinutes = Math.floor((now - past) / (1000 * 60));
+
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+  };
 
   const handleLogout = async () => {
     const result = await logout();
@@ -34,9 +102,6 @@ const HomeScreen = ({ navigation }) => {
     { id: 1, title: 'My Fridge', icon: '🧊', color: ['#43e97b', '#38f9d7'], screen: 'FridgeInventory' },
     { id: 2, title: 'Settings', icon: '⚙️', color: ['#f093fb', '#f5576c'], screen: 'Settings' },
     { id: 3, title: 'Manage Drawers', icon: '📦', color: ['#4facfe', '#00f2fe'], screen: 'ManageDrawers' },
-    { id: 4, title: 'Analytics', icon: '📈', color: ['#667eea', '#764ba2'] },
-    { id: 5, title: 'Messages', icon: '💬', color: ['#fa709a', '#fee140'] },
-    { id: 6, title: 'Notifications', icon: '🔔', color: ['#30cfd0', '#330867'] },
   ];
 
   return (
@@ -80,22 +145,24 @@ const HomeScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.statsContainer}>
-          <Text style={styles.sectionTitle}>Statistics</Text>
+          <Text style={styles.sectionTitle}>Your Fridge Stats</Text>
 
           <View style={styles.statCard}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>1,234</Text>
-              <Text style={styles.statLabel}>Total Users</Text>
+              <Text style={styles.statValue}>{stats.totalItems}</Text>
+              <Text style={styles.statLabel}>Total Items</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>56</Text>
-              <Text style={styles.statLabel}>Active Now</Text>
+              <Text style={[styles.statValue, stats.expiringItems > 0 && styles.statValueWarning]}>
+                {stats.expiringItems}
+              </Text>
+              <Text style={styles.statLabel}>Expiring Soon</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>89%</Text>
-              <Text style={styles.statLabel}>Growth</Text>
+              <Text style={styles.statValue}>{stats.drawersUsed}</Text>
+              <Text style={styles.statLabel}>Drawers Used</Text>
             </View>
           </View>
         </View>
@@ -103,15 +170,26 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.activityContainer}>
           <Text style={styles.sectionTitle}>Recent Activity</Text>
 
-          {[1, 2, 3].map((item) => (
-            <View key={item} style={styles.activityItem}>
-              <View style={styles.activityDot} />
-              <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>Activity Title {item}</Text>
-                <Text style={styles.activityTime}>{item} hour ago</Text>
-              </View>
+          {recentActivity.length === 0 ? (
+            <View style={styles.emptyActivity}>
+              <Text style={styles.emptyActivityIcon}>📋</Text>
+              <Text style={styles.emptyActivityText}>No recent activity</Text>
+              <Text style={styles.emptyActivitySubtext}>
+                Add items to your fridge to see them here
+              </Text>
             </View>
-          ))}
+          ) : (
+            recentActivity.map((activity, index) => (
+              <View key={index} style={styles.activityItem}>
+                <View style={styles.activityDot} />
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityTitle}>{activity.title}</Text>
+                  <Text style={styles.activityDescription}>{activity.description}</Text>
+                  <Text style={styles.activityTime}>{activity.time}</Text>
+                </View>
+              </View>
+            ))
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -230,6 +308,9 @@ const styles = StyleSheet.create({
     color: '#667eea',
     marginBottom: 5,
   },
+  statValueWarning: {
+    color: '#ff6b6b',
+  },
   statLabel: {
     fontSize: 12,
     color: '#888',
@@ -274,9 +355,43 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 3,
   },
+  activityDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
   activityTime: {
     fontSize: 12,
     color: '#888',
+  },
+  emptyActivity: {
+    backgroundColor: '#ffffff',
+    borderRadius: 15,
+    padding: 40,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2.22,
+    elevation: 3,
+  },
+  emptyActivityIcon: {
+    fontSize: 48,
+    marginBottom: 15,
+  },
+  emptyActivityText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 5,
+  },
+  emptyActivitySubtext: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
   },
 });
 
