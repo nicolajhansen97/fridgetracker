@@ -46,3 +46,6 @@ local.properties
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Supabase credentials (use supabase.example.js as template)
+src/config/supabase.js
