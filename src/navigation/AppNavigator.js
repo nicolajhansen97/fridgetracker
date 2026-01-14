@@ -10,6 +10,7 @@ import HomeScreen from '../screens/HomeScreen';
 import FridgeInventoryScreen from '../screens/FridgeInventoryScreen';
 import AddItemScreen from '../screens/AddItemScreen';
 import ManageDrawersScreen from '../screens/ManageDrawersScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -39,6 +40,7 @@ const AppNavigator = () => {
             <Stack.Screen name="FridgeInventory" component={FridgeInventoryScreen} />
             <Stack.Screen name="AddItem" component={AddItemScreen} />
             <Stack.Screen name="ManageDrawers" component={ManageDrawersScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
           </>
         )}
       </Stack.Navigator>

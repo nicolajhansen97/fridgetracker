@@ -23,6 +23,8 @@ const HomeScreen = ({ navigation }) => {
   const handleCardPress = (card) => {
     if (card.id === 1) {
       navigation.navigate('FridgeInventory');
+    } else if (card.id === 2) {
+      navigation.navigate('Settings');
     } else if (card.id === 3) {
       navigation.navigate('ManageDrawers');
     }
@@ -30,7 +32,7 @@ const HomeScreen = ({ navigation }) => {
 
   const cards = [
     { id: 1, title: 'My Fridge', icon: '🧊', color: ['#43e97b', '#38f9d7'], screen: 'FridgeInventory' },
-    { id: 2, title: 'Profile', icon: '👤', color: ['#f093fb', '#f5576c'] },
+    { id: 2, title: 'Settings', icon: '⚙️', color: ['#f093fb', '#f5576c'], screen: 'Settings' },
     { id: 3, title: 'Manage Drawers', icon: '📦', color: ['#4facfe', '#00f2fe'], screen: 'ManageDrawers' },
     { id: 4, title: 'Analytics', icon: '📈', color: ['#667eea', '#764ba2'] },
     { id: 5, title: 'Messages', icon: '💬', color: ['#fa709a', '#fee140'] },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
@@ -17,7 +18,30 @@ const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [enableBiometricToggle, setEnableBiometricToggle] = useState(false);
+  const [showBiometricOption, setShowBiometricOption] = useState(false);
+  const {
+    login,
+    biometricAvailable,
+    biometricType,
+    loginWithBiometric,
+    enableBiometric,
+    checkBiometricEnabled,
+  } = useAuth();
+
+  useEffect(() => {
+    // Check if biometric login is available and try auto-login
+    const initBiometric = async () => {
+      if (biometricAvailable) {
+        const enabled = await checkBiometricEnabled();
+        if (enabled) {
+          // Attempt biometric login on app launch
+          handleBiometricLogin();
+        }
+      }
+    };
+    initBiometric();
+  }, [biometricAvailable]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -30,10 +54,41 @@ const LoginScreen = ({ navigation }) => {
     setIsLoading(false);
 
     if (result.success) {
+      // If biometric toggle is on, enable biometric login
+      if (enableBiometricToggle && biometricAvailable) {
+        const biometricResult = await enableBiometric(email);
+        if (biometricResult.success) {
+          Alert.alert('Success', `${biometricType} login enabled!`);
+        }
+      }
       navigation.replace('Home');
     } else {
       Alert.alert('Login Failed', result.error || 'Invalid credentials');
     }
+  };
+
+  const handleBiometricLogin = async () => {
+    setIsLoading(true);
+    const result = await loginWithBiometric();
+    setIsLoading(false);
+
+    if (result.success) {
+      navigation.replace('Home');
+    } else if (result.error === 'Session expired. Please login with password again.') {
+      Alert.alert('Session Expired', result.error);
+    }
+    // If biometric fails, user can still login with password
+  };
+
+  const toggleBiometricOption = () => {
+    if (!biometricAvailable) {
+      Alert.alert(
+        'Not Available',
+        `${biometricType} is not available on this device. Please enable it in your device settings.`
+      );
+      return;
+    }
+    setEnableBiometricToggle(!enableBiometricToggle);
   };
 
   return (
@@ -89,6 +144,21 @@ const LoginScreen = ({ navigation }) => {
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
 
+            {biometricAvailable && (
+              <View style={styles.biometricToggleContainer}>
+                <Text style={styles.biometricToggleText}>
+                  Enable {biometricType} login
+                </Text>
+                <Switch
+                  value={enableBiometricToggle}
+                  onValueChange={toggleBiometricOption}
+                  trackColor={{ false: '#ccc', true: '#667eea' }}
+                  thumbColor={enableBiometricToggle ? '#fff' : '#f4f3f4'}
+                  disabled={isLoading}
+                />
+              </View>
+            )}
+
             <TouchableOpacity
               style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
               onPress={handleLogin}
@@ -100,6 +170,18 @@ const LoginScreen = ({ navigation }) => {
                 <Text style={styles.loginButtonText}>Login</Text>
               )}
             </TouchableOpacity>
+
+            {biometricAvailable && (
+              <TouchableOpacity
+                style={styles.biometricButton}
+                onPress={handleBiometricLogin}
+                disabled={isLoading}
+              >
+                <Text style={styles.biometricButtonText}>
+                  🔐 Login with {biometricType}
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <View style={styles.signupContainer}>
               <Text style={styles.signupText}>Don't have an account? </Text>
@@ -164,12 +246,26 @@ const styles = StyleSheet.create({
   },
   forgotPassword: {
     alignSelf: 'flex-end',
-    marginBottom: 30,
+    marginBottom: 20,
   },
   forgotPasswordText: {
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '500',
+  },
+  biometricToggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 20,
+  },
+  biometricToggleText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '600',
   },
   loginButton: {
     backgroundColor: '#ffffff',
@@ -193,6 +289,20 @@ const styles = StyleSheet.create({
     color: '#667eea',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  biometricButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#ffffff',
+    padding: 15,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  biometricButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   signupContainer: {
     flexDirection: 'row',
