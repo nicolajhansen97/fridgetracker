@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '../config/supabase';
 import { useAuth } from './AuthContext';
+import { useHousehold } from './HouseholdContext';
 
 const FridgeContext = createContext();
 
@@ -8,21 +9,29 @@ export const FridgeProvider = ({ children }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
+  const { currentHousehold } = useHousehold();
 
   useEffect(() => {
     if (user) {
       loadItems();
     }
-  }, [user]);
+  }, [user, currentHousehold]);
 
   const loadItems = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('fridge_items')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+
+      let query = supabase.from('fridge_items').select('*');
+
+      if (currentHousehold?.id) {
+        // Load household items
+        query = query.eq('household_id', currentHousehold.id);
+      } else {
+        // Load personal items (no household)
+        query = query.eq('user_id', user.id).is('household_id', null);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       setItems(data || []);
@@ -40,6 +49,7 @@ export const FridgeProvider = ({ children }) => {
         .insert([
           {
             user_id: user.id,
+            household_id: currentHousehold?.id || null,
             name: itemData.name,
             drawer: itemData.drawer,
             quantity: itemData.quantity || 1,

@@ -61,7 +61,8 @@ const LoginScreen = ({ navigation }) => {
           Alert.alert('Success', `${biometricType} login enabled!`);
         }
       }
-      navigation.replace('Home');
+      // Navigation will be handled automatically by AuthContext
+      // when isAuthenticated changes to true
     } else {
       Alert.alert('Login Failed', result.error || 'Invalid credentials');
     }
@@ -73,7 +74,8 @@ const LoginScreen = ({ navigation }) => {
     setIsLoading(false);
 
     if (result.success) {
-      navigation.replace('Home');
+      // Navigation will be handled automatically by AuthContext
+      // when isAuthenticated changes to true
     } else if (result.error === 'Session expired. Please login with password again.') {
       Alert.alert('Session Expired', result.error);
     }

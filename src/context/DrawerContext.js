@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '../config/supabase';
 import { useAuth } from './AuthContext';
+import { useHousehold } from './HouseholdContext';
 
 const DrawerContext = createContext();
 
@@ -14,28 +15,36 @@ export const useDrawers = () => {
 
 export const DrawerProvider = ({ children }) => {
   const { user } = useAuth();
+  const { currentHousehold } = useHousehold();
   const [drawers, setDrawers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load drawers when user changes
+  // Load drawers when user or household changes
   useEffect(() => {
     if (user) {
       loadDrawers();
     } else {
       setDrawers([]);
     }
-  }, [user]);
+  }, [user, currentHousehold]);
 
   const loadDrawers = async () => {
     if (!user) return;
 
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('drawers')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('sort_order', { ascending: true });
+
+      let query = supabase.from('drawers').select('*');
+
+      if (currentHousehold?.id) {
+        // Load household drawers
+        query = query.eq('household_id', currentHousehold.id);
+      } else {
+        // Load personal drawers (no household)
+        query = query.eq('user_id', user.id).is('household_id', null);
+      }
+
+      const { data, error } = await query.order('sort_order', { ascending: true });
 
       if (error) throw error;
       setDrawers(data || []);
@@ -56,6 +65,7 @@ export const DrawerProvider = ({ children }) => {
         .insert([
           {
             user_id: user.id,
+            household_id: currentHousehold?.id || null,
             name: drawerData.name,
             icon: drawerData.icon || '📦',
             sort_order: drawerData.sort_order || drawers.length,

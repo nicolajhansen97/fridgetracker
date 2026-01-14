@@ -10,10 +10,12 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { useFridge } from '../context/FridgeContext';
+import { useHousehold } from '../context/HouseholdContext';
 
 const HomeScreen = ({ navigation }) => {
   const { user, logout } = useAuth();
   const { items } = useFridge();
+  const { currentHousehold, invitations } = useHousehold();
   const [stats, setStats] = useState({
     totalItems: 0,
     expiringItems: 0,
@@ -82,10 +84,9 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const handleLogout = async () => {
-    const result = await logout();
-    if (result.success) {
-      navigation.replace('Login');
-    }
+    await logout();
+    // Navigation will be handled automatically by AuthContext
+    // when isAuthenticated changes to false
   };
 
   const handleCardPress = (card) => {
@@ -95,13 +96,16 @@ const HomeScreen = ({ navigation }) => {
       navigation.navigate('Settings');
     } else if (card.id === 3) {
       navigation.navigate('ManageDrawers');
+    } else if (card.id === 4) {
+      navigation.navigate('ManageHousehold');
     }
   };
 
   const cards = [
     { id: 1, title: 'My Fridge', icon: '🧊', color: ['#43e97b', '#38f9d7'], screen: 'FridgeInventory' },
-    { id: 2, title: 'Settings', icon: '⚙️', color: ['#f093fb', '#f5576c'], screen: 'Settings' },
+    { id: 4, title: 'Family Sharing', icon: '👨‍👩‍👧', color: ['#FFD93D', '#FFAF37'], screen: 'ManageHousehold' },
     { id: 3, title: 'Manage Drawers', icon: '📦', color: ['#4facfe', '#00f2fe'], screen: 'ManageDrawers' },
+    { id: 2, title: 'Settings', icon: '⚙️', color: ['#f093fb', '#f5576c'], screen: 'Settings' },
   ];
 
   return (
