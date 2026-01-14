@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "my-react-native-app",
+    "slug": "my-react-native-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#667eea"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.myreactnativeapp"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#667eea"
+      },
+      "package": "com.myreactnativeapp"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
