@@ -17,7 +17,7 @@ Your React Native Fridge App is ready to be pushed to GitHub.
 
 **1. Create Repository on GitHub:**
    - Go to https://github.com/new
-   - Repository name: `my-react-native-fridge-app` (or your choice)
+   - Repository name: `fridgetracker` (or your choice)
    - Description: `React Native fridge inventory app with custom drawers and European date format`
    - Choose Public or Private
    - **DO NOT** check any boxes (README, .gitignore, license)
@@ -36,7 +36,7 @@ git push -u origin main
 
 **Example:**
 ```bash
-git remote add origin https://github.com/nicolajhansen97/my-react-native-fridge-app.git
+git remote add origin https://github.com/nicolajhansen97/fridgetracker.git
 git branch -M main
 git push -u origin main
 ```
@@ -47,7 +47,7 @@ If you have GitHub CLI installed:
 
 ```bash
 cd /c/Users/nicol/my-react-native-app
-gh repo create my-react-native-fridge-app --public --source=. --remote=origin --push
+gh repo create fridgetracker --public --source=. --remote=origin --push
 ```
 
 ## Important: Setup for Other Developers

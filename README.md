@@ -1,4 +1,12 @@
-# My React Native App
+# FridgeTracker
+
+> A smart, modern fridge inventory management app built with React Native and Supabase
+
+**FridgeTracker** helps you organize your fridge, reduce food waste, and never forget what's in your kitchen. Track items by custom drawers, set expiry dates with an intuitive date picker, and keep your food fresh with smart notifications.
+
+[![React Native](https://img.shields.io/badge/React%20Native-0.81-blue.svg)](https://reactnative.dev/)
+[![Expo](https://img.shields.io/badge/Expo-54.0-000020.svg)](https://expo.dev/)
+[![Supabase](https://img.shields.io/badge/Supabase-Powered-green.svg)](https://supabase.com/)
 
 A beautiful React Native mobile application with Supabase authentication and fridge inventory management.
 
@@ -52,7 +60,7 @@ npm --version
 ### 2. Navigate to Project Directory
 
 ```bash
-cd my-react-native-app
+cd fridgetracker
 ```
 
 ### 3. Install Dependencies
@@ -107,7 +115,7 @@ npm run web      # For web browser
 ## Project Structure
 
 ```
-my-react-native-app/
+fridgetracker/
 ├── App.js                          # Main app component
 ├── app.json                        # Expo configuration
 ├── package.json                    # Dependencies
