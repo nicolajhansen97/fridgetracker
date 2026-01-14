@@ -11,6 +11,7 @@ import FridgeInventoryScreen from '../screens/FridgeInventoryScreen';
 import AddItemScreen from '../screens/AddItemScreen';
 import ManageDrawersScreen from '../screens/ManageDrawersScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import ExpiringItemsScreen from '../screens/ExpiringItemsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -41,6 +42,7 @@ const AppNavigator = () => {
             <Stack.Screen name="AddItem" component={AddItemScreen} />
             <Stack.Screen name="ManageDrawers" component={ManageDrawersScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="ExpiringItems" component={ExpiringItemsScreen} />
           </>
         )}
       </Stack.Navigator>

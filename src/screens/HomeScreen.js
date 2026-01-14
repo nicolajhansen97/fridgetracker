@@ -153,12 +153,19 @@ const HomeScreen = ({ navigation }) => {
               <Text style={styles.statLabel}>Total Items</Text>
             </View>
             <View style={styles.statDivider} />
-            <View style={styles.statItem}>
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() => navigation.navigate('ExpiringItems')}
+              activeOpacity={0.7}
+            >
               <Text style={[styles.statValue, stats.expiringItems > 0 && styles.statValueWarning]}>
                 {stats.expiringItems}
               </Text>
               <Text style={styles.statLabel}>Expiring Soon</Text>
-            </View>
+              {stats.expiringItems > 0 && (
+                <Text style={styles.tapHint}>Tap to view</Text>
+              )}
+            </TouchableOpacity>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{stats.drawersUsed}</Text>
@@ -314,6 +321,12 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     color: '#888',
+  },
+  tapHint: {
+    fontSize: 10,
+    color: '#ff6b6b',
+    marginTop: 4,
+    fontWeight: '600',
   },
   statDivider: {
     width: 1,
