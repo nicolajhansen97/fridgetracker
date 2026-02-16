@@ -46,6 +46,3 @@ local.properties
 .env.development.local
 .env.test.local
 .env.production.local
-
-# Supabase credentials (use environment variables)
-src/config/supabase.js
