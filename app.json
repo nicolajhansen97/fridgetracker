@@ -1,26 +1,29 @@
 {
   "expo": {
-    "name": "FridgeTracker",
+    "name": "Freezely",
     "slug": "fridgetracker",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#667eea"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fridgetracker.app",
+      "bundleIdentifier": "com.freezely.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#667eea"
       },
-      "package": "com.fridgetracker.app"
+      "package": "com.freezely.app"
     },
     "web": {
       "bundler": "metro"
@@ -28,7 +31,18 @@
     "extra": {
       "eas": {
         "projectId": "11a9bd44-499c-4a15-b141-bfdfe8837f9d"
-      }
+      },
+      "supabaseUrl": "https://zuzfcnrejdtjehfocwos.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1emZjbnJlamR0amVoZm9jd29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMDU1NTYsImV4cCI6MjA4Mzg4MTU1Nn0.ktaHZZxsjzcSmOtybhhehgNeT0m-OvR6XaNyL3nt0Ks"
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ],
+    "updates": {
+      "url": "https://u.expo.dev/11a9bd44-499c-4a15-b141-bfdfe8837f9d"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
