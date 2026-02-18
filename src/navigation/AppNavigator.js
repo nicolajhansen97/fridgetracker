@@ -9,9 +9,11 @@ import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import HomeScreen from '../screens/HomeScreen';
 import FridgeInventoryScreen from '../screens/FridgeInventoryScreen';
 import AddItemScreen from '../screens/AddItemScreen';
+import EditItemScreen from '../screens/EditItemScreen';
 import ManageDrawersScreen from '../screens/ManageDrawersScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import ExpiringItemsScreen from '../screens/ExpiringItemsScreen';
+import ActivityHistoryScreen from '../screens/ActivityHistoryScreen';
 import ManageHouseholdScreen from '../screens/ManageHouseholdScreen';
 
 const Stack = createNativeStackNavigator();
@@ -41,9 +43,11 @@ const AppNavigator = () => {
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="FridgeInventory" component={FridgeInventoryScreen} />
             <Stack.Screen name="AddItem" component={AddItemScreen} />
+            <Stack.Screen name="EditItem" component={EditItemScreen} />
             <Stack.Screen name="ManageDrawers" component={ManageDrawersScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="ExpiringItems" component={ExpiringItemsScreen} />
+            <Stack.Screen name="ActivityHistory" component={ActivityHistoryScreen} />
             <Stack.Screen name="ManageHousehold" component={ManageHouseholdScreen} />
           </>
         )}

@@ -44,6 +44,26 @@ export const FridgeProvider = ({ children }) => {
 
   const addItem = async (itemData) => {
     try {
+      // Validate position if provided
+      if (itemData.position) {
+        const { data: isAvailable, error: validationError } = await supabase.rpc(
+          'is_position_available',
+          {
+            p_position: itemData.position,
+            p_household_id: currentHousehold?.id || null,
+          }
+        );
+
+        if (validationError) throw validationError;
+
+        if (!isAvailable) {
+          return {
+            success: false,
+            error: `Position ${itemData.position} is already in use`,
+          };
+        }
+      }
+
       const { data, error } = await supabase
         .from('fridge_items')
         .insert([
@@ -55,6 +75,7 @@ export const FridgeProvider = ({ children }) => {
             quantity: itemData.quantity || 1,
             expiry_date: itemData.expiry_date,
             notes: itemData.notes,
+            position: itemData.position || null,
           },
         ])
         .select();
@@ -70,6 +91,27 @@ export const FridgeProvider = ({ children }) => {
 
   const updateItem = async (id, itemData) => {
     try {
+      // Validate position if changed and provided
+      if (itemData.position !== undefined && itemData.position !== null) {
+        const { data: isAvailable, error: validationError } = await supabase.rpc(
+          'is_position_available',
+          {
+            p_position: itemData.position,
+            p_household_id: currentHousehold?.id || null,
+            p_exclude_item_id: id,
+          }
+        );
+
+        if (validationError) throw validationError;
+
+        if (!isAvailable) {
+          return {
+            success: false,
+            error: `Position ${itemData.position} is already in use`,
+          };
+        }
+      }
+
       const { data, error } = await supabase
         .from('fridge_items')
         .update(itemData)

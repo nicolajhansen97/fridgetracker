@@ -5,11 +5,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   TextInput,
   Alert,
   Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useHousehold } from '../context/HouseholdContext';
 
@@ -19,10 +19,13 @@ const ManageHouseholdScreen = ({ navigation }) => {
     currentHousehold,
     householdMembers,
     invitations,
+    pendingInvites,
     createHousehold,
     updateHouseholdName,
     deleteHousehold,
     inviteMember,
+    resendInvite,
+    cancelInvite,
     acceptInvitation,
     declineInvitation,
     leaveHousehold,
@@ -65,7 +68,10 @@ const ManageHouseholdScreen = ({ navigation }) => {
 
     const result = await inviteMember(currentHousehold.id, inviteEmail.trim());
     if (result.success) {
-      Alert.alert('Success', `Invitation sent to ${inviteEmail}`);
+      const message = result.emailSent
+        ? `Invitation sent! ${inviteEmail.trim()} will receive an email with instructions to join.`
+        : `Invitation created! Ask ${inviteEmail.trim()} to open Freezely to accept it.`;
+      Alert.alert('Invitation Sent', message);
       setInviteEmail('');
       setShowInviteModal(false);
     } else {
@@ -232,7 +238,9 @@ const ManageHouseholdScreen = ({ navigation }) => {
                 {householdMembers.map((member) => (
                   <View key={member.id} style={styles.memberRow}>
                     <View style={styles.memberInfo}>
-                      <Text style={styles.memberEmail}>{member.user_email}</Text>
+                      <Text style={styles.memberEmail}>
+                        {member.user_email}
+                      </Text>
                       <Text style={styles.memberRole}>{member.role}</Text>
                     </View>
                     {isOwner && member.role !== 'owner' && (
@@ -246,6 +254,59 @@ const ManageHouseholdScreen = ({ navigation }) => {
                   </View>
                 ))}
               </View>
+
+              {/* Pending Invites */}
+              {isOwner && pendingInvites.length > 0 && (
+                <View style={styles.membersSection}>
+                  <Text style={styles.subTitle}>Pending Invites ({pendingInvites.length})</Text>
+                  {pendingInvites.map((invite) => {
+                    const hoursSince = invite.last_email_sent_at
+                      ? (Date.now() - new Date(invite.last_email_sent_at).getTime()) / 3600000
+                      : 25;
+                    const canResend = hoursSince >= 24;
+                    const hoursLeft = Math.ceil(24 - hoursSince);
+                    return (
+                      <View key={invite.id} style={styles.memberRow}>
+                        <View style={styles.memberInfo}>
+                          <Text style={styles.memberEmail}>{invite.invited_email}</Text>
+                          <Text style={[styles.memberRole, { color: '#f59e0b' }]}>⏳ Awaiting response</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 6 }}>
+                          <TouchableOpacity
+                            style={[styles.removeButton, { backgroundColor: canResend ? '#667eea' : '#ccc' }]}
+                            disabled={!canResend}
+                            onPress={async () => {
+                              const result = await resendInvite(invite.id);
+                              if (result.success) {
+                                Alert.alert('Email Sent', `Invitation resent to ${invite.invited_email}`);
+                              } else if (result.cooldown) {
+                                Alert.alert('Too soon', `You can resend in ${result.hoursRemaining}h`);
+                              } else {
+                                Alert.alert('Error', result.error);
+                              }
+                            }}
+                          >
+                            <Text style={styles.removeButtonText}>
+                              {canResend ? 'Resend' : `${hoursLeft}h`}
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.removeButton}
+                            onPress={() =>
+                              Alert.alert('Cancel Invite', `Cancel invitation to ${invite.invited_email}?`, [
+                                { text: 'No', style: 'cancel' },
+                                { text: 'Cancel Invite', style: 'destructive', onPress: () => cancelInvite(invite.id) },
+                              ])
+                            }
+                          >
+                            <Text style={styles.removeButtonText}>Cancel</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
 
               {/* Actions */}
               <View style={styles.actionsSection}>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreezerTracker Icon Generator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            opacity: 0.9;
+            margin-bottom: 40px;
+        }
+        .icons-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        .icon-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        .icon-card h3 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .icon-info {
+            font-size: 13px;
+            opacity: 0.8;
+            margin-bottom: 15px;
+        }
+        canvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
+            background: white;
+        }
+        canvas:hover {
+            transform: scale(1.05);
+        }
+        .download-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .instructions {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        .instructions h2 {
+            margin-top: 0;
+        }
+        .instructions ol {
+            line-height: 1.8;
+        }
+        code {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>❄️ FreezerTracker Icon Generator</h1>
+    <p class="subtitle">Click any icon to preview, then click the download button</p>
+
+    <div class="icons-container">
+        <div class="icon-card">
+            <h3>📱 App Icon</h3>
+            <p class="icon-info">1024×1024 px<br>Save as: <code>icon.png</code></p>
+            <canvas id="appIcon" width="1024" height="1024"></canvas>
+            <button class="download-btn" onclick="downloadIcon('appIcon', 'icon.png')">
+                Download icon.png
+            </button>
+        </div>
+
+        <div class="icon-card">
+            <h3>🤖 Android Adaptive Icon</h3>
+            <p class="icon-info">1024×1024 px<br>Save as: <code>adaptive-icon.png</code></p>
+            <canvas id="adaptiveIcon" width="1024" height="1024"></canvas>
+            <button class="download-btn" onclick="downloadIcon('adaptiveIcon', 'adaptive-icon.png')">
+                Download adaptive-icon.png
+            </button>
+        </div>
+
+        <div class="icon-card">
+            <h3>🚀 Splash Screen</h3>
+            <p class="icon-info">1284×2778 px<br>Save as: <code>splash.png</code></p>
+            <canvas id="splashIcon" width="1284" height="2778"></canvas>
+            <button class="download-btn" onclick="downloadIcon('splashIcon', 'splash.png')">
+                Download splash.png
+            </button>
+        </div>
+    </div>
+
+    <div class="instructions">
+        <h2>📋 Instructions</h2>
+        <ol>
+            <li>Click each <strong>Download</strong> button above to save the icons</li>
+            <li>Move the downloaded files to your <code>assets/</code> folder</li>
+            <li>Replace any existing files with the same names</li>
+            <li>Restart Expo: <code>npx expo start --clear</code></li>
+            <li>Your new icons will appear! 🎉</li>
+        </ol>
+    </div>
+
+    <script>
+        // Draw App Icon (1024x1024)
+        function drawAppIcon() {
+            const canvas = document.getElementById('appIcon');
+            const ctx = canvas.getContext('2d');
+            const size = 1024;
+
+            // Purple gradient background
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+
+            // Add subtle glow effect
+            const glowGradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+            glowGradient.addColorStop(0, 'rgba(255,255,255,0.15)');
+            glowGradient.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = glowGradient;
+            ctx.fillRect(0, 0, size, size);
+
+            // Draw snowflake
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 600px Arial';
+            ctx.fillText('❄️', size/2, size/2 + 30);
+
+            // Add white ring around snowflake
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, 420, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // Draw Adaptive Icon (1024x1024 - centered for safe area)
+        function drawAdaptiveIcon() {
+            const canvas = document.getElementById('adaptiveIcon');
+            const ctx = canvas.getContext('2d');
+            const size = 1024;
+
+            // Transparent background
+            ctx.clearRect(0, 0, size, size);
+
+            // Draw only in safe area (66% of size)
+            const safeArea = size * 0.66;
+            const offset = (size - safeArea) / 2;
+
+            // White circle background (so snowflake shows on any color)
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, safeArea/2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Purple gradient circle
+            const gradient = ctx.createLinearGradient(offset, offset, size - offset, size - offset);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, safeArea/2 - 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw smaller snowflake
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 450px Arial';
+            ctx.fillText('❄️', size/2, size/2 + 25);
+        }
+
+        // Draw Splash Screen (1284x2778)
+        function drawSplashScreen() {
+            const canvas = document.getElementById('splashIcon');
+            const ctx = canvas.getContext('2d');
+            const width = 1284;
+            const height = 2778;
+
+            // Purple gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 0, height);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+
+            // Add radial glow
+            const glowGradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, height/2);
+            glowGradient.addColorStop(0, 'rgba(255,255,255,0.2)');
+            glowGradient.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = glowGradient;
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw large snowflake in center
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 500px Arial';
+            ctx.fillText('❄️', width/2, height/2);
+
+            // Add app name
+            ctx.font = 'bold 80px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillStyle = 'white';
+            ctx.fillText('FreezerTracker', width/2, height/2 + 350);
+
+            // Add subtle tagline
+            ctx.font = '40px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fillText('Track What\'s In Your Freezer', width/2, height/2 + 420);
+
+            // Add decorative snowflakes
+            ctx.font = '100px Arial';
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            // Top snowflakes
+            ctx.fillText('❄', width * 0.2, height * 0.2);
+            ctx.fillText('❄', width * 0.8, height * 0.25);
+            // Bottom snowflakes
+            ctx.fillText('❄', width * 0.15, height * 0.75);
+            ctx.fillText('❄', width * 0.85, height * 0.78);
+        }
+
+        // Download function
+        function downloadIcon(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Generate all icons on page load
+        window.onload = function() {
+            drawAppIcon();
+            drawAdaptiveIcon();
+            drawSplashScreen();
+        };
+    </script>
+</body>
+</html>

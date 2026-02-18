@@ -5,8 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { useFridge } from '../context/FridgeContext';
@@ -98,13 +98,16 @@ const HomeScreen = ({ navigation }) => {
       navigation.navigate('ManageDrawers');
     } else if (card.id === 4) {
       navigation.navigate('ManageHousehold');
+    } else if (card.id === 5) {
+      navigation.navigate('ActivityHistory');
     }
   };
 
   const cards = [
-    { id: 1, title: 'My Fridge', icon: '🧊', color: ['#43e97b', '#38f9d7'], screen: 'FridgeInventory' },
+    { id: 1, title: 'My Freezer', icon: '❄️', color: ['#43e97b', '#38f9d7'], screen: 'FridgeInventory' },
     { id: 4, title: 'Family Sharing', icon: '👨‍👩‍👧', color: ['#FFD93D', '#FFAF37'], screen: 'ManageHousehold' },
-    { id: 3, title: 'Manage Drawers', icon: '📦', color: ['#4facfe', '#00f2fe'], screen: 'ManageDrawers' },
+    { id: 5, title: 'Activity History', icon: '📊', color: ['#667eea', '#764ba2'], screen: 'ActivityHistory' },
+    { id: 3, title: 'Manage Compartments', icon: '📦', color: ['#4facfe', '#00f2fe'], screen: 'ManageDrawers' },
     { id: 2, title: 'Settings', icon: '⚙️', color: ['#f093fb', '#f5576c'], screen: 'Settings' },
   ];
 
@@ -115,9 +118,11 @@ const HomeScreen = ({ navigation }) => {
         style={styles.header}
       >
         <View style={styles.headerContent}>
-          <View>
+          <View style={styles.userInfo}>
             <Text style={styles.greeting}>Hello,</Text>
-            <Text style={styles.username}>{user?.email || 'User'}</Text>
+            <Text style={styles.username}>
+              {user?.email || 'User'}
+            </Text>
           </View>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutText}>Logout</Text>
@@ -224,14 +229,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  userInfo: {
+    flex: 1,
+    marginRight: 15,
+  },
   greeting: {
     fontSize: 16,
     color: '#ffffff',
     opacity: 0.9,
   },
   username: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#ffffff',
     marginTop: 5,
   },
@@ -272,7 +281,7 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 120,
+    height: 120,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -290,6 +299,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#ffffff',
+    textAlign: 'center',
   },
   statsContainer: {
     marginBottom: 30,

@@ -5,10 +5,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   Alert,
   Switch,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 
@@ -90,7 +90,9 @@ const SettingsScreen = ({ navigation }) => {
           <View style={styles.card}>
             <View style={styles.settingItem}>
               <Text style={styles.settingLabel}>Email</Text>
-              <Text style={styles.settingValue}>{user?.email}</Text>
+              <Text style={styles.settingValue}>
+                {user?.email}
+              </Text>
             </View>
           </View>
         </View>
@@ -125,7 +127,7 @@ const SettingsScreen = ({ navigation }) => {
           <View style={styles.card}>
             <View style={styles.settingItem}>
               <Text style={styles.settingLabel}>App Name</Text>
-              <Text style={styles.settingValue}>FridgeTracker</Text>
+              <Text style={styles.settingValue}>Freezely</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.settingItem}>
@@ -141,7 +143,7 @@ const SettingsScreen = ({ navigation }) => {
             <Text style={styles.infoIcon}>🔐</Text>
             <Text style={styles.infoTitle}>Secure & Convenient</Text>
             <Text style={styles.infoText}>
-              {biometricType} keeps your account secure while providing quick access to your fridge inventory.
+              {biometricType} keeps your account secure while providing quick access to your freezer inventory.
             </Text>
           </View>
         )}
@@ -232,8 +234,10 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   settingValue: {
-    fontSize: 15,
+    fontSize: 13,
     color: '#666',
+    flex: 1,
+    textAlign: 'right',
   },
   divider: {
     height: 1,

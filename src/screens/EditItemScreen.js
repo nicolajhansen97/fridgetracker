@@ -16,17 +16,20 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useFridge } from '../context/FridgeContext';
 import { useDrawers } from '../context/DrawerContext';
 
-const AddItemScreen = ({ navigation }) => {
-  const [name, setName] = useState('');
-  const [drawer, setDrawer] = useState('');
-  const [quantity, setQuantity] = useState('1');
-  const [expiryDate, setExpiryDate] = useState('');
-  const [selectedDate, setSelectedDate] = useState(null);
+const EditItemScreen = ({ route, navigation }) => {
+  const { item } = route.params;
+  const [name, setName] = useState(item.name);
+  const [drawer, setDrawer] = useState(item.drawer);
+  const [quantity, setQuantity] = useState(String(item.quantity || 1));
+  const [expiryDate, setExpiryDate] = useState(item.expiry_date || '');
+  const [selectedDate, setSelectedDate] = useState(
+    item.expiry_date ? new Date(item.expiry_date) : null
+  );
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-  const [notes, setNotes] = useState('');
-  const [position, setPosition] = useState('');
+  const [notes, setNotes] = useState(item.notes || '');
+  const [position, setPosition] = useState(item.position ? String(item.position) : '');
   const [isLoading, setIsLoading] = useState(false);
-  const { addItem } = useFridge();
+  const { updateItem } = useFridge();
   const { drawers } = useDrawers();
 
   const showDatePicker = () => {
@@ -73,7 +76,7 @@ const AddItemScreen = ({ navigation }) => {
     }
 
     setIsLoading(true);
-    const result = await addItem({
+    const result = await updateItem(item.id, {
       name: name.trim(),
       drawer,
       quantity: parseInt(quantity) || 1,
@@ -84,7 +87,7 @@ const AddItemScreen = ({ navigation }) => {
     setIsLoading(false);
 
     if (result.success) {
-      Alert.alert('Success', 'Item added to your freezer!', [
+      Alert.alert('Success', 'Item updated successfully!', [
         {
           text: 'OK',
           onPress: () => navigation.goBack(),
@@ -109,7 +112,7 @@ const AddItemScreen = ({ navigation }) => {
           >
             <Text style={styles.backButtonText}>← Cancel</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Add Item</Text>
+          <Text style={styles.title}>Edit Item</Text>
           <View style={styles.placeholder} />
         </View>
       </LinearGradient>
@@ -212,7 +215,9 @@ const AddItemScreen = ({ navigation }) => {
                 onPress={showDatePicker}
                 disabled={isLoading}
               >
-                <Text style={[styles.datePickerText, !expiryDate && styles.datePickerPlaceholder]}>
+                <Text
+                  style={[styles.datePickerText, !expiryDate && styles.datePickerPlaceholder]}
+                >
                   {expiryDate ? formatDateForDisplay(expiryDate) : 'Select date (DD-MM-YYYY)'}
                 </Text>
                 <Text style={styles.calendarIcon}>📅</Text>
@@ -253,7 +258,7 @@ const AddItemScreen = ({ navigation }) => {
               disabled={isLoading}
             >
               <Text style={styles.submitButtonText}>
-                {isLoading ? 'Adding...' : 'Add to Fridge'}
+                {isLoading ? 'Updating...' : 'Update Item'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -355,6 +360,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
+  helperText: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
+  },
   datePickerButton: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
@@ -438,11 +448,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  helperText: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 4,
-  },
 });
 
-export default AddItemScreen;
+export default EditItemScreen;

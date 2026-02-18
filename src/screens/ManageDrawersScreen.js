@@ -8,12 +8,12 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useDrawers } from '../context/DrawerContext';
 
-const ICON_OPTIONS = ['📦', '❄️', '🧊', '🥬', '🥩', '🧈', '🥛', '🍞', '🧃', '🥫', '🍎', '🧀'];
+const ICON_OPTIONS = ['❄️', '🧊', '🥶', '📦', '🗄️', '🍦', '🥩', '🍕', '🌽', '🥦', '🍓', '🍔'];
 
 const ManageDrawersScreen = ({ navigation }) => {
   const { drawers, isLoading, addDrawer, updateDrawer, deleteDrawer } = useDrawers();
@@ -25,7 +25,7 @@ const ManageDrawersScreen = ({ navigation }) => {
 
   const handleAddDrawer = async () => {
     if (!newDrawerName.trim()) {
-      Alert.alert('Error', 'Please enter a drawer name');
+      Alert.alert('Error', 'Please enter a compartment name');
       return;
     }
 
@@ -39,7 +39,7 @@ const ManageDrawersScreen = ({ navigation }) => {
     } else {
       setNewDrawerName('');
       setSelectedIcon('📦');
-      Alert.alert('Success', 'Drawer added successfully!');
+      Alert.alert('Success', 'Compartment added successfully!');
     }
   };
 
@@ -51,7 +51,7 @@ const ManageDrawersScreen = ({ navigation }) => {
 
   const handleSaveEdit = async () => {
     if (!editName.trim()) {
-      Alert.alert('Error', 'Please enter a drawer name');
+      Alert.alert('Error', 'Please enter a compartment name');
       return;
     }
 
@@ -66,7 +66,7 @@ const ManageDrawersScreen = ({ navigation }) => {
       setEditingDrawer(null);
       setEditName('');
       setEditIcon('');
-      Alert.alert('Success', 'Drawer updated successfully!');
+      Alert.alert('Success', 'Compartment updated successfully!');
     }
   };
 
@@ -78,8 +78,8 @@ const ManageDrawersScreen = ({ navigation }) => {
 
   const handleDeleteDrawer = (drawer) => {
     Alert.alert(
-      'Delete Drawer',
-      `Are you sure you want to delete "${drawer.name}"? Items in this drawer will not be deleted.`,
+      'Delete Compartment',
+      `Are you sure you want to delete "${drawer.name}"? Items in this compartment will not be deleted.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -187,14 +187,14 @@ const ManageDrawersScreen = ({ navigation }) => {
           >
             <Text style={styles.backButtonText}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Manage Drawers</Text>
+          <Text style={styles.title}>Manage Compartments</Text>
           <View style={styles.placeholder} />
         </View>
       </LinearGradient>
 
       <ScrollView style={styles.content}>
         <View style={styles.addSection}>
-          <Text style={styles.sectionTitle}>Add New Drawer</Text>
+          <Text style={styles.sectionTitle}>Add New Compartment</Text>
 
           <Text style={styles.sectionLabel}>Select Icon</Text>
           <ScrollView
@@ -216,10 +216,10 @@ const ManageDrawersScreen = ({ navigation }) => {
             ))}
           </ScrollView>
 
-          <Text style={styles.sectionLabel}>Drawer Name</Text>
+          <Text style={styles.sectionLabel}>Compartment Name</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g., Fryser, Kjøleskap, Grønnsak skuff"
+            placeholder="e.g., Top Shelf, Bottom Drawer, Door Shelf"
             value={newDrawerName}
             onChangeText={setNewDrawerName}
           />
@@ -230,16 +230,16 @@ const ManageDrawersScreen = ({ navigation }) => {
             disabled={isLoading}
           >
             <Text style={styles.addButtonText}>
-              {isLoading ? 'Adding...' : 'Add Drawer'}
+              {isLoading ? 'Adding...' : 'Add Compartment'}
             </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.listSection}>
-          <Text style={styles.sectionTitle}>Your Drawers ({drawers.length})</Text>
+          <Text style={styles.sectionTitle}>Your Compartments ({drawers.length})</Text>
           {drawers.length === 0 ? (
             <Text style={styles.emptyText}>
-              No drawers yet. Add your first drawer above!
+              No compartments yet. Add your first compartment above!
             </Text>
           ) : (
             <FlatList

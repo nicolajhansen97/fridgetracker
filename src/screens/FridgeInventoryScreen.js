@@ -5,10 +5,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   Alert,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFridge } from '../context/FridgeContext';
 
@@ -76,7 +76,7 @@ const FridgeInventoryScreen = ({ navigation }) => {
           >
             <Text style={styles.backButtonText}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>My Fridge</Text>
+          <Text style={styles.title}>My Freezer</Text>
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => navigation.navigate('AddItem')}
@@ -94,10 +94,10 @@ const FridgeInventoryScreen = ({ navigation }) => {
       >
         {items.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🧊</Text>
-            <Text style={styles.emptyTitle}>Your fridge is empty!</Text>
+            <Text style={styles.emptyIcon}>❄️</Text>
+            <Text style={styles.emptyTitle}>Your freezer is empty!</Text>
             <Text style={styles.emptyText}>
-              Start adding items to track what's in your fridge
+              Start adding items to track what's in your freezer
             </Text>
             <TouchableOpacity
               style={styles.emptyButton}
@@ -131,6 +131,13 @@ const FridgeInventoryScreen = ({ navigation }) => {
                           </Text>
                         </View>
                       )}
+                      {item.position && (
+                        <View style={styles.badgePosition}>
+                          <Text style={styles.badgeText}>
+                            Pkg #{item.position}
+                          </Text>
+                        </View>
+                      )}
                       {item.expiry_date && (
                         <View style={styles.badgeExpiry}>
                           <Text style={styles.badgeText}>
@@ -141,12 +148,20 @@ const FridgeInventoryScreen = ({ navigation }) => {
                     </View>
                   </View>
 
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => handleDelete(item)}
-                  >
-                    <Text style={styles.deleteButtonText}>🗑️</Text>
-                  </TouchableOpacity>
+                  <View style={styles.actionButtons}>
+                    <TouchableOpacity
+                      style={styles.editButton}
+                      onPress={() => navigation.navigate('EditItem', { item })}
+                    >
+                      <Text style={styles.editButtonText}>✏️</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => handleDelete(item)}
+                    >
+                      <Text style={styles.deleteButtonText}>🗑️</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))}
             </View>
@@ -296,17 +311,33 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 10,
   },
+  badgePosition: {
+    backgroundColor: '#6c63ff',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
   badgeText: {
     color: '#ffffff',
     fontSize: 12,
     fontWeight: '600',
   },
-  deleteButton: {
-    padding: 10,
+  actionButtons: {
+    flexDirection: 'column',
     marginLeft: 10,
   },
+  editButton: {
+    padding: 8,
+    marginBottom: 5,
+  },
+  editButtonText: {
+    fontSize: 20,
+  },
+  deleteButton: {
+    padding: 8,
+  },
   deleteButtonText: {
-    fontSize: 24,
+    fontSize: 20,
   },
   bottomSpace: {
     height: 30,

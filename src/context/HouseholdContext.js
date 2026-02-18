@@ -10,6 +10,7 @@ export const HouseholdProvider = ({ children }) => {
   const [currentHousehold, setCurrentHousehold] = useState(null);
   const [householdMembers, setHouseholdMembers] = useState([]);
   const [invitations, setInvitations] = useState([]);
+  const [pendingInvites, setPendingInvites] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -27,6 +28,9 @@ export const HouseholdProvider = ({ children }) => {
   useEffect(() => {
     if (currentHousehold) {
       loadHouseholdMembers();
+      loadPendingInvites();
+    } else {
+      setPendingInvites([]);
     }
   }, [currentHousehold]);
 
@@ -79,7 +83,10 @@ export const HouseholdProvider = ({ children }) => {
   };
 
   const loadHouseholdMembers = async () => {
-    if (!currentHousehold) return;
+    if (!currentHousehold || !currentHousehold.id) {
+      setHouseholdMembers([]);
+      return;
+    }
 
     try {
       // Use RPC function to get members with emails
@@ -88,11 +95,16 @@ export const HouseholdProvider = ({ children }) => {
           p_household_id: currentHousehold.id
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading household members:', error);
+        setHouseholdMembers([]);
+        return;
+      }
 
       setHouseholdMembers(data || []);
     } catch (error) {
       console.error('Error loading household members:', error);
+      setHouseholdMembers([]);
     }
   };
 
@@ -106,6 +118,39 @@ export const HouseholdProvider = ({ children }) => {
       setInvitations(data || []);
     } catch (error) {
       console.error('Error loading invitations:', error);
+    }
+  };
+
+  const loadPendingInvites = async () => {
+    if (!currentHousehold?.id) {
+      setPendingInvites([]);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .rpc('get_pending_invites', { p_household_id: currentHousehold.id });
+
+      if (error) throw error;
+      setPendingInvites(data || []);
+    } catch (error) {
+      // Non-owners get access denied — that's expected, just clear the list
+      setPendingInvites([]);
+    }
+  };
+
+  const cancelInvite = async (inviteId) => {
+    try {
+      const { data, error } = await supabase
+        .rpc('cancel_household_invite', { p_invite_id: inviteId });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to cancel invite');
+
+      await loadPendingInvites();
+      return { success: true };
+    } catch (error) {
+      console.error('Error cancelling invite:', error);
+      return { success: false, error: error.message };
     }
   };
 
@@ -166,38 +211,56 @@ export const HouseholdProvider = ({ children }) => {
 
   const inviteMember = async (householdId, email) => {
     try {
-      // Check if user is already a member
-      const { data: existingMember } = await supabase
-        .from('household_members')
-        .select('id')
-        .eq('household_id', householdId)
-        .eq('user_id', (
-          await supabase
-            .from('auth.users')
-            .select('id')
-            .eq('email', email)
-            .single()
-        )?.data?.id)
-        .single();
+      // Create invite via RPC to bypass RLS
+      const { data: createResult, error } = await supabase
+        .rpc('create_household_invite', {
+          p_household_id: householdId,
+          p_invited_email: email,
+        });
 
-      if (existingMember) {
-        return { success: false, error: 'User is already a member' };
+      if (error) throw error;
+      if (!createResult?.success) {
+        return { success: false, error: createResult?.error || 'Failed to create invitation' };
       }
 
-      // Create invitation
-      const { error } = await supabase
-        .from('household_invitations')
-        .insert([{
-          household_id: householdId,
-          invited_email: email,
-          invited_by: user.id
-        }]);
+      // Send invite email (best-effort — invitation is valid even if email fails)
+      let emailSent = false;
+      try {
+        const { data: emailResult } = await supabase.rpc('send_household_invite_email', {
+          p_household_name: currentHousehold?.name || 'our household',
+          p_invited_by_email: user.email,
+          p_invitee_email: email,
+          p_invite_id: createResult.invite_id,
+        });
+        emailSent = emailResult?.success === true;
+      } catch (emailError) {
+        console.error('Failed to send invite email:', emailError);
+      }
+
+      await loadPendingInvites();
+      return { success: true, emailSent };
+    } catch (error) {
+      console.error('Error inviting member:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const resendInvite = async (inviteId) => {
+    try {
+      const { data, error } = await supabase
+        .rpc('resend_invite_email', { p_invite_id: inviteId });
 
       if (error) throw error;
 
+      if (data?.cooldown) {
+        return { success: false, cooldown: true, hoursRemaining: data.hours_remaining };
+      }
+      if (!data?.success) throw new Error(data?.error || 'Failed to resend');
+
+      await loadPendingInvites();
       return { success: true };
     } catch (error) {
-      console.error('Error inviting member:', error);
+      console.error('Error resending invite:', error);
       return { success: false, error: error.message };
     }
   };
@@ -253,6 +316,12 @@ export const HouseholdProvider = ({ children }) => {
 
       if (error) throw error;
 
+      // Clear current household immediately if it's the one being left
+      if (currentHousehold?.id === householdId) {
+        setCurrentHousehold(null);
+        setHouseholdMembers([]);
+      }
+
       await loadHouseholds();
       return { success: true };
     } catch (error) {
@@ -289,11 +358,14 @@ export const HouseholdProvider = ({ children }) => {
         currentHousehold,
         householdMembers,
         invitations,
+        pendingInvites,
         loading,
         createHousehold,
         updateHouseholdName,
         deleteHousehold,
         inviteMember,
+        resendInvite,
+        cancelInvite,
         acceptInvitation,
         declineInvitation,
         leaveHousehold,

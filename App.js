@@ -4,6 +4,7 @@ import { AuthProvider } from './src/context/AuthContext';
 import { HouseholdProvider } from './src/context/HouseholdContext';
 import { FridgeProvider } from './src/context/FridgeContext';
 import { DrawerProvider } from './src/context/DrawerContext';
+import { ActivityProvider } from './src/context/ActivityContext';
 import AppNavigator from './src/navigation/AppNavigator';
 
 export default function App() {
@@ -12,8 +13,10 @@ export default function App() {
       <HouseholdProvider>
         <DrawerProvider>
           <FridgeProvider>
-            <StatusBar style="light" />
-            <AppNavigator />
+            <ActivityProvider>
+              <StatusBar style="light" />
+              <AppNavigator />
+            </ActivityProvider>
           </FridgeProvider>
         </DrawerProvider>
       </HouseholdProvider>
