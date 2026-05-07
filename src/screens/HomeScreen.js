@@ -1,424 +1,417 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { useFridge } from '../context/FridgeContext';
 import { useHousehold } from '../context/HouseholdContext';
+import { useLanguage } from '../i18n';
+import WhatsNewModal from '../components/WhatsNewModal';
+import {
+  Screen,
+  Card,
+  Icon,
+  PrimaryButton,
+  SectionTitle,
+} from '../components/ui';
+import { colors, gradients, radii, spacing, typography } from '../theme';
 
 const HomeScreen = ({ navigation }) => {
-  const { user, logout } = useAuth();
-  const { items } = useFridge();
-  const { currentHousehold, invitations } = useHousehold();
-  const [stats, setStats] = useState({
-    totalItems: 0,
-    expiringItems: 0,
-    drawersUsed: 0,
-  });
-  const [recentActivity, setRecentActivity] = useState([]);
+  const { user } = useAuth();
+  const { items, loadItems } = useFridge();
+  const { currentHousehold, loadHouseholds } = useHousehold();
+  const { t } = useLanguage();
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    calculateStats();
+  // Compute summary
+  const summary = useMemo(() => {
+    if (!items || items.length === 0) {
+      return { totalItems: 0, expiringCount: 0, drawersUsed: 0, expiringList: [], recent: [] };
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const sevenDays = new Date(today);
+    sevenDays.setDate(today.getDate() + 7);
+
+    const expiringList = items
+      .filter((i) => i.expiry_date)
+      .map((i) => ({ ...i, _exp: new Date(i.expiry_date) }))
+      .filter((i) => i._exp <= sevenDays)
+      .sort((a, b) => a._exp - b._exp);
+
+    const drawersUsed = new Set(items.map((i) => i.drawer)).size;
+    const recent = [...items]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, 4);
+
+    return {
+      totalItems: items.length,
+      expiringCount: expiringList.length,
+      drawersUsed,
+      expiringList: expiringList.slice(0, 3),
+      recent,
+    };
   }, [items]);
 
-  const calculateStats = () => {
-    if (!items || items.length === 0) {
-      setStats({ totalItems: 0, expiringItems: 0, drawersUsed: 0 });
-      setRecentActivity([]);
-      return;
+  const greeting = useMemo(() => {
+    const h = new Date().getHours();
+    if (h < 12) return t('home.morning');
+    if (h < 18) return t('home.afternoon');
+    return t('home.evening');
+  }, [t]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([loadItems(), loadHouseholds()]);
+    } catch (e) {
+      console.error('Refresh error:', e);
+    } finally {
+      setRefreshing(false);
     }
+  };
 
-    // Calculate total items
-    const totalItems = items.length;
-
-    // Calculate items expiring within 7 days
+  const formatExpiry = (isoDate) => {
     const today = new Date();
-    const sevenDaysFromNow = new Date();
-    sevenDaysFromNow.setDate(today.getDate() + 7);
+    today.setHours(0, 0, 0, 0);
+    const exp = new Date(isoDate);
+    exp.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((exp - today) / 86400000);
+    if (diffDays < 0) return t('expiring.expired');
+    if (diffDays === 0) return t('expiring.expiresToday');
+    if (diffDays === 1) return t('expiring.expiresTomorrow');
+    return t('expiring.daysLeft', { count: diffDays });
+  };
 
-    const expiringItems = items.filter(item => {
-      if (!item.expiry_date) return false;
-      const expiryDate = new Date(item.expiry_date);
-      return expiryDate >= today && expiryDate <= sevenDaysFromNow;
-    }).length;
-
-    // Calculate unique drawers
-    const uniqueDrawers = new Set(items.map(item => item.drawer));
-    const drawersUsed = uniqueDrawers.size;
-
-    setStats({ totalItems, expiringItems, drawersUsed });
-
-    // Get recent activity (last 3 items added)
-    const sortedItems = [...items]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, 3);
-
-    const activity = sortedItems.map(item => ({
-      title: `Added ${item.name}`,
-      description: `to ${item.drawer}`,
-      time: getTimeAgo(item.created_at),
-    }));
-
-    setRecentActivity(activity);
+  const expiryTone = (isoDate) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const exp = new Date(isoDate);
+    exp.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((exp - today) / 86400000);
+    if (diffDays <= 1) return colors.danger;
+    if (diffDays <= 3) return colors.warning;
+    return colors.primary;
   };
 
   const getTimeAgo = (timestamp) => {
-    const now = new Date();
-    const past = new Date(timestamp);
-    const diffInMinutes = Math.floor((now - past) / (1000 * 60));
-
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
-
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    // Navigation will be handled automatically by AuthContext
-    // when isAuthenticated changes to false
-  };
-
-  const handleCardPress = (card) => {
-    if (card.id === 1) {
-      navigation.navigate('FridgeInventory');
-    } else if (card.id === 2) {
-      navigation.navigate('Settings');
-    } else if (card.id === 3) {
-      navigation.navigate('ManageDrawers');
-    } else if (card.id === 4) {
-      navigation.navigate('ManageHousehold');
-    } else if (card.id === 5) {
-      navigation.navigate('ActivityHistory');
+    const diff = (Date.now() - new Date(timestamp).getTime()) / 60000;
+    if (diff < 1) return t('home.justNow');
+    if (diff < 60) return t('home.minAgo', { count: Math.floor(diff) });
+    const hours = Math.floor(diff / 60);
+    if (hours < 24) {
+      return hours === 1 ? t('home.hourAgo', { count: hours }) : t('home.hoursAgo', { count: hours });
     }
+    const days = Math.floor(hours / 24);
+    return days === 1 ? t('home.dayAgo', { count: days }) : t('home.daysAgo', { count: days });
   };
 
-  const cards = [
-    { id: 1, title: 'My Freezer', icon: '❄️', color: ['#43e97b', '#38f9d7'], screen: 'FridgeInventory' },
-    { id: 4, title: 'Family Sharing', icon: '👨‍👩‍👧', color: ['#FFD93D', '#FFAF37'], screen: 'ManageHousehold' },
-    { id: 5, title: 'Activity History', icon: '📊', color: ['#667eea', '#764ba2'], screen: 'ActivityHistory' },
-    { id: 3, title: 'Manage Compartments', icon: '📦', color: ['#4facfe', '#00f2fe'], screen: 'ManageDrawers' },
-    { id: 2, title: 'Settings', icon: '⚙️', color: ['#f093fb', '#f5576c'], screen: 'Settings' },
-  ];
+  const goToAdd = () => {
+    navigation.navigate('FreezerTab', { screen: 'AddItem' });
+  };
+
+  const goToInventory = () => {
+    navigation.navigate('FreezerTab', { screen: 'FridgeInventory' });
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <Screen>
       <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.header}
+        colors={gradients.hero}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.heroHeader}
       >
-        <View style={styles.headerContent}>
-          <View style={styles.userInfo}>
-            <Text style={styles.greeting}>Hello,</Text>
-            <Text style={styles.username}>
-              {user?.email || 'User'}
-            </Text>
-          </View>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.greeting}>{greeting}</Text>
+        <Text style={styles.userLine} numberOfLines={1}>
+          {currentHousehold ? currentHousehold.name : (user?.email || 'Freezely')}
+        </Text>
       </LinearGradient>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>Quick Access</Text>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+      >
+        {/* Stats row */}
+        <View style={styles.statsRow}>
+          <TouchableOpacity activeOpacity={0.85} onPress={goToInventory} style={{ flex: 1 }}>
+            <Card style={styles.statCard}>
+              <Text style={styles.statLabel}>{t('home.totalItems')}</Text>
+              <Text style={styles.statValue}>{summary.totalItems}</Text>
+              <Text style={styles.statSub}>
+                {summary.drawersUsed} {summary.drawersUsed === 1 ? t('home.drawerSingular') : t('home.drawerPlural')}
+              </Text>
+            </Card>
+          </TouchableOpacity>
 
-        <View style={styles.cardsContainer}>
-          {cards.map((card) => (
-            <TouchableOpacity
-              key={card.id}
-              style={styles.cardWrapper}
-              onPress={() => handleCardPress(card)}
-            >
-              <LinearGradient
-                colors={card.color}
-                style={styles.card}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Text style={styles.cardIcon}>{card.icon}</Text>
-                <Text style={styles.cardTitle}>{card.title}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          ))}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('ExpiringItems')}
+            style={{ flex: 1 }}
+          >
+            <Card style={styles.statCard}>
+              <Text style={styles.statLabel}>{t('home.expiringSoon')}</Text>
+              <Text style={[styles.statValue, summary.expiringCount > 0 && { color: colors.danger }]}>
+                {summary.expiringCount}
+              </Text>
+              <Text style={styles.statSub}>
+                {summary.expiringCount > 0 ? t('home.tapToView') : t('home.allFresh')}
+              </Text>
+            </Card>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.statsContainer}>
-          <Text style={styles.sectionTitle}>Your Fridge Stats</Text>
+        {/* Quick add */}
+        <PrimaryButton
+          title={t('home.quickAdd')}
+          onPress={goToAdd}
+          icon={<Icon name="add" size={18} color={colors.surface} />}
+          style={{ marginTop: spacing.md }}
+        />
 
-          <View style={styles.statCard}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{stats.totalItems}</Text>
-              <Text style={styles.statLabel}>Total Items</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <TouchableOpacity
-              style={styles.statItem}
-              onPress={() => navigation.navigate('ExpiringItems')}
-              activeOpacity={0.7}
+        {/* Expiring soon list */}
+        {summary.expiringList.length > 0 && (
+          <>
+            <SectionTitle
+              icon={<Icon name="time-outline" size={14} color={colors.textMuted} />}
+              action={
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('ExpiringItems')}
+                  hitSlop={6}
+                  style={styles.sectionActionBtn}
+                >
+                  <Text style={styles.sectionAction}>{t('home.viewAll')}</Text>
+                  <Icon name="chevron-forward" size={14} color={colors.primary} />
+                </TouchableOpacity>
+              }
             >
-              <Text style={[styles.statValue, stats.expiringItems > 0 && styles.statValueWarning]}>
-                {stats.expiringItems}
-              </Text>
-              <Text style={styles.statLabel}>Expiring Soon</Text>
-              {stats.expiringItems > 0 && (
-                <Text style={styles.tapHint}>Tap to view</Text>
-              )}
-            </TouchableOpacity>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{stats.drawersUsed}</Text>
-              <Text style={styles.statLabel}>Drawers Used</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.activityContainer}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-
-          {recentActivity.length === 0 ? (
-            <View style={styles.emptyActivity}>
-              <Text style={styles.emptyActivityIcon}>📋</Text>
-              <Text style={styles.emptyActivityText}>No recent activity</Text>
-              <Text style={styles.emptyActivitySubtext}>
-                Add items to your fridge to see them here
-              </Text>
-            </View>
-          ) : (
-            recentActivity.map((activity, index) => (
-              <View key={index} style={styles.activityItem}>
-                <View style={styles.activityDot} />
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityTitle}>{activity.title}</Text>
-                  <Text style={styles.activityDescription}>{activity.description}</Text>
-                  <Text style={styles.activityTime}>{activity.time}</Text>
+              {t('home.useFirst')}
+            </SectionTitle>
+            <Card padded={false}>
+              {summary.expiringList.map((item, idx) => (
+                <View
+                  key={item.id}
+                  style={[styles.expiringRow, idx < summary.expiringList.length - 1 && styles.expiringDivider]}
+                >
+                  <View style={[styles.expiringDot, { backgroundColor: expiryTone(item.expiry_date) }]} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.expiringName} numberOfLines={1}>{item.name}</Text>
+                    <View style={styles.expiringMetaRow}>
+                      <Icon name="cube-outline" size={12} color={colors.textMuted} />
+                      <Text style={styles.expiringMeta}>{item.drawer}</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.expiringStatus, { color: expiryTone(item.expiry_date) }]}>
+                    {formatExpiry(item.expiry_date)}
+                  </Text>
                 </View>
-              </View>
-            ))
-          )}
-        </View>
+              ))}
+            </Card>
+          </>
+        )}
+
+        {/* Recent activity */}
+        {summary.recent.length > 0 && (
+          <>
+            <SectionTitle>{t('home.recentActivity')}</SectionTitle>
+            <Card padded={false}>
+              {summary.recent.map((item, idx) => (
+                <View
+                  key={item.id}
+                  style={[styles.activityRow, idx < summary.recent.length - 1 && styles.activityDivider]}
+                >
+                  <View style={styles.activityDot} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.activityTitle} numberOfLines={1}>{item.name}</Text>
+                    <View style={styles.activityMetaRow}>
+                      <Icon name="cube-outline" size={12} color={colors.textMuted} />
+                      <Text style={styles.activityMeta}>{item.drawer} · {getTimeAgo(item.created_at)}</Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </Card>
+          </>
+        )}
+
+        {/* Empty state when fully empty */}
+        {summary.totalItems === 0 && (
+          <Card style={styles.emptyHero}>
+            <View style={styles.emptyIconWrap}>
+              <Icon name="snow-outline" size={40} color={colors.primary} />
+            </View>
+            <Text style={styles.emptyTitle}>{t('inventory.freezerEmpty')}</Text>
+            <Text style={styles.emptySub}>{t('inventory.startAdding')}</Text>
+          </Card>
+        )}
+
+        <View style={{ height: spacing.xxxl }} />
       </ScrollView>
-    </SafeAreaView>
+      <WhatsNewModal />
+    </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f7fa',
-  },
-  header: {
-    paddingTop: 20,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  userInfo: {
-    flex: 1,
-    marginRight: 15,
+  heroHeader: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
+    borderBottomLeftRadius: radii.header,
+    borderBottomRightRadius: radii.header,
   },
   greeting: {
-    fontSize: 16,
-    color: '#ffffff',
-    opacity: 0.9,
-  },
-  username: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginTop: 5,
-  },
-  logoutButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  logoutText: {
-    color: '#ffffff',
-    fontWeight: '600',
+    color: 'rgba(255,255,255,0.85)',
     fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.1,
+  },
+  userLine: {
+    color: colors.surface,
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    marginTop: 2,
   },
   content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    marginTop: 20,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
-  },
-  cardsContainer: {
+  statsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 30,
-  },
-  cardWrapper: {
-    width: '48%',
-    marginBottom: 15,
-  },
-  card: {
-    borderRadius: 20,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 120,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
-  },
-  cardIcon: {
-    fontSize: 40,
-    marginBottom: 10,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-    textAlign: 'center',
-  },
-  statsContainer: {
-    marginBottom: 30,
+    gap: spacing.md,
   },
   statCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#667eea',
-    marginBottom: 5,
-  },
-  statValueWarning: {
-    color: '#ff6b6b',
+    paddingVertical: spacing.lg,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#888',
+    ...typography.label,
+    color: colors.textMuted,
   },
-  tapHint: {
-    fontSize: 10,
-    color: '#ff6b6b',
+  statValue: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.text,
+    letterSpacing: -0.6,
+    marginTop: 6,
+  },
+  statSub: {
+    ...typography.caption,
+    color: colors.textMuted,
     marginTop: 4,
-    fontWeight: '600',
   },
-  statDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: '#e0e0e0',
+  sectionAction: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '700',
+    marginRight: 2,
   },
-  activityContainer: {
-    marginBottom: 30,
-  },
-  activityItem: {
+  sectionActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    padding: 15,
-    borderRadius: 15,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2.22,
-    elevation: 3,
   },
-  activityDot: {
+
+  expiringRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: spacing.lg,
+    gap: 12,
+  },
+  expiringDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  expiringDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#667eea',
-    marginRight: 15,
   },
-  activityContent: {
-    flex: 1,
+  expiringName: {
+    ...typography.bodyStrong,
+    color: colors.text,
+  },
+  expiringMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  expiringMeta: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  expiringStatus: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  activityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: spacing.lg,
+    gap: 12,
+  },
+  activityDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  activityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
   },
   activityTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 3,
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '500',
   },
-  activityDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  activityTime: {
-    fontSize: 12,
-    color: '#888',
-  },
-  emptyActivity: {
-    backgroundColor: '#ffffff',
-    borderRadius: 15,
-    padding: 40,
+  activityMetaRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2.22,
-    elevation: 3,
+    gap: 4,
+    marginTop: 2,
   },
-  emptyActivityIcon: {
-    fontSize: 48,
-    marginBottom: 15,
+  activityMeta: {
+    ...typography.caption,
+    color: colors.textMuted,
   },
-  emptyActivityText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 5,
+
+  emptyHero: {
+    alignItems: 'center',
+    paddingVertical: spacing.xxxl,
+    marginTop: spacing.lg,
   },
-  emptyActivitySubtext: {
-    fontSize: 14,
-    color: '#888',
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#ECFEFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  emptyTitle: {
+    ...typography.h3,
+    color: colors.text,
+    marginBottom: 6,
     textAlign: 'center',
+  },
+  emptySub: {
+    ...typography.body,
+    color: colors.textMuted,
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
   },
 });
 

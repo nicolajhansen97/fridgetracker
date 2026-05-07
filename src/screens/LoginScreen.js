@@ -13,13 +13,16 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../i18n';
+import { Icon } from '../components/ui';
+import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [enableBiometricToggle, setEnableBiometricToggle] = useState(false);
-  const [showBiometricOption, setShowBiometricOption] = useState(false);
+  const { t } = useLanguage();
   const {
     login,
     biometricAvailable,
@@ -30,14 +33,10 @@ const LoginScreen = ({ navigation }) => {
   } = useAuth();
 
   useEffect(() => {
-    // Check if biometric login is available and try auto-login
     const initBiometric = async () => {
       if (biometricAvailable) {
         const enabled = await checkBiometricEnabled();
-        if (enabled) {
-          // Attempt biometric login on app launch
-          handleBiometricLogin();
-        }
+        if (enabled) handleBiometricLogin();
       }
     };
     initBiometric();
@@ -45,26 +44,21 @@ const LoginScreen = ({ navigation }) => {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common.error'), t('login.fillAllFields'));
       return;
     }
-
     setIsLoading(true);
     const result = await login(email, password);
     setIsLoading(false);
-
     if (result.success) {
-      // If biometric toggle is on, enable biometric login
       if (enableBiometricToggle && biometricAvailable) {
         const biometricResult = await enableBiometric(email);
         if (biometricResult.success) {
-          Alert.alert('Success', `${biometricType} login enabled!`);
+          Alert.alert(t('common.success'), t('login.biometricEnabled', { type: biometricType }));
         }
       }
-      // Navigation will be handled automatically by AuthContext
-      // when isAuthenticated changes to true
     } else {
-      Alert.alert('Login Failed', result.error || 'Invalid credentials');
+      Alert.alert(t('login.loginFailed'), result.error || 'Invalid credentials');
     }
   };
 
@@ -72,126 +66,113 @@ const LoginScreen = ({ navigation }) => {
     setIsLoading(true);
     const result = await loginWithBiometric();
     setIsLoading(false);
-
-    if (result.success) {
-      // Navigation will be handled automatically by AuthContext
-      // when isAuthenticated changes to true
-    } else if (result.error === 'Session expired. Please login with password again.') {
-      Alert.alert('Session Expired', result.error);
+    if (!result.success && result.error === 'Session expired. Please login with password again.') {
+      Alert.alert(t('login.sessionExpired'), result.error);
     }
-    // If biometric fails, user can still login with password
   };
 
   const toggleBiometricOption = () => {
     if (!biometricAvailable) {
-      Alert.alert(
-        'Not Available',
-        `${biometricType} is not available on this device. Please enable it in your device settings.`
-      );
+      Alert.alert(t('login.notAvailable'), t('login.biometricNotAvailable', { type: biometricType }));
       return;
     }
     setEnableBiometricToggle(!enableBiometricToggle);
   };
 
   return (
-    <LinearGradient
-      colors={['#667eea', '#764ba2']}
-      style={styles.container}
-    >
+    <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Sign in to continue</Text>
+            <Text style={styles.brand}>Freezely</Text>
+            <Text style={styles.title}>{t('login.welcomeBack')}</Text>
+            <Text style={styles.subtitle}>{t('login.signInToContinue')}</Text>
           </View>
 
           <View style={styles.form}>
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                placeholderTextColor="#a0a0a0"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                editable={!isLoading}
-              />
-            </View>
+            <Text style={styles.label}>{t('common.email')}</Text>
+            <TextInput
+              style={styles.input}
+              placeholder={t('login.enterEmail')}
+              placeholderTextColor="#94A3B8"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              editable={!isLoading}
+            />
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                placeholderTextColor="#a0a0a0"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoComplete="password"
-                editable={!isLoading}
-              />
-            </View>
+            <Text style={[styles.label, { marginTop: spacing.md }]}>{t('login.password')}</Text>
+            <TextInput
+              style={styles.input}
+              placeholder={t('login.enterPassword')}
+              placeholderTextColor="#94A3B8"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoComplete="password"
+              editable={!isLoading}
+            />
 
             <TouchableOpacity
-              style={styles.forgotPassword}
               onPress={() => navigation.navigate('ForgotPassword')}
               disabled={isLoading}
+              hitSlop={6}
+              style={styles.forgotRow}
             >
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              <Text style={styles.forgotText}>{t('login.forgotPassword')}</Text>
             </TouchableOpacity>
 
             {biometricAvailable && (
-              <View style={styles.biometricToggleContainer}>
-                <Text style={styles.biometricToggleText}>
-                  Enable {biometricType} login
+              <View style={styles.bioToggleRow}>
+                <Text style={styles.bioToggleText}>
+                  {t('login.enableBiometric', { type: biometricType })}
                 </Text>
                 <Switch
                   value={enableBiometricToggle}
                   onValueChange={toggleBiometricOption}
-                  trackColor={{ false: '#ccc', true: '#667eea' }}
-                  thumbColor={enableBiometricToggle ? '#fff' : '#f4f3f4'}
+                  trackColor={{ false: 'rgba(255,255,255,0.35)', true: colors.surface }}
+                  thumbColor={enableBiometricToggle ? colors.primary : '#f4f3f4'}
                   disabled={isLoading}
                 />
               </View>
             )}
 
             <TouchableOpacity
-              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+              style={[styles.signInBtn, isLoading && { opacity: 0.7 }]}
               onPress={handleLogin}
               disabled={isLoading}
+              activeOpacity={0.85}
             >
               {isLoading ? (
-                <ActivityIndicator color="#667eea" />
+                <ActivityIndicator color={colors.primary} />
               ) : (
-                <Text style={styles.loginButtonText}>Login</Text>
+                <Text style={styles.signInText}>{t('login.loginButton')}</Text>
               )}
             </TouchableOpacity>
 
             {biometricAvailable && (
               <TouchableOpacity
-                style={styles.biometricButton}
+                style={styles.bioBtn}
                 onPress={handleBiometricLogin}
                 disabled={isLoading}
+                activeOpacity={0.85}
               >
-                <Text style={styles.biometricButtonText}>
-                  🔐 Login with {biometricType}
+                <Icon name="finger-print-outline" size={18} color={colors.surface} />
+                <Text style={styles.bioBtnText}>
+                  {t('login.loginWithBiometric', { type: biometricType })}
                 </Text>
               </TouchableOpacity>
             )}
 
-            <View style={styles.signupContainer}>
-              <Text style={styles.signupText}>Don't have an account? </Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Register')}
-                disabled={isLoading}
-              >
-                <Text style={styles.signupLink}>Sign Up</Text>
+            <View style={styles.signupRow}>
+              <Text style={styles.signupText}>{t('login.noAccount')} </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Register')} disabled={isLoading} hitSlop={6}>
+                <Text style={styles.signupLink}>{t('login.signUp')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -211,114 +192,119 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 30,
+    paddingHorizontal: spacing.xxl,
   },
   header: {
-    marginBottom: 50,
+    marginBottom: spacing.xxxl,
+  },
+  brand: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '600',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: spacing.sm,
   },
   title: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 10,
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.surface,
+    letterSpacing: -0.4,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 18,
-    color: '#ffffff',
-    opacity: 0.9,
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.85)',
   },
   form: {
     width: '100%',
   },
-  inputContainer: {
-    marginBottom: 20,
-  },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 8,
+    ...typography.label,
+    color: colors.surface,
+    opacity: 0.9,
+    marginBottom: 6,
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 12,
-    padding: 15,
-    fontSize: 16,
-    color: '#333',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: radii.md,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: colors.text,
   },
-  forgotPassword: {
+  forgotRow: {
     alignSelf: 'flex-end',
-    marginBottom: 20,
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
   },
-  forgotPasswordText: {
-    color: '#ffffff',
-    fontSize: 14,
+  forgotText: {
+    color: colors.surface,
+    fontSize: 13,
     fontWeight: '500',
+    textDecorationLine: 'underline',
   },
-  biometricToggleContainer: {
+  bioToggleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: radii.md,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: spacing.lg,
   },
-  biometricToggleText: {
-    color: '#ffffff',
+  bioToggleText: {
+    color: colors.surface,
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  signInBtn: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    paddingVertical: 16,
+    alignItems: 'center',
+    ...shadows.button,
+  },
+  signInText: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  bioBtn: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: spacing.md,
+  },
+  bioBtnText: {
+    color: colors.surface,
     fontSize: 15,
     fontWeight: '600',
   },
-  loginButton: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 18,
-    alignItems: 'center',
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
-  },
-  loginButtonDisabled: {
-    opacity: 0.7,
-  },
-  loginButtonText: {
-    color: '#667eea',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  biometricButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#ffffff',
-    padding: 15,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  biometricButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  signupContainer: {
+  signupRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: spacing.xl,
   },
   signupText: {
-    color: '#ffffff',
+    color: 'rgba(255,255,255,0.85)',
     fontSize: 14,
   },
   signupLink: {
-    color: '#ffffff',
+    color: colors.surface,
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '700',
     textDecorationLine: 'underline',
   },
 });

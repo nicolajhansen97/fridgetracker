@@ -5,34 +5,35 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  TextInput,
   Alert,
   Modal,
+  RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useHousehold } from '../context/HouseholdContext';
+import { useLanguage } from '../i18n';
+import {
+  Screen,
+  ScreenHeader,
+  Card,
+  Icon,
+  Badge,
+  Input,
+  PrimaryButton,
+  SecondaryButton,
+  SectionTitle,
+} from '../components/ui';
+import { colors, radii, shadows, spacing, typography } from '../theme';
 
 const ManageHouseholdScreen = ({ navigation }) => {
   const {
-    households,
-    currentHousehold,
-    householdMembers,
-    invitations,
-    pendingInvites,
-    createHousehold,
-    updateHouseholdName,
-    deleteHousehold,
-    inviteMember,
-    resendInvite,
-    cancelInvite,
-    acceptInvitation,
-    declineInvitation,
-    leaveHousehold,
-    removeMember,
-    switchHousehold,
+    households, currentHousehold, householdMembers, invitations, pendingInvites,
+    createHousehold, deleteHousehold, inviteMember, resendInvite, cancelInvite,
+    acceptInvitation, declineInvitation, leaveHousehold, removeMember, switchHousehold,
+    loadHouseholds, loadHouseholdMembers, loadInvitations,
   } = useHousehold();
 
+  const { t } = useLanguage();
+  const [refreshing, setRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [householdName, setHouseholdName] = useState('');
@@ -40,225 +41,202 @@ const ManageHouseholdScreen = ({ navigation }) => {
 
   const handleCreateHousehold = async () => {
     if (!householdName.trim()) {
-      Alert.alert('Error', 'Please enter a household name');
+      Alert.alert(t('common.error'), t('household.enterHouseholdName'));
       return;
     }
-
     const result = await createHousehold(householdName.trim());
     if (result.success) {
-      Alert.alert('Success', 'Household created successfully!');
+      Alert.alert(t('common.success'), t('household.householdCreated'));
       setHouseholdName('');
       setShowCreateModal(false);
       switchHousehold(result.household);
     } else {
-      Alert.alert('Error', result.error);
+      Alert.alert(t('common.error'), result.error);
     }
   };
 
   const handleInviteMember = async () => {
     if (!inviteEmail.trim()) {
-      Alert.alert('Error', 'Please enter an email address');
+      Alert.alert(t('common.error'), t('household.enterEmail'));
       return;
     }
-
     if (!currentHousehold) {
-      Alert.alert('Error', 'No household selected');
+      Alert.alert(t('common.error'), t('household.noHouseholdSelected'));
       return;
     }
-
     const result = await inviteMember(currentHousehold.id, inviteEmail.trim());
     if (result.success) {
       const message = result.emailSent
-        ? `Invitation sent! ${inviteEmail.trim()} will receive an email with instructions to join.`
-        : `Invitation created! Ask ${inviteEmail.trim()} to open Freezely to accept it.`;
-      Alert.alert('Invitation Sent', message);
+        ? t('household.invitationSentEmail', { email: inviteEmail.trim() })
+        : t('household.invitationSentApp', { email: inviteEmail.trim() });
+      Alert.alert(t('household.invitationSent'), message);
       setInviteEmail('');
       setShowInviteModal(false);
     } else {
-      Alert.alert('Error', result.error);
+      Alert.alert(t('common.error'), result.error);
     }
   };
 
   const handleAcceptInvitation = async (invitation) => {
     const result = await acceptInvitation(invitation.id, invitation.household_id);
     if (result.success) {
-      Alert.alert('Success', `You joined ${invitation.household_name}!`);
+      Alert.alert(t('common.success'), t('household.joinedHousehold', { name: invitation.household_name }));
     } else {
-      Alert.alert('Error', result.error);
+      Alert.alert(t('common.error'), result.error);
     }
   };
 
   const handleDeclineInvitation = async (invitation) => {
-    Alert.alert(
-      'Decline Invitation',
-      `Decline invitation to ${invitation.household_name}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Decline',
-          style: 'destructive',
-          onPress: async () => {
-            const result = await declineInvitation(invitation.id);
-            if (!result.success) {
-              Alert.alert('Error', result.error);
-            }
-          },
+    Alert.alert(t('household.declineInvitation'), t('household.declineConfirm', { name: invitation.household_name }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('household.decline'),
+        style: 'destructive',
+        onPress: async () => {
+          const result = await declineInvitation(invitation.id);
+          if (!result.success) Alert.alert(t('common.error'), result.error);
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleLeaveHousehold = () => {
     if (!currentHousehold) return;
-
-    Alert.alert(
-      'Leave Household',
-      `Are you sure you want to leave "${currentHousehold.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Leave',
-          style: 'destructive',
-          onPress: async () => {
-            const result = await leaveHousehold(currentHousehold.id);
-            if (result.success) {
-              Alert.alert('Success', 'You left the household');
-            } else {
-              Alert.alert('Error', result.error);
-            }
-          },
+    Alert.alert(t('household.leaveHousehold'), t('household.leaveConfirm', { name: currentHousehold.name }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('household.leaveHousehold'),
+        style: 'destructive',
+        onPress: async () => {
+          const result = await leaveHousehold(currentHousehold.id);
+          if (result.success) Alert.alert(t('common.success'), t('household.leftHousehold'));
+          else Alert.alert(t('common.error'), result.error);
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleDeleteHousehold = () => {
     if (!currentHousehold) return;
-
-    Alert.alert(
-      'Delete Household',
-      `Are you sure you want to delete "${currentHousehold.name}"? This will remove all items and cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const result = await deleteHousehold(currentHousehold.id);
-            if (result.success) {
-              Alert.alert('Success', 'Household deleted');
-            } else {
-              Alert.alert('Error', result.error);
-            }
-          },
+    Alert.alert(t('household.deleteHousehold'), t('household.deleteConfirm', { name: currentHousehold.name }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.delete'),
+        style: 'destructive',
+        onPress: async () => {
+          const result = await deleteHousehold(currentHousehold.id);
+          if (result.success) Alert.alert(t('common.success'), t('household.householdDeleted'));
+          else Alert.alert(t('common.error'), result.error);
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleRemoveMember = (member) => {
-    Alert.alert(
-      'Remove Member',
-      `Remove ${member.user_email} from the household?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            const result = await removeMember(member.id);
-            if (!result.success) {
-              Alert.alert('Error', result.error);
-            }
-          },
+    Alert.alert(t('household.removeMember'), t('household.removeMemberConfirm', { email: member.user_email }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.remove'),
+        style: 'destructive',
+        onPress: async () => {
+          const result = await removeMember(member.id);
+          if (!result.success) Alert.alert(t('common.error'), result.error);
         },
-      ]
-    );
+      },
+    ]);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([loadHouseholds(), loadInvitations()]);
+      if (currentHousehold) await loadHouseholdMembers(currentHousehold.id);
+    } catch (e) { console.error('Refresh error:', e); }
+    finally { setRefreshing(false); }
   };
 
   const isOwner = currentHousehold?.role === 'owner';
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={['#43e97b', '#38f9d7']} style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Family Sharing</Text>
-          <View style={styles.placeholder} />
-        </View>
-      </LinearGradient>
+    <Screen>
+      <ScreenHeader
+        title={t('household.title')}
+        onBack={() => navigation.goBack()}
+        backLabel={t('common.back')}
+      />
 
-      <ScrollView style={styles.content}>
-        {/* Invitations Section */}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+      >
         {invitations.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📨 Pending Invitations</Text>
+          <>
+            <SectionTitle icon={<Icon name="mail-outline" size={14} color={colors.textMuted} />}>
+              {t('household.pendingInvitations')}
+            </SectionTitle>
             {invitations.map((invitation) => (
-              <View key={invitation.id} style={styles.invitationCard}>
-                <View style={styles.invitationInfo}>
+              <Card key={invitation.id} style={styles.invitationCard}>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.invitationName}>{invitation.household_name}</Text>
-                  <Text style={styles.invitationText}>You've been invited to join</Text>
+                  <Text style={styles.invitationText}>{t('household.invitedToJoin')}</Text>
                 </View>
-                <View style={styles.invitationActions}>
-                  <TouchableOpacity
-                    style={[styles.invitationButton, styles.acceptButton]}
+                <View style={styles.row}>
+                  <PrimaryButton
+                    title={t('household.accept')}
                     onPress={() => handleAcceptInvitation(invitation)}
-                  >
-                    <Text style={styles.buttonText}>Accept</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.invitationButton, styles.declineButton]}
+                    fullWidth={false}
+                    style={styles.smallBtn}
+                  />
+                  <SecondaryButton
+                    title={t('household.decline')}
                     onPress={() => handleDeclineInvitation(invitation)}
-                  >
-                    <Text style={styles.buttonText}>Decline</Text>
-                  </TouchableOpacity>
+                    danger
+                    style={styles.smallBtnSecondary}
+                  />
                 </View>
-              </View>
+              </Card>
             ))}
-          </View>
+          </>
         )}
 
-        {/* Current Household Section */}
         {currentHousehold && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🏠 Current Household</Text>
-            <View style={styles.householdCard}>
+          <>
+            <SectionTitle icon={<Icon name="people-outline" size={14} color={colors.textMuted} />}>
+              {t('household.currentHousehold')}
+            </SectionTitle>
+            <Card>
               <View style={styles.householdHeader}>
                 <Text style={styles.householdName}>{currentHousehold.name}</Text>
-                <View style={styles.roleBadge}>
-                  <Text style={styles.roleText}>{isOwner ? 'Owner' : 'Member'}</Text>
-                </View>
+                <Badge tone={isOwner ? 'primary' : 'default'}>
+                  {isOwner ? t('household.owner') : t('household.member')}
+                </Badge>
               </View>
 
-              {/* Members */}
-              <View style={styles.membersSection}>
-                <Text style={styles.subTitle}>Members ({householdMembers.length})</Text>
-                {householdMembers.map((member) => (
-                  <View key={member.id} style={styles.memberRow}>
-                    <View style={styles.memberInfo}>
-                      <Text style={styles.memberEmail}>
-                        {member.user_email}
-                      </Text>
-                      <Text style={styles.memberRole}>{member.role}</Text>
-                    </View>
-                    {isOwner && member.role !== 'owner' && (
-                      <TouchableOpacity
-                        style={styles.removeButton}
-                        onPress={() => handleRemoveMember(member)}
-                      >
-                        <Text style={styles.removeButtonText}>Remove</Text>
-                      </TouchableOpacity>
-                    )}
+              <Text style={styles.subTitle}>
+                {t('household.members', { count: householdMembers.length })}
+              </Text>
+              {householdMembers.map((member) => (
+                <View key={member.id} style={styles.memberRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.memberEmail} numberOfLines={1}>{member.user_email}</Text>
+                    <Text style={styles.memberRole}>{member.role}</Text>
                   </View>
-                ))}
-              </View>
+                  {isOwner && member.role !== 'owner' && (
+                    <SecondaryButton
+                      title={t('common.remove')}
+                      onPress={() => handleRemoveMember(member)}
+                      danger
+                      style={styles.smallBtnSecondary}
+                    />
+                  )}
+                </View>
+              ))}
 
-              {/* Pending Invites */}
               {isOwner && pendingInvites.length > 0 && (
-                <View style={styles.membersSection}>
-                  <Text style={styles.subTitle}>Pending Invites ({pendingInvites.length})</Text>
+                <>
+                  <Text style={[styles.subTitle, { marginTop: spacing.lg }]}>
+                    {t('household.pendingInvites', { count: pendingInvites.length })}
+                  </Text>
                   {pendingInvites.map((invite) => {
                     const hoursSince = invite.last_email_sent_at
                       ? (Date.now() - new Date(invite.last_email_sent_at).getTime()) / 3600000
@@ -267,462 +245,293 @@ const ManageHouseholdScreen = ({ navigation }) => {
                     const hoursLeft = Math.ceil(24 - hoursSince);
                     return (
                       <View key={invite.id} style={styles.memberRow}>
-                        <View style={styles.memberInfo}>
-                          <Text style={styles.memberEmail}>{invite.invited_email}</Text>
-                          <Text style={[styles.memberRole, { color: '#f59e0b' }]}>⏳ Awaiting response</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.memberEmail} numberOfLines={1}>{invite.invited_email}</Text>
+                          <View style={styles.awaitingRow}>
+                            <Icon name="time-outline" size={12} color={colors.warning} />
+                            <Text style={[styles.memberRole, { color: colors.warning }]}>
+                              {t('household.awaitingResponse')}
+                            </Text>
+                          </View>
                         </View>
-                        <View style={{ flexDirection: 'row', gap: 6 }}>
-                          <TouchableOpacity
-                            style={[styles.removeButton, { backgroundColor: canResend ? '#667eea' : '#ccc' }]}
+                        <View style={styles.row}>
+                          <SecondaryButton
+                            title={canResend ? t('household.resend') : t('household.hoursLeft', { count: hoursLeft })}
                             disabled={!canResend}
                             onPress={async () => {
                               const result = await resendInvite(invite.id);
                               if (result.success) {
-                                Alert.alert('Email Sent', `Invitation resent to ${invite.invited_email}`);
+                                Alert.alert(t('household.emailSent'), t('household.invitationResent', { email: invite.invited_email }));
                               } else if (result.cooldown) {
-                                Alert.alert('Too soon', `You can resend in ${result.hoursRemaining}h`);
+                                Alert.alert(t('household.tooSoon'), t('household.resendCooldown', { hours: result.hoursRemaining }));
                               } else {
-                                Alert.alert('Error', result.error);
+                                Alert.alert(t('common.error'), result.error);
                               }
                             }}
-                          >
-                            <Text style={styles.removeButtonText}>
-                              {canResend ? 'Resend' : `${hoursLeft}h`}
-                            </Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.removeButton}
+                            style={styles.smallBtnSecondary}
+                          />
+                          <SecondaryButton
+                            title={t('common.cancel')}
                             onPress={() =>
-                              Alert.alert('Cancel Invite', `Cancel invitation to ${invite.invited_email}?`, [
-                                { text: 'No', style: 'cancel' },
-                                { text: 'Cancel Invite', style: 'destructive', onPress: () => cancelInvite(invite.id) },
+                              Alert.alert(t('household.cancelInvite'), t('household.cancelInviteConfirm', { email: invite.invited_email }), [
+                                { text: t('common.no'), style: 'cancel' },
+                                { text: t('household.cancelInvite'), style: 'destructive', onPress: () => cancelInvite(invite.id) },
                               ])
                             }
-                          >
-                            <Text style={styles.removeButtonText}>Cancel</Text>
-                          </TouchableOpacity>
+                            danger
+                            style={styles.smallBtnSecondary}
+                          />
                         </View>
                       </View>
                     );
                   })}
-                </View>
+                </>
               )}
 
-              {/* Actions */}
-              <View style={styles.actionsSection}>
-                {isOwner && (
+              <View style={styles.actionsRow}>
+                {isOwner ? (
                   <>
-                    <TouchableOpacity
-                      style={[styles.actionButton, styles.inviteButton]}
+                    <PrimaryButton
+                      title={t('household.inviteMember')}
+                      icon={<Icon name="person-add-outline" size={16} color={colors.surface} />}
                       onPress={() => setShowInviteModal(true)}
-                    >
-                      <Text style={styles.actionButtonText}>➕ Invite Member</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.actionButton, styles.deleteButton]}
+                    />
+                    <SecondaryButton
+                      title={t('household.deleteHousehold')}
                       onPress={handleDeleteHousehold}
-                    >
-                      <Text style={styles.actionButtonText}>🗑️ Delete Household</Text>
-                    </TouchableOpacity>
+                      danger
+                      style={{ marginTop: spacing.sm }}
+                    />
                   </>
-                )}
-                {!isOwner && (
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.leaveButton]}
+                ) : (
+                  <SecondaryButton
+                    title={t('household.leaveHousehold')}
                     onPress={handleLeaveHousehold}
-                  >
-                    <Text style={styles.actionButtonText}>🚪 Leave Household</Text>
-                  </TouchableOpacity>
+                    danger
+                  />
                 )}
               </View>
-            </View>
-          </View>
+            </Card>
+          </>
         )}
 
-        {/* All Households */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>All Your Households</Text>
-          <TouchableOpacity
-            style={styles.createButton}
-            onPress={() => setShowCreateModal(true)}
-          >
-            <Text style={styles.createButtonText}>+ Create New Household</Text>
-          </TouchableOpacity>
+        <SectionTitle>{t('household.allHouseholds')}</SectionTitle>
+        <PrimaryButton
+          title={t('household.createNew')}
+          onPress={() => setShowCreateModal(true)}
+          style={{ marginBottom: spacing.md }}
+        />
 
-          {households.map((household) => (
+        {households.map((household) => {
+          const isActive = currentHousehold?.id === household.id;
+          return (
             <TouchableOpacity
               key={household.id}
-              style={[
-                styles.householdListItem,
-                currentHousehold?.id === household.id && styles.activeHousehold,
-              ]}
+              activeOpacity={0.85}
               onPress={() => switchHousehold(household)}
             >
-              <View>
-                <Text style={styles.householdListName}>{household.name}</Text>
-                <Text style={styles.householdListRole}>{household.role}</Text>
-              </View>
-              {currentHousehold?.id === household.id && (
-                <Text style={styles.activeIndicator}>✓ Active</Text>
-              )}
+              <Card style={[styles.householdItem, isActive && styles.householdItemActive]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.householdItemName}>{household.name}</Text>
+                  <Text style={styles.householdItemRole}>{household.role}</Text>
+                </View>
+                {isActive && (
+                  <View style={styles.activeBadge}>
+                    <Icon name="checkmark-circle" size={14} color={colors.primary} />
+                    <Text style={styles.activeBadgeText}>{t('household.active')}</Text>
+                  </View>
+                )}
+              </Card>
             </TouchableOpacity>
-          ))}
-        </View>
+          );
+        })}
+
+        <View style={{ height: spacing.xxxl }} />
       </ScrollView>
 
-      {/* Create Household Modal */}
-      <Modal visible={showCreateModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create New Household</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Household Name (e.g., The Smiths)"
-              value={householdName}
-              onChangeText={setHouseholdName}
-            />
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  setShowCreateModal(false);
-                  setHouseholdName('');
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton]}
-                onPress={handleCreateHousehold}
-              >
-                <Text style={styles.confirmButtonText}>Create</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <FormModal
+        visible={showCreateModal}
+        title={t('household.createNewTitle')}
+        value={householdName}
+        setValue={setHouseholdName}
+        placeholder={t('household.householdNamePlaceholder')}
+        confirmTitle={t('common.create')}
+        onCancel={() => { setShowCreateModal(false); setHouseholdName(''); }}
+        onConfirm={handleCreateHousehold}
+      />
 
-      {/* Invite Member Modal */}
-      <Modal visible={showInviteModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Invite Member</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Email address"
-              value={inviteEmail}
-              onChangeText={setInviteEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  setShowInviteModal(false);
-                  setInviteEmail('');
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton]}
-                onPress={handleInviteMember}
-              >
-                <Text style={styles.confirmButtonText}>Send Invite</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+      <FormModal
+        visible={showInviteModal}
+        title={t('household.inviteMember')}
+        value={inviteEmail}
+        setValue={setInviteEmail}
+        placeholder={t('household.emailAddress')}
+        confirmTitle={t('household.sendInvite')}
+        onCancel={() => { setShowInviteModal(false); setInviteEmail(''); }}
+        onConfirm={handleInviteMember}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
+    </Screen>
   );
 };
 
+const FormModal = ({ visible, title, value, setValue, placeholder, confirmTitle, onCancel, onConfirm, keyboardType, autoCapitalize }) => (
+  <Modal visible={visible} transparent animationType="fade">
+    <View style={styles.modalOverlay}>
+      <View style={styles.modalSheet}>
+        <Text style={styles.modalTitle}>{title}</Text>
+        <Input
+          placeholder={placeholder}
+          value={value}
+          onChangeText={setValue}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          autoFocus
+        />
+        <View style={styles.modalActions}>
+          <SecondaryButton title="Cancel" onPress={onCancel} style={{ flex: 1 }} />
+          <PrimaryButton title={confirmTitle} onPress={onConfirm} style={{ flex: 1 }} />
+        </View>
+      </View>
+    </View>
+  </Modal>
+);
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    paddingTop: 20,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  backButton: {
-    padding: 8,
-  },
-  backButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  placeholder: {
-    width: 70,
-  },
   content: {
-    flex: 1,
-    padding: 20,
-  },
-  section: {
-    marginBottom: 30,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
   },
   invitationCard: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 10,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  invitationInfo: {
-    flex: 1,
+    gap: spacing.md,
+    marginBottom: spacing.sm,
   },
   invitationName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    ...typography.bodyStrong,
+    color: colors.text,
   },
   invitationText: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: 2,
   },
-  invitationActions: {
+  row: {
     flexDirection: 'row',
-    gap: 10,
+    gap: spacing.sm,
+    flexWrap: 'wrap',
   },
-  invitationButton: {
+  smallBtn: {
+    paddingHorizontal: 14,
+  },
+  smallBtnSecondary: {
     paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-  },
-  acceptButton: {
-    backgroundColor: '#43e97b',
-  },
-  declineButton: {
-    backgroundColor: '#ff6b6b',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  householdCard: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    paddingHorizontal: 14,
   },
   householdHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
   householdName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  roleBadge: {
-    backgroundColor: '#43e97b',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  roleText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 12,
-  },
-  membersSection: {
-    marginBottom: 20,
+    ...typography.h3,
+    color: colors.text,
+    flex: 1,
+    marginRight: spacing.sm,
   },
   subTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
+    ...typography.label,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
   },
   memberRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  memberInfo: {
-    flex: 1,
+    borderBottomColor: colors.border,
+    gap: spacing.sm,
   },
   memberEmail: {
-    fontSize: 14,
-    color: '#333',
+    ...typography.bodySmall,
+    color: colors.text,
   },
   memberRole: {
-    fontSize: 12,
-    color: '#888',
+    ...typography.caption,
+    color: colors.textMuted,
     marginTop: 2,
   },
-  removeButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: '#ff6b6b',
+  actionsRow: {
+    marginTop: spacing.lg,
+  },
+  householdItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  householdItemActive: {
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  householdItemName: {
+    ...typography.bodyStrong,
+    color: colors.text,
+  },
+  householdItemRole: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  activeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#CCFBF1',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 8,
   },
-  removeButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+  activeBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0F766E',
   },
-  actionsSection: {
-    gap: 10,
-  },
-  actionButton: {
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  inviteButton: {
-    backgroundColor: '#43e97b',
-  },
-  deleteButton: {
-    backgroundColor: '#ff6b6b',
-  },
-  leaveButton: {
-    backgroundColor: '#ffa500',
-  },
-  actionButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  createButton: {
-    backgroundColor: '#667eea',
-    paddingVertical: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  createButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  householdListItem: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
+  awaitingRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    gap: 3,
   },
-  activeHousehold: {
-    borderWidth: 2,
-    borderColor: '#43e97b',
-  },
-  householdListName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  householdListRole: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 4,
-  },
-  activeIndicator: {
-    color: '#43e97b',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
+
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(15,23,42,0.55)',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: spacing.xl,
   },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 25,
-    width: '85%',
+  modalSheet: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
+    padding: spacing.xxl,
+    width: '100%',
+    maxWidth: 420,
+    ...shadows.button,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
+    ...typography.h2,
+    color: colors.text,
+    marginBottom: spacing.lg,
     textAlign: 'center',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 10,
-    padding: 15,
-    fontSize: 16,
-    marginBottom: 20,
   },
   modalActions: {
     flexDirection: 'row',
-    gap: 10,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#f0f0f0',
-  },
-  confirmButton: {
-    backgroundColor: '#43e97b',
-  },
-  cancelButtonText: {
-    color: '#333',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  confirmButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
+    gap: spacing.sm,
+    marginTop: spacing.lg,
   },
 });
 

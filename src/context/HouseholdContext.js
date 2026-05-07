@@ -373,6 +373,7 @@ export const HouseholdProvider = ({ children }) => {
         switchHousehold,
         loadHouseholds,
         loadHouseholdMembers,
+        loadInvitations,
       }}
     >
       {children}

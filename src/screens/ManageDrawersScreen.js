@@ -2,44 +2,75 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   FlatList,
   StyleSheet,
   Alert,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useDrawers } from '../context/DrawerContext';
+import { useLanguage } from '../i18n';
+import {
+  Screen,
+  ScreenHeader,
+  Card,
+  Input,
+  PrimaryButton,
+  SecondaryButton,
+} from '../components/ui';
+import { colors, radii, spacing, typography } from '../theme';
 
 const ICON_OPTIONS = ['❄️', '🧊', '🥶', '📦', '🗄️', '🍦', '🥩', '🍕', '🌽', '🥦', '🍓', '🍔'];
 
+const IconPicker = ({ value, onChange }) => (
+  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.iconRow}>
+    {ICON_OPTIONS.map((icon) => (
+      <TouchableOpacity
+        key={icon}
+        onPress={() => onChange(icon)}
+        style={[styles.iconOption, value === icon && styles.iconOptionSelected]}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.iconText}>{icon}</Text>
+      </TouchableOpacity>
+    ))}
+  </ScrollView>
+);
+
 const ManageDrawersScreen = ({ navigation }) => {
-  const { drawers, isLoading, addDrawer, updateDrawer, deleteDrawer } = useDrawers();
+  const { drawers, isLoading, addDrawer, updateDrawer, deleteDrawer, loadDrawers } = useDrawers();
+  const { t } = useLanguage();
+  const [refreshing, setRefreshing] = useState(false);
   const [newDrawerName, setNewDrawerName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('📦');
   const [editingDrawer, setEditingDrawer] = useState(null);
   const [editName, setEditName] = useState('');
   const [editIcon, setEditIcon] = useState('');
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await loadDrawers();
+    } catch (e) {
+      console.error('Refresh error:', e);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleAddDrawer = async () => {
     if (!newDrawerName.trim()) {
-      Alert.alert('Error', 'Please enter a compartment name');
+      Alert.alert(t('common.error'), t('drawers.enterName'));
       return;
     }
-
-    const result = await addDrawer({
-      name: newDrawerName.trim(),
-      icon: selectedIcon,
-    });
-
+    const result = await addDrawer({ name: newDrawerName.trim(), icon: selectedIcon });
     if (result.error) {
-      Alert.alert('Error', result.error);
+      Alert.alert(t('common.error'), result.error);
     } else {
       setNewDrawerName('');
       setSelectedIcon('📦');
-      Alert.alert('Success', 'Compartment added successfully!');
+      Alert.alert(t('common.success'), t('drawers.addedSuccess'));
     }
   };
 
@@ -51,22 +82,17 @@ const ManageDrawersScreen = ({ navigation }) => {
 
   const handleSaveEdit = async () => {
     if (!editName.trim()) {
-      Alert.alert('Error', 'Please enter a compartment name');
+      Alert.alert(t('common.error'), t('drawers.enterName'));
       return;
     }
-
-    const result = await updateDrawer(editingDrawer, {
-      name: editName.trim(),
-      icon: editIcon,
-    });
-
+    const result = await updateDrawer(editingDrawer, { name: editName.trim(), icon: editIcon });
     if (result.error) {
-      Alert.alert('Error', result.error);
+      Alert.alert(t('common.error'), result.error);
     } else {
       setEditingDrawer(null);
       setEditName('');
       setEditIcon('');
-      Alert.alert('Success', 'Compartment updated successfully!');
+      Alert.alert(t('common.success'), t('drawers.updatedSuccess'));
     }
   };
 
@@ -77,23 +103,17 @@ const ManageDrawersScreen = ({ navigation }) => {
   };
 
   const handleDeleteDrawer = (drawer) => {
-    Alert.alert(
-      'Delete Compartment',
-      `Are you sure you want to delete "${drawer.name}"? Items in this compartment will not be deleted.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const result = await deleteDrawer(drawer.id);
-            if (result.error) {
-              Alert.alert('Error', result.error);
-            }
-          },
+    Alert.alert(t('drawers.deleteCompartment'), t('drawers.confirmDelete', { name: drawer.name }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.delete'),
+        style: 'destructive',
+        onPress: async () => {
+          const result = await deleteDrawer(drawer.id);
+          if (result.error) Alert.alert(t('common.error'), result.error);
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const renderDrawerItem = ({ item }) => {
@@ -101,375 +121,183 @@ const ManageDrawersScreen = ({ navigation }) => {
 
     if (isEditing) {
       return (
-        <View style={styles.drawerItem}>
-          <View style={styles.editContainer}>
-            <Text style={styles.sectionLabel}>Icon</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.iconScrollEdit}
-            >
-              {ICON_OPTIONS.map((icon) => (
-                <TouchableOpacity
-                  key={icon}
-                  style={[
-                    styles.iconOption,
-                    editIcon === icon && styles.iconOptionSelected,
-                  ]}
-                  onPress={() => setEditIcon(icon)}
-                >
-                  <Text style={styles.iconText}>{icon}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+        <Card style={styles.drawerCard}>
+          <Text style={styles.fieldLabel}>{t('drawers.icon')}</Text>
+          <IconPicker value={editIcon} onChange={setEditIcon} />
 
-            <Text style={styles.sectionLabel}>Name</Text>
-            <TextInput
-              style={styles.editInput}
-              value={editName}
-              onChangeText={setEditName}
-              placeholder="Drawer name"
+          <Input
+            label={t('drawers.name')}
+            value={editName}
+            onChangeText={setEditName}
+            placeholder={t('drawers.drawerName')}
+            style={{ marginTop: spacing.md }}
+          />
+
+          <View style={styles.editButtonRow}>
+            <SecondaryButton title={t('common.cancel')} onPress={handleCancelEdit} style={{ flex: 1 }} />
+            <PrimaryButton
+              title={isLoading ? t('drawers.saving') : t('common.save')}
+              onPress={handleSaveEdit}
+              loading={isLoading}
+              style={{ flex: 1 }}
             />
-
-            <View style={styles.editButtons}>
-              <TouchableOpacity
-                style={[styles.button, styles.cancelButton]}
-                onPress={handleCancelEdit}
-              >
-                <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.saveButton]}
-                onPress={handleSaveEdit}
-                disabled={isLoading}
-              >
-                <Text style={styles.buttonText}>
-                  {isLoading ? 'Saving...' : 'Save'}
-                </Text>
-              </TouchableOpacity>
-            </View>
           </View>
-        </View>
+        </Card>
       );
     }
 
     return (
-      <View style={styles.drawerItem}>
-        <View style={styles.drawerInfo}>
+      <Card style={styles.drawerCard}>
+        <View style={styles.drawerRow}>
           <Text style={styles.drawerIcon}>{item.icon}</Text>
-          <Text style={styles.drawerName}>{item.name}</Text>
+          <Text style={styles.drawerName} numberOfLines={1}>{item.name}</Text>
         </View>
-        <View style={styles.drawerActions}>
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => handleEditDrawer(item)}
-          >
-            <Text style={styles.editButtonText}>Edit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => handleDeleteDrawer(item)}
-          >
-            <Text style={styles.deleteButtonText}>Delete</Text>
-          </TouchableOpacity>
+        <View style={styles.drawerActionRow}>
+          <SecondaryButton title={t('common.edit')} onPress={() => handleEditDrawer(item)} style={{ flex: 1 }} />
+          <SecondaryButton title={t('common.delete')} onPress={() => handleDeleteDrawer(item)} danger style={{ flex: 1 }} />
         </View>
-      </View>
+      </Card>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={['#4facfe', '#00f2fe']} style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Manage Compartments</Text>
-          <View style={styles.placeholder} />
-        </View>
-      </LinearGradient>
+    <Screen>
+      <ScreenHeader
+        title={t('drawers.title')}
+        onBack={() => navigation.goBack()}
+        backLabel={t('common.back')}
+      />
 
-      <ScrollView style={styles.content}>
-        <View style={styles.addSection}>
-          <Text style={styles.sectionTitle}>Add New Compartment</Text>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+      >
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('drawers.addNew')}</Text>
 
-          <Text style={styles.sectionLabel}>Select Icon</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.iconScroll}
-          >
-            {ICON_OPTIONS.map((icon) => (
-              <TouchableOpacity
-                key={icon}
-                style={[
-                  styles.iconOption,
-                  selectedIcon === icon && styles.iconOptionSelected,
-                ]}
-                onPress={() => setSelectedIcon(icon)}
-              >
-                <Text style={styles.iconText}>{icon}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <Text style={styles.fieldLabel}>{t('drawers.selectIcon')}</Text>
+          <IconPicker value={selectedIcon} onChange={setSelectedIcon} />
 
-          <Text style={styles.sectionLabel}>Compartment Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g., Top Shelf, Bottom Drawer, Door Shelf"
+          <Input
+            label={t('drawers.compartmentName')}
+            placeholder={t('drawers.namePlaceholder')}
             value={newDrawerName}
             onChangeText={setNewDrawerName}
+            style={{ marginTop: spacing.md }}
           />
 
-          <TouchableOpacity
-            style={[styles.addButton, isLoading && styles.buttonDisabled]}
+          <PrimaryButton
+            title={isLoading ? t('drawers.adding') : t('drawers.addCompartment')}
             onPress={handleAddDrawer}
-            disabled={isLoading}
-          >
-            <Text style={styles.addButtonText}>
-              {isLoading ? 'Adding...' : 'Add Compartment'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            loading={isLoading}
+            style={{ marginTop: spacing.lg }}
+          />
+        </Card>
 
-        <View style={styles.listSection}>
-          <Text style={styles.sectionTitle}>Your Compartments ({drawers.length})</Text>
-          {drawers.length === 0 ? (
-            <Text style={styles.emptyText}>
-              No compartments yet. Add your first compartment above!
-            </Text>
-          ) : (
-            <FlatList
-              data={drawers}
-              keyExtractor={(item) => item.id}
-              renderItem={renderDrawerItem}
-              scrollEnabled={false}
-            />
-          )}
-        </View>
+        <Text style={styles.listTitle}>
+          {t('drawers.yourCompartments', { count: drawers.length })}
+        </Text>
+
+        {drawers.length === 0 ? (
+          <Card style={styles.emptyCard}>
+            <Text style={styles.emptyText}>{t('drawers.noCompartments')}</Text>
+          </Card>
+        ) : (
+          <FlatList
+            data={drawers}
+            keyExtractor={(item) => item.id}
+            renderItem={renderDrawerItem}
+            scrollEnabled={false}
+          />
+        )}
+        <View style={{ height: spacing.xxl }} />
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    paddingTop: 20,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  backButton: {
-    padding: 8,
-  },
-  backButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  placeholder: {
-    width: 70,
-  },
   content: {
-    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
   },
-  addSection: {
-    backgroundColor: '#fff',
-    padding: 20,
-    marginTop: 20,
-    marginHorizontal: 20,
-    marginBottom: 10,
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  listSection: {
-    backgroundColor: '#fff',
-    padding: 20,
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+  section: {
+    marginBottom: spacing.lg,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333',
+    ...typography.h3,
+    color: colors.text,
+    marginBottom: spacing.md,
   },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 10,
+  fieldLabel: {
+    ...typography.label,
+    color: colors.textMuted,
     marginBottom: 8,
-    color: '#666',
+    marginTop: spacing.sm,
   },
-  iconScroll: {
-    marginBottom: 15,
-  },
-  iconScrollEdit: {
-    marginBottom: 10,
+  iconRow: {
+    paddingVertical: 4,
+    paddingRight: 8,
   },
   iconOption: {
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
+    width: 48,
+    height: 48,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceMuted,
     alignItems: 'center',
-    marginRight: 10,
-    borderRadius: 25,
-    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    marginRight: 8,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   iconOptionSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#e3f2fd',
+    borderColor: colors.primary,
+    backgroundColor: '#ECFEFF',
   },
   iconText: {
-    fontSize: 24,
+    fontSize: 22,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 15,
-    backgroundColor: '#fff',
+  listTitle: {
+    ...typography.label,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
+    marginLeft: 4,
   },
-  editInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 10,
-    backgroundColor: '#fff',
+  drawerCard: {
+    marginBottom: spacing.sm,
   },
-  addButton: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  drawerItem: {
-    backgroundColor: '#f9f9f9',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  drawerInfo: {
+  drawerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    gap: spacing.md,
   },
   drawerIcon: {
     fontSize: 24,
-    marginRight: 10,
   },
   drawerName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    ...typography.bodyStrong,
+    color: colors.text,
     flex: 1,
   },
-  drawerActions: {
+  drawerActionRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    gap: spacing.sm,
+    marginTop: spacing.md,
   },
-  editButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 6,
-    marginRight: 10,
-  },
-  editButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  deleteButton: {
-    backgroundColor: '#FF3B30',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  deleteButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  editContainer: {
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 8,
-  },
-  editButtons: {
+  editButtonRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 10,
+    gap: spacing.sm,
+    marginTop: spacing.lg,
   },
-  button: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 6,
-    marginLeft: 10,
-  },
-  cancelButton: {
-    backgroundColor: '#999',
-  },
-  saveButton: {
-    backgroundColor: '#34C759',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
+  emptyCard: {
+    alignItems: 'center',
+    paddingVertical: spacing.xxl,
   },
   emptyText: {
+    ...typography.body,
+    color: colors.textMuted,
     textAlign: 'center',
-    color: '#999',
-    fontSize: 16,
-    marginTop: 20,
   },
 });
 

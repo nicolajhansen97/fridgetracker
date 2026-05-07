@@ -3,22 +3,46 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useActivity } from '../context/ActivityContext';
+import { useLanguage } from '../i18n';
+import {
+  Screen,
+  ScreenHeader,
+  Card,
+  Icon,
+  EmptyState,
+} from '../components/ui';
+import { colors, spacing, typography } from '../theme';
+
+const actionIconName = (action) => {
+  switch (action) {
+    case 'created': return 'add-circle-outline';
+    case 'updated': return 'create-outline';
+    case 'consumed': return 'restaurant-outline';
+    case 'deleted': return 'trash-outline';
+    default: return 'document-text-outline';
+  }
+};
+
+const actionColorMap = {
+  created: '#065F46',
+  updated: '#92400E',
+  consumed: '#075985',
+  deleted: '#991B1B',
+};
 
 const ActivityHistoryScreen = ({ navigation }) => {
   const { activities, loading, loadActivities, getActivityDescription } = useActivity();
+  const { t } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadActivities();
-    setRefreshing(false);
+    try { await loadActivities(); } catch (e) { console.error('Refresh error:', e); }
+    finally { setRefreshing(false); }
   };
 
   const formatTimestamp = (timestamp) => {
@@ -28,86 +52,72 @@ const ActivityHistoryScreen = ({ navigation }) => {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
+    if (diffMins < 1) return t('activity.justNow');
+    if (diffMins < 60) return t('activity.minAgo', { count: diffMins });
+    if (diffHours < 24) return t('activity.hourAgo', { count: diffHours });
+    if (diffDays < 7) return t('activity.dayAgo', { count: diffDays });
+    return `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
   };
 
-  const getActionColor = (action) => {
-    switch (action) {
-      case 'created':
-        return '#4caf50';
-      case 'updated':
-        return '#ff9800';
-      case 'deleted':
-        return '#f44336';
-      default:
-        return '#888';
-    }
+  const fieldLabels = {
+    position: t('activity.fieldPackage'),
+    expiry_date: t('activity.fieldExpiry'),
+    drawer: t('activity.fieldCompartment'),
+    quantity: t('activity.fieldQuantity'),
+    name: t('activity.fieldName'),
+    notes: t('activity.fieldNotes'),
   };
 
-  const getActionIcon = (action) => {
-    switch (action) {
-      case 'created':
-        return '✅';
-      case 'updated':
-        return '📝';
-      case 'deleted':
-        return '🗑️';
-      default:
-        return '📋';
-    }
+  const formatValue = (val) => {
+    if (val === null || val === undefined || val === '') return '';
+    return JSON.stringify(val).replace(/^"(.*)"$/, '$1');
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={['#667eea', '#764ba2']} style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Activity History</Text>
-          <View style={styles.placeholder} />
-        </View>
-      </LinearGradient>
+    <Screen>
+      <ScreenHeader
+        title={t('activity.title')}
+        onBack={() => navigation.goBack()}
+        backLabel={t('common.back')}
+      />
 
       <ScrollView
-        style={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         {loading && activities.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Loading...</Text>
-          </View>
+          <EmptyState description={t('common.loading')} />
         ) : activities.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>📊</Text>
-            <Text style={styles.emptyTitle}>No Activity Yet</Text>
-            <Text style={styles.emptyText}>
-              Activity will appear here as you add, update, or remove items
-            </Text>
-          </View>
+          <EmptyState
+            icon="bar-chart-outline"
+            title={t('activity.noActivity')}
+            description={t('activity.noActivityDesc')}
+          />
         ) : (
-          <View style={styles.listContainer}>
-            {activities.map((activity) => (
-              <View key={activity.id} style={styles.activityCard}>
-                <View style={styles.activityHeader}>
-                  <View style={styles.actionBadge}>
-                    <Text style={styles.actionIcon}>{getActionIcon(activity.action)}</Text>
-                    <Text
-                      style={[
-                        styles.actionText,
-                        { color: getActionColor(activity.action) },
-                      ]}
-                    >
-                      {activity.action.toUpperCase()}
+          activities.map((activity) => {
+            const changes = activity.changes
+              ? Object.entries(activity.changes).filter(([field, change]) => {
+                  if (!change) return false;
+                  if (change.old === null && change.new === null) return false;
+                  if ((field === 'notes' || field === 'position') &&
+                      (change.old == null || change.new == null || change.old === '' || change.new === '')) {
+                    return false;
+                  }
+                  return true;
+                })
+              : [];
+
+            return (
+              <Card key={activity.id} style={styles.card}>
+                <View style={styles.headerRow}>
+                  <View style={styles.actionPill}>
+                    <Icon
+                      name={actionIconName(activity.action)}
+                      size={14}
+                      color={actionColorMap[activity.action] || colors.textMuted}
+                    />
+                    <Text style={[styles.actionPillText, { color: actionColorMap[activity.action] || colors.textMuted }]}>
+                      {t(`activity.${activity.action}`)}
                     </Text>
                   </View>
                   <Text style={styles.timestamp}>{formatTimestamp(activity.created_at)}</Text>
@@ -115,219 +125,116 @@ const ActivityHistoryScreen = ({ navigation }) => {
 
                 <Text style={styles.description}>{getActivityDescription(activity)}</Text>
 
-                <View style={styles.userInfo}>
-                  <Text style={styles.userLabel}>By:</Text>
-                  <Text style={styles.userEmail}>
-                    {activity.user_email}
-                  </Text>
+                <View style={styles.userRow}>
+                  <Text style={styles.userLabel}>{t('activity.by')}</Text>
+                  <Text style={styles.userEmail} numberOfLines={1}>{activity.user_email}</Text>
                 </View>
 
-                {activity.changes && Object.keys(activity.changes).length > 0 && (
-                  <View style={styles.changesContainer}>
-                    <Text style={styles.changesLabel}>Changes:</Text>
-                    {Object.entries(activity.changes)
-                      .filter(([field, change]) => {
-                        // Skip if change is null or undefined
-                        if (!change) return false;
-
-                        // Hide changes where both old and new are null
-                        if (change.old === null && change.new === null) return false;
-
-                        // Hide notes and position changes if either value is null/empty
-                        if ((field === 'notes' || field === 'position') &&
-                            (change.old === null || change.new === null ||
-                             change.old === '' || change.new === '')) {
-                          return false;
-                        }
-
-                        return true;
-                      })
-                      .map(([field, change]) => {
-                        // Make field names more user-friendly
-                        const fieldLabels = {
-                          position: 'Package #',
-                          expiry_date: 'Expiry Date',
-                          drawer: 'Compartment',
-                          quantity: 'Quantity',
-                          name: 'Name',
-                          notes: 'Notes',
-                        };
-                        const fieldLabel = fieldLabels[field] || field;
-
-                        // Format values
-                        const formatValue = (val) => {
-                          if (val === null || val === undefined || val === '') return '';
-                          // Remove quotes from strings for cleaner display
-                          const stringVal = JSON.stringify(val);
-                          return stringVal.replace(/^"(.*)"$/, '$1');
-                        };
-
-                        return (
-                          <View key={field} style={styles.changeRow}>
-                            <Text style={styles.changeField}>{fieldLabel}:</Text>
-                            {change && change.old !== undefined && change.new !== undefined ? (
-                              <Text style={styles.changeValue}>
-                                {formatValue(change.old) || '(empty)'} → {formatValue(change.new) || '(empty)'}
-                              </Text>
-                            ) : (
-                              <Text style={styles.changeValue}>{formatValue(change)}</Text>
-                            )}
-                          </View>
-                        );
-                      })}
+                {changes.length > 0 && (
+                  <View style={styles.changes}>
+                    <Text style={styles.changesLabel}>{t('activity.changes')}</Text>
+                    {changes.map(([field, change]) => (
+                      <View key={field} style={styles.changeRow}>
+                        <Text style={styles.changeField}>{fieldLabels[field] || field}</Text>
+                        {change && change.old !== undefined && change.new !== undefined ? (
+                          <Text style={styles.changeValue}>
+                            {formatValue(change.old) || t('activity.empty')} → {formatValue(change.new) || t('activity.empty')}
+                          </Text>
+                        ) : (
+                          <Text style={styles.changeValue}>{formatValue(change)}</Text>
+                        )}
+                      </View>
+                    ))}
                   </View>
                 )}
-              </View>
-            ))}
-          </View>
+              </Card>
+            );
+          })
         )}
+        <View style={{ height: spacing.xxl }} />
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f7fa',
-  },
-  header: {
-    paddingTop: 20,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  backButton: {
-    padding: 8,
-  },
-  backButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  placeholder: {
-    width: 70,
-  },
   content: {
-    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
   },
-  listContainer: {
-    padding: 20,
+  card: {
+    marginBottom: spacing.md,
   },
-  activityCard: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  activityHeader: {
+  headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: spacing.sm,
   },
-  actionBadge: {
+  actionPill: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
-  actionIcon: {
-    fontSize: 18,
-    marginRight: 6,
-  },
-  actionText: {
-    fontSize: 12,
-    fontWeight: 'bold',
+  actionPillText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   timestamp: {
-    fontSize: 12,
-    color: '#888',
+    ...typography.caption,
+    color: colors.textSubtle,
   },
   description: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 8,
-    fontWeight: '500',
+    ...typography.bodyStrong,
+    color: colors.text,
+    marginBottom: spacing.sm,
   },
-  userInfo: {
+  userRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 4,
   },
   userLabel: {
-    fontSize: 14,
-    color: '#888',
+    ...typography.caption,
+    color: colors.textMuted,
     marginRight: 6,
   },
   userEmail: {
-    fontSize: 12,
-    color: '#667eea',
-    fontWeight: '500',
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '600',
     flex: 1,
   },
-  changesContainer: {
-    marginTop: 12,
-    paddingTop: 12,
+  changes: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: colors.border,
   },
   changesLabel: {
-    fontSize: 12,
-    color: '#888',
+    ...typography.label,
+    color: colors.textMuted,
     marginBottom: 6,
-    fontWeight: '600',
   },
   changeRow: {
     flexDirection: 'row',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   changeField: {
-    fontSize: 12,
-    color: '#666',
+    ...typography.caption,
+    color: colors.textMuted,
     fontWeight: '600',
     width: 100,
   },
   changeValue: {
-    fontSize: 12,
-    color: '#333',
+    ...typography.caption,
+    color: colors.text,
     flex: 1,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 100,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 20,
-  },
-  emptyTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#888',
-    textAlign: 'center',
-    paddingHorizontal: 40,
   },
 });
 

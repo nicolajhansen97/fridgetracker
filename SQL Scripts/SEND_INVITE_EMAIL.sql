@@ -1,5 +1,11 @@
 -- Function to send household invite emails via Resend API using pg_net
--- Run this in your Supabase SQL Editor
+-- Run this in your Supabase SQL Editor.
+--
+-- Drop existing versions first so changes to return types / arg lists are
+-- always accepted. CREATE OR REPLACE alone fails when the signature changes.
+DROP FUNCTION IF EXISTS send_household_invite_email(text, text, text);
+DROP FUNCTION IF EXISTS get_pending_invites(uuid);
+DROP FUNCTION IF EXISTS cancel_household_invite(uuid);
 
 CREATE OR REPLACE FUNCTION send_household_invite_email(
   p_household_name text,

@@ -7,10 +7,22 @@ import {
   ScrollView,
   Alert,
   Switch,
+  RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../i18n';
+import {
+  Screen,
+  ScreenHeader,
+  Card,
+  Pill,
+  SectionTitle,
+} from '../components/ui';
+import { colors, radii, spacing, typography } from '../theme';
+
+const FAMILY_SIZE_KEY = 'freezely_family_size';
+const USE_PACKAGE_NUMBERS_KEY = 'freezely_use_package_numbers';
 
 const SettingsScreen = ({ navigation }) => {
   const {
@@ -21,13 +33,49 @@ const SettingsScreen = ({ navigation }) => {
     disableBiometric,
     checkBiometricEnabled,
   } = useAuth();
+  const { t, locale, setLocale, languages } = useLanguage();
 
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [familySize, setFamilySize] = useState(4);
+  const [usePackageNumbers, setUsePackageNumbers] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     checkBiometricStatus();
+    AsyncStorage.getItem(FAMILY_SIZE_KEY).then((val) => {
+      if (val) setFamilySize(parseInt(val));
+    });
+    AsyncStorage.getItem(USE_PACKAGE_NUMBERS_KEY).then((val) => {
+      if (val !== null) setUsePackageNumbers(val === 'true');
+    });
   }, []);
+
+  const handleTogglePackageNumbers = (value) => {
+    setUsePackageNumbers(value);
+    AsyncStorage.setItem(USE_PACKAGE_NUMBERS_KEY, String(value));
+  };
+
+  const changeFamilySize = (delta) => {
+    const n = Math.min(20, Math.max(1, familySize + delta));
+    setFamilySize(n);
+    AsyncStorage.setItem(FAMILY_SIZE_KEY, String(n));
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await checkBiometricStatus();
+      const val = await AsyncStorage.getItem(FAMILY_SIZE_KEY);
+      if (val) setFamilySize(parseInt(val));
+      const pkgVal = await AsyncStorage.getItem(USE_PACKAGE_NUMBERS_KEY);
+      if (pkgVal !== null) setUsePackageNumbers(pkgVal === 'true');
+    } catch (e) {
+      console.error('Refresh error:', e);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const checkBiometricStatus = async () => {
     const enabled = await checkBiometricEnabled();
@@ -36,236 +84,232 @@ const SettingsScreen = ({ navigation }) => {
 
   const handleToggleBiometric = async () => {
     if (!biometricAvailable) {
-      Alert.alert(
-        'Not Available',
-        `${biometricType} is not available on this device. Please enable it in your device settings.`
-      );
+      Alert.alert(t('login.notAvailable'), t('login.biometricNotAvailable', { type: biometricType }));
       return;
     }
-
     setIsLoading(true);
-
     if (biometricEnabled) {
-      // Disable biometric
       const result = await disableBiometric();
       if (result.success) {
         setBiometricEnabled(false);
-        Alert.alert('Success', `${biometricType} login disabled`);
+        Alert.alert(t('common.success'), t('settings.biometricDisabled', { type: biometricType }));
       } else {
-        Alert.alert('Error', result.error || 'Failed to disable biometric login');
+        Alert.alert(t('common.error'), result.error || t('settings.failedDisable'));
       }
     } else {
-      // Enable biometric
       const result = await enableBiometric(user?.email);
       if (result.success) {
         setBiometricEnabled(true);
-        Alert.alert('Success', `${biometricType} login enabled!`);
+        Alert.alert(t('common.success'), t('settings.biometricEnabled', { type: biometricType }));
       } else {
-        Alert.alert('Error', result.error || 'Failed to enable biometric login');
+        Alert.alert(t('common.error'), result.error || t('settings.failedEnable'));
       }
     }
-
     setIsLoading(false);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={['#4facfe', '#00f2fe']} style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Settings</Text>
-          <View style={styles.placeholder} />
-        </View>
-      </LinearGradient>
+    <Screen>
+      <ScreenHeader
+        title={t('settings.title')}
+        onBack={() => navigation.goBack()}
+        backLabel={t('common.back')}
+      />
 
-      <ScrollView style={styles.content}>
-        {/* Account Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <View style={styles.card}>
-            <View style={styles.settingItem}>
-              <Text style={styles.settingLabel}>Email</Text>
-              <Text style={styles.settingValue}>
-                {user?.email}
-              </Text>
-            </View>
-          </View>
-        </View>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+      >
+        <SectionTitle>{t('settings.account')}</SectionTitle>
+        <Card>
+          <Row label={t('common.email')} value={user?.email} />
+        </Card>
 
-        {/* Security Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Security</Text>
-          <View style={styles.card}>
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>{biometricType} Login</Text>
-                <Text style={styles.settingDescription}>
-                  {biometricAvailable
-                    ? `Use ${biometricType} for quick and secure login`
-                    : `${biometricType} is not available on this device`}
-                </Text>
+        <SectionTitle>{t('settings.household')}</SectionTitle>
+        <Card>
+          <Row
+            label={t('settings.familySize')}
+            description={t('settings.familySizeDesc')}
+            right={
+              <View style={styles.stepper}>
+                <TouchableOpacity style={styles.stepBtn} onPress={() => changeFamilySize(-1)}>
+                  <Text style={styles.stepBtnText}>−</Text>
+                </TouchableOpacity>
+                <Text style={styles.stepValue}>{familySize}</Text>
+                <TouchableOpacity style={styles.stepBtn} onPress={() => changeFamilySize(1)}>
+                  <Text style={styles.stepBtnText}>+</Text>
+                </TouchableOpacity>
               </View>
+            }
+          />
+          <Divider />
+          <Row
+            label={t('settings.usePackageNumbers')}
+            description={t('settings.usePackageNumbersDesc')}
+            right={
+              <Switch
+                value={usePackageNumbers}
+                onValueChange={handleTogglePackageNumbers}
+                trackColor={{ false: colors.borderStrong, true: colors.primary }}
+                thumbColor={colors.surface}
+              />
+            }
+          />
+        </Card>
+
+        <SectionTitle>{t('settings.language')}</SectionTitle>
+        <Card>
+          <View style={styles.langGrid}>
+            {languages.map((lang) => (
+              <Pill
+                key={lang.code}
+                label={lang.label}
+                icon={lang.flag}
+                selected={locale === lang.code}
+                onPress={() => setLocale(lang.code)}
+                style={{ marginBottom: 8, marginRight: 8 }}
+              />
+            ))}
+          </View>
+        </Card>
+
+        <SectionTitle>{t('settings.security')}</SectionTitle>
+        <Card>
+          <Row
+            label={t('settings.biometricLogin', { type: biometricType })}
+            description={
+              biometricAvailable
+                ? t('settings.biometricAvailable', { type: biometricType })
+                : t('settings.biometricUnavailable', { type: biometricType })
+            }
+            right={
               <Switch
                 value={biometricEnabled}
                 onValueChange={handleToggleBiometric}
-                trackColor={{ false: '#ccc', true: '#4facfe' }}
-                thumbColor={biometricEnabled ? '#fff' : '#f4f3f4'}
+                trackColor={{ false: colors.borderStrong, true: colors.primary }}
+                thumbColor={colors.surface}
                 disabled={!biometricAvailable || isLoading}
               />
-            </View>
-          </View>
-        </View>
+            }
+          />
+        </Card>
 
-        {/* About Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
-          <View style={styles.card}>
-            <View style={styles.settingItem}>
-              <Text style={styles.settingLabel}>App Name</Text>
-              <Text style={styles.settingValue}>Freezely</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.settingItem}>
-              <Text style={styles.settingLabel}>Version</Text>
-              <Text style={styles.settingValue}>1.0.0</Text>
-            </View>
-          </View>
-        </View>
+        <SectionTitle>{t('settings.about')}</SectionTitle>
+        <Card>
+          <Row label={t('settings.appName')} value="Freezely" />
+          <Divider />
+          <Row label={t('settings.version')} value="1.0.2" />
+          <Divider />
+          <TouchableOpacity onPress={() => navigation.navigate('Changelog')} activeOpacity={0.7}>
+            <Row label={t('settings.whatsNew')} chevron />
+          </TouchableOpacity>
+        </Card>
 
-        {/* Info Card */}
         {biometricAvailable && (
-          <View style={styles.infoCard}>
-            <Text style={styles.infoIcon}>🔐</Text>
-            <Text style={styles.infoTitle}>Secure & Convenient</Text>
-            <Text style={styles.infoText}>
-              {biometricType} keeps your account secure while providing quick access to your freezer inventory.
-            </Text>
-          </View>
+          <Card style={styles.infoCard}>
+            <Text style={styles.infoTitle}>{t('settings.secureConvenient')}</Text>
+            <Text style={styles.infoText}>{t('settings.biometricInfo', { type: biometricType })}</Text>
+          </Card>
         )}
+
+        <View style={{ height: spacing.xxl }} />
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 };
 
+const Row = ({ label, description, value, right, chevron }) => (
+  <View style={styles.row}>
+    <View style={{ flex: 1, marginRight: spacing.md }}>
+      <Text style={styles.rowLabel}>{label}</Text>
+      {description ? <Text style={styles.rowDescription}>{description}</Text> : null}
+    </View>
+    {value ? <Text style={styles.rowValue} numberOfLines={1}>{value}</Text> : null}
+    {right}
+    {chevron ? <Text style={styles.chevron}>›</Text> : null}
+  </View>
+);
+
+const Divider = () => <View style={styles.divider} />;
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    paddingTop: 20,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  backButton: {
-    padding: 8,
-  },
-  backButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  placeholder: {
-    width: 70,
-  },
   content: {
-    flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
   },
-  section: {
-    marginTop: 25,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
-    marginLeft: 5,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 15,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  settingItem: {
+  row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: spacing.sm,
   },
-  settingInfo: {
-    flex: 1,
-    marginRight: 15,
+  rowLabel: {
+    ...typography.bodyStrong,
+    color: colors.text,
   },
-  settingLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+  rowDescription: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: 2,
+    lineHeight: 17,
   },
-  settingDescription: {
-    fontSize: 13,
-    color: '#666',
-    lineHeight: 18,
-  },
-  settingValue: {
-    fontSize: 13,
-    color: '#666',
-    flex: 1,
+  rowValue: {
+    ...typography.body,
+    color: colors.textMuted,
+    flexShrink: 1,
     textAlign: 'right',
+  },
+  chevron: {
+    fontSize: 22,
+    color: colors.textSubtle,
+    marginLeft: spacing.sm,
   },
   divider: {
     height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 8,
+    backgroundColor: colors.border,
+    marginHorizontal: -spacing.lg,
+  },
+  langGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingTop: 4,
+  },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  stepBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepBtnText: {
+    fontSize: 18,
+    color: colors.text,
+    fontWeight: '700',
+  },
+  stepValue: {
+    ...typography.h3,
+    color: colors.text,
+    minWidth: 28,
+    textAlign: 'center',
   },
   infoCard: {
-    backgroundColor: '#e3f2fd',
-    borderRadius: 15,
-    padding: 20,
-    marginTop: 25,
-    marginBottom: 30,
-    alignItems: 'center',
-  },
-  infoIcon: {
-    fontSize: 40,
-    marginBottom: 10,
+    marginTop: spacing.lg,
+    backgroundColor: '#ECFEFF',
   },
   infoTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1976d2',
-    marginBottom: 8,
+    ...typography.h3,
+    color: colors.primaryDark,
+    marginBottom: 6,
   },
   infoText: {
-    fontSize: 14,
-    color: '#555',
-    textAlign: 'center',
+    ...typography.body,
+    color: colors.textMuted,
     lineHeight: 20,
   },
 });

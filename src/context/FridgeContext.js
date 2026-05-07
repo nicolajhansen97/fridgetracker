@@ -60,6 +60,8 @@ export const FridgeProvider = ({ children }) => {
           return {
             success: false,
             error: `Position ${itemData.position} is already in use`,
+            errorKey: 'positionInUse',
+            errorParams: { position: itemData.position },
           };
         }
       }
@@ -73,7 +75,9 @@ export const FridgeProvider = ({ children }) => {
             name: itemData.name,
             drawer: itemData.drawer,
             quantity: itemData.quantity || 1,
+            unit: itemData.unit || null,
             expiry_date: itemData.expiry_date,
+            frozen_date: itemData.frozen_date || null,
             notes: itemData.notes,
             position: itemData.position || null,
           },
@@ -108,16 +112,24 @@ export const FridgeProvider = ({ children }) => {
           return {
             success: false,
             error: `Position ${itemData.position} is already in use`,
+            errorKey: 'positionInUse',
+            errorParams: { position: itemData.position },
           };
         }
       }
 
-      const { data, error } = await supabase
+      let updateQuery = supabase
         .from('fridge_items')
         .update(itemData)
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .select();
+        .eq('id', id);
+
+      if (currentHousehold?.id) {
+        updateQuery = updateQuery.eq('household_id', currentHousehold.id);
+      } else {
+        updateQuery = updateQuery.eq('user_id', user.id);
+      }
+
+      const { data, error } = await updateQuery.select();
 
       if (error) throw error;
 
@@ -130,11 +142,18 @@ export const FridgeProvider = ({ children }) => {
 
   const deleteItem = async (id) => {
     try {
-      const { error } = await supabase
+      let query = supabase
         .from('fridge_items')
         .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('id', id);
+
+      if (currentHousehold?.id) {
+        query = query.eq('household_id', currentHousehold.id);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { error } = await query;
 
       if (error) throw error;
 
@@ -145,6 +164,30 @@ export const FridgeProvider = ({ children }) => {
     }
   };
 
+  const consumeItem = async (id) => {
+    try {
+      const { error } = await supabase.rpc('consume_fridge_item', { p_item_id: id });
+      if (error) throw error;
+      setItems(items.filter((item) => item.id !== id));
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+
+  const getNextAvailablePosition = () => {
+    const usedPositions = new Set(
+      items
+        .filter((item) => item.position != null && item.position > 0)
+        .map((item) => item.position)
+    );
+    let next = 1;
+    while (usedPositions.has(next)) {
+      next++;
+    }
+    return next;
+  };
+
   return (
     <FridgeContext.Provider
       value={{
@@ -153,7 +196,9 @@ export const FridgeProvider = ({ children }) => {
         addItem,
         updateItem,
         deleteItem,
+        consumeItem,
         loadItems,
+        getNextAvailablePosition,
       }}
     >
       {children}

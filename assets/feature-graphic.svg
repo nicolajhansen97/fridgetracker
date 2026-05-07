@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7B8CDE"/>
+      <stop offset="50%" style="stop-color:#9B7ECF"/>
+      <stop offset="100%" style="stop-color:#8B6FC0"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.2"/>
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.05"/>
+    </linearGradient>
+    <linearGradient id="glassBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.4"/>
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.1"/>
+    </linearGradient>
+    <radialGradient id="snowGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#60E0FF;stop-opacity:0.5"/>
+      <stop offset="100%" style="stop-color:#60E0FF;stop-opacity:0"/>
+    </radialGradient>
+    <linearGradient id="snowColor" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#40D4FF"/>
+      <stop offset="50%" style="stop-color:#20C0F0"/>
+      <stop offset="100%" style="stop-color:#00A0E0"/>
+    </linearGradient>
+    <filter id="blur">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="12"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="500" fill="url(#bg)"/>
+
+  <!-- Glass card behind icon -->
+  <rect x="310" y="40" width="200" height="200" rx="45" ry="45" fill="url(#glass)" stroke="url(#glassBorder)" stroke-width="1.5"/>
+
+  <!-- Inner circle -->
+  <circle cx="410" cy="140" r="70" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+
+  <!-- Snowflake glow -->
+  <ellipse cx="410" cy="140" rx="60" ry="60" fill="url(#snowGlow)" filter="url(#blur)"/>
+
+  <!-- Snowflake -->
+  <g transform="translate(410, 140)" fill="none" stroke="url(#snowColor)" stroke-width="7" stroke-linecap="round">
+    <line x1="0" y1="-50" x2="0" y2="50"/>
+    <line x1="-43.3" y1="-25" x2="43.3" y2="25"/>
+    <line x1="-43.3" y1="25" x2="43.3" y2="-25"/>
+    <line x1="0" y1="-50" x2="-14" y2="-34"/>
+    <line x1="0" y1="-50" x2="14" y2="-34"/>
+    <line x1="0" y1="50" x2="-14" y2="34"/>
+    <line x1="0" y1="50" x2="14" y2="34"/>
+    <line x1="43.3" y1="-25" x2="27" y2="-31"/>
+    <line x1="43.3" y1="-25" x2="37" y2="-9"/>
+    <line x1="-43.3" y1="25" x2="-27" y2="31"/>
+    <line x1="-43.3" y1="25" x2="-37" y2="9"/>
+    <line x1="-43.3" y1="-25" x2="-37" y2="-9"/>
+    <line x1="-43.3" y1="-25" x2="-27" y2="-31"/>
+    <line x1="73.6" y1="25" x2="37" y2="9"/>
+    <line x1="43.3" y1="25" x2="27" y2="31"/>
+    <circle cx="0" cy="0" r="7" fill="url(#snowColor)" stroke="none"/>
+  </g>
+
+  <!-- App name -->
+  <text x="410" y="310" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="60" font-weight="bold" fill="#ffffff" letter-spacing="3">Freezely</text>
+
+  <!-- Tagline -->
+  <text x="410" y="360" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="rgba(255,255,255,0.75)" letter-spacing="1">Track your freezer. Reduce waste.</text>
+
+  <!-- Decorative small glowing dots -->
+  <g opacity="0.15">
+    <circle cx="100" cy="80" r="18" fill="#60E0FF"/>
+    <circle cx="820" cy="420" r="22" fill="#60E0FF"/>
+    <circle cx="150" cy="380" r="12" fill="#60E0FF"/>
+    <circle cx="750" cy="90" r="16" fill="#60E0FF"/>
+    <circle cx="50" cy="250" r="10" fill="#60E0FF"/>
+    <circle cx="900" cy="250" r="13" fill="#60E0FF"/>
+  </g>
+</svg>

@@ -8,381 +8,230 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFridge } from '../context/FridgeContext';
+import { useLanguage } from '../i18n';
+import {
+  Screen,
+  ScreenHeader,
+  Card,
+  Icon,
+  Badge,
+  IconButton,
+  EmptyState,
+} from '../components/ui';
+import { colors, spacing, typography } from '../theme';
+
+const statusTone = (status) => {
+  switch (status) {
+    case 'expired':
+    case 'today':
+      return 'danger';
+    case 'tomorrow':
+    case 'critical':
+      return 'warning';
+    case 'warning':
+      return 'info';
+    default:
+      return 'default';
+  }
+};
 
 const ExpiringItemsScreen = ({ navigation }) => {
   const { items, loading, deleteItem, loadItems } = useFridge();
+  const { t } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
   const [expiringItems, setExpiringItems] = useState([]);
 
   useEffect(() => {
-    calculateExpiringItems();
-  }, [items]);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadItems();
-    setRefreshing(false);
-  };
-
-  const calculateExpiringItems = () => {
     if (!items || items.length === 0) {
       setExpiringItems([]);
       return;
     }
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Get items with expiry dates and categorize them
-    const itemsWithExpiry = items
-      .filter(item => item.expiry_date)
-      .map(item => {
+    const list = items
+      .filter((i) => i.expiry_date)
+      .map((item) => {
         const expiryDate = new Date(item.expiry_date);
         expiryDate.setHours(0, 0, 0, 0);
-
-        const diffTime = expiryDate - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const diffDays = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
 
         let status = 'good';
         let statusText = '';
+        if (diffDays < 0) { status = 'expired';   statusText = t('expiring.expired'); }
+        else if (diffDays === 0) { status = 'today'; statusText = t('expiring.expiresToday'); }
+        else if (diffDays === 1) { status = 'tomorrow'; statusText = t('expiring.expiresTomorrow'); }
+        else if (diffDays <= 3)  { status = 'critical'; statusText = t('expiring.daysLeft', { count: diffDays }); }
+        else if (diffDays <= 7)  { status = 'warning';  statusText = t('expiring.daysLeft', { count: diffDays }); }
+        else return null;
 
-        if (diffDays < 0) {
-          status = 'expired';
-          statusText = 'Expired';
-        } else if (diffDays === 0) {
-          status = 'today';
-          statusText = 'Expires today';
-        } else if (diffDays === 1) {
-          status = 'tomorrow';
-          statusText = 'Expires tomorrow';
-        } else if (diffDays <= 3) {
-          status = 'critical';
-          statusText = `${diffDays} days left`;
-        } else if (diffDays <= 7) {
-          status = 'warning';
-          statusText = `${diffDays} days left`;
-        } else {
-          return null; // Don't show items with more than 7 days
-        }
-
-        return {
-          ...item,
-          daysLeft: diffDays,
-          status,
-          statusText,
-        };
+        return { ...item, daysLeft: diffDays, status, statusText };
       })
-      .filter(item => item !== null)
+      .filter(Boolean)
       .sort((a, b) => a.daysLeft - b.daysLeft);
 
-    setExpiringItems(itemsWithExpiry);
+    setExpiringItems(list);
+  }, [items]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try { await loadItems(); } catch (e) { console.error('Refresh error:', e); }
+    finally { setRefreshing(false); }
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
-  };
-
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case 'expired':
-        return styles.statusExpired;
-      case 'today':
-        return styles.statusToday;
-      case 'tomorrow':
-        return styles.statusTomorrow;
-      case 'critical':
-        return styles.statusCritical;
-      case 'warning':
-        return styles.statusWarning;
-      default:
-        return styles.statusGood;
-    }
+    const d = new Date(dateString);
+    return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
   };
 
   const handleDelete = (item) => {
-    Alert.alert(
-      'Delete Item',
-      `Are you sure you want to delete "${item.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const result = await deleteItem(item.id);
-            if (!result.success) {
-              Alert.alert('Error', result.error);
-            }
-          },
+    Alert.alert(t('inventory.deleteItem'), t('inventory.confirmDelete', { name: item.name }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.delete'),
+        style: 'destructive',
+        onPress: async () => {
+          const result = await deleteItem(item.id);
+          if (!result.success) Alert.alert(t('common.error'), result.error);
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={['#ff6b6b', '#ee5a6f']} style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Expiring Soon</Text>
-          <View style={styles.placeholder} />
-        </View>
-      </LinearGradient>
+    <Screen>
+      <ScreenHeader
+        title={t('expiring.title')}
+        onBack={() => navigation.goBack()}
+        backLabel={t('common.back')}
+      />
 
       <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         {loading && expiringItems.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Loading...</Text>
-          </View>
+          <EmptyState description={t('common.loading')} />
         ) : expiringItems.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>✨</Text>
-            <Text style={styles.emptyTitle}>All Good!</Text>
-            <Text style={styles.emptyText}>
-              No items expiring in the next 7 days
-            </Text>
-          </View>
+          <EmptyState
+            icon="checkmark-circle-outline"
+            title={t('expiring.allGood')}
+            description={t('expiring.noItemsExpiring')}
+          />
         ) : (
-          <View style={styles.listContainer}>
-            <View style={styles.infoCard}>
-              <Text style={styles.infoIcon}>⚠️</Text>
-              <Text style={styles.infoText}>
-                {expiringItems.length} item{expiringItems.length !== 1 ? 's' : ''} expiring soon
+          <>
+            <Card style={styles.banner}>
+              <Icon name="alert-circle-outline" size={22} color="#92400E" />
+              <Text style={styles.bannerText}>
+                {t('expiring.itemsExpiring', { count: expiringItems.length })}
               </Text>
-            </View>
+            </Card>
 
             {expiringItems.map((item) => (
-              <View key={item.id} style={styles.itemCard}>
+              <Card key={item.id} style={styles.itemCard}>
                 <View style={styles.itemHeader}>
-                  <View style={styles.itemInfo}>
+                  <View style={{ flex: 1 }}>
                     <Text style={styles.itemName}>{item.name}</Text>
-                    <Text style={styles.itemDrawer}>📦 {item.drawer}</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => handleDelete(item)}
-                  >
-                    <Text style={styles.deleteButtonText}>🗑️</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.itemDetails}>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Expires:</Text>
-                    <Text style={styles.detailValue}>
-                      {formatDate(item.expiry_date)}
-                    </Text>
-                  </View>
-
-                  {item.quantity && item.quantity > 1 && (
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Quantity:</Text>
-                      <Text style={styles.detailValue}>{item.quantity}</Text>
+                    <View style={styles.itemDrawerRow}>
+                      <Icon name="cube-outline" size={13} color={colors.textMuted} />
+                      <Text style={styles.itemDrawer}>{item.drawer}</Text>
                     </View>
-                  )}
-
-                  {item.notes && (
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Notes:</Text>
-                      <Text style={styles.detailValue}>{item.notes}</Text>
-                    </View>
-                  )}
+                  </View>
+                  <IconButton name="trash-outline" variant="surface" size={32} onPress={() => handleDelete(item)} />
                 </View>
 
-                <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
-                  <Text style={styles.statusText}>{item.statusText}</Text>
+                <View style={styles.details}>
+                  <DetailRow label={t('expiring.expires')} value={formatDate(item.expiry_date)} />
+                  {item.quantity && item.quantity > 1 ? (
+                    <DetailRow label={t('expiring.quantity')} value={item.quantity} />
+                  ) : null}
+                  {item.notes ? <DetailRow label={t('expiring.notes')} value={item.notes} /> : null}
                 </View>
-              </View>
+
+                <Badge tone={statusTone(item.status)} style={styles.badgeWide}>
+                  {item.statusText}
+                </Badge>
+              </Card>
             ))}
-          </View>
+          </>
         )}
+        <View style={{ height: spacing.xxl }} />
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 };
 
+const DetailRow = ({ label, value }) => (
+  <View style={styles.detailRow}>
+    <Text style={styles.detailLabel}>{label}</Text>
+    <Text style={styles.detailValue}>{value}</Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    paddingTop: 20,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  backButton: {
-    padding: 8,
-  },
-  backButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  placeholder: {
-    width: 70,
-  },
   content: {
-    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
   },
-  listContainer: {
-    padding: 20,
-  },
-  infoCard: {
-    backgroundColor: '#fff3cd',
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 20,
+  banner: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ffc107',
+    gap: spacing.md,
+    backgroundColor: colors.warningSoft,
+    marginBottom: spacing.lg,
   },
-  infoIcon: {
-    fontSize: 24,
-    marginRight: 10,
-  },
-  infoText: {
-    fontSize: 15,
-    color: '#856404',
-    fontWeight: '600',
+  bannerText: {
+    ...typography.bodyStrong,
+    color: '#92400E',
     flex: 1,
   },
   itemCard: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    marginBottom: spacing.md,
   },
   itemHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  itemInfo: {
-    flex: 1,
+    gap: spacing.md,
+    marginBottom: spacing.md,
   },
   itemName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
+    ...typography.h3,
+    color: colors.text,
+  },
+  itemDrawerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
   },
   itemDrawer: {
-    fontSize: 14,
-    color: '#666',
+    ...typography.bodySmall,
+    color: colors.textMuted,
   },
-  deleteButton: {
-    padding: 5,
-  },
-  deleteButtonText: {
-    fontSize: 20,
-  },
-  itemDetails: {
-    marginBottom: 12,
+  details: {
+    marginBottom: spacing.md,
   },
   detailRow: {
     flexDirection: 'row',
-    marginBottom: 6,
+    paddingVertical: 2,
   },
   detailLabel: {
-    fontSize: 14,
-    color: '#888',
-    width: 80,
+    ...typography.bodySmall,
+    color: colors.textMuted,
+    width: 84,
   },
   detailValue: {
-    fontSize: 14,
-    color: '#333',
+    ...typography.bodySmall,
+    color: colors.text,
     flex: 1,
   },
-  statusBadge: {
+  badgeWide: {
+    alignSelf: 'stretch',
     paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
     alignItems: 'center',
-  },
-  statusExpired: {
-    backgroundColor: '#ffe0e0',
-  },
-  statusToday: {
-    backgroundColor: '#ffcccc',
-  },
-  statusTomorrow: {
-    backgroundColor: '#ffd9b3',
-  },
-  statusCritical: {
-    backgroundColor: '#ffe6b3',
-  },
-  statusWarning: {
-    backgroundColor: '#fff3cd',
-  },
-  statusGood: {
-    backgroundColor: '#d4edda',
-  },
-  statusText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 100,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 20,
-  },
-  emptyTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#888',
-    textAlign: 'center',
   },
 });
 

@@ -39,7 +39,9 @@
       "@react-native-community/datetimepicker"
     ],
     "updates": {
-      "url": "https://u.expo.dev/11a9bd44-499c-4a15-b141-bfdfe8837f9d"
+      "url": "https://u.expo.dev/11a9bd44-499c-4a15-b141-bfdfe8837f9d",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     },
     "runtimeVersion": {
       "policy": "appVersion"

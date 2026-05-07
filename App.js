@@ -1,25 +1,45 @@
 import React from 'react';
+import { Text, TextInput } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { LanguageProvider } from './src/i18n';
 import { AuthProvider } from './src/context/AuthContext';
 import { HouseholdProvider } from './src/context/HouseholdContext';
 import { FridgeProvider } from './src/context/FridgeContext';
 import { DrawerProvider } from './src/context/DrawerContext';
 import { ActivityProvider } from './src/context/ActivityContext';
+import { ShoppingListProvider } from './src/context/ShoppingListContext';
+import { OTAUpdateProvider } from './src/context/OTAUpdateContext';
 import AppNavigator from './src/navigation/AppNavigator';
+import OTAUpdateModal from './src/components/OTAUpdateModal';
+import SessionTracker from './src/components/SessionTracker';
+
+// Disable iOS Dynamic Type scaling to preserve fixed layouts
+if (Text.defaultProps == null) Text.defaultProps = {};
+Text.defaultProps.allowFontScaling = false;
+if (TextInput.defaultProps == null) TextInput.defaultProps = {};
+TextInput.defaultProps.allowFontScaling = false;
 
 export default function App() {
   return (
-    <AuthProvider>
-      <HouseholdProvider>
-        <DrawerProvider>
-          <FridgeProvider>
-            <ActivityProvider>
-              <StatusBar style="light" />
-              <AppNavigator />
-            </ActivityProvider>
-          </FridgeProvider>
-        </DrawerProvider>
-      </HouseholdProvider>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <HouseholdProvider>
+          <DrawerProvider>
+            <FridgeProvider>
+              <ActivityProvider>
+                <ShoppingListProvider>
+                  <OTAUpdateProvider>
+                    <StatusBar style="light" />
+                    <AppNavigator />
+                    <OTAUpdateModal />
+                    <SessionTracker />
+                  </OTAUpdateProvider>
+                </ShoppingListProvider>
+              </ActivityProvider>
+            </FridgeProvider>
+          </DrawerProvider>
+        </HouseholdProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }

@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../i18n';
+import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
 
 const RegisterScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -20,20 +22,19 @@ const RegisterScreen = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
+  const { t } = useLanguage();
 
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common.error'), t('login.fillAllFields'));
       return;
     }
-
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert(t('common.error'), t('register.passwordsDontMatch'));
       return;
     }
-
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters long');
+      Alert.alert(t('common.error'), t('register.passwordTooShort'));
       return;
     }
 
@@ -42,103 +43,83 @@ const RegisterScreen = ({ navigation }) => {
     setIsLoading(false);
 
     if (result.success) {
-      Alert.alert(
-        'Success',
-        result.message,
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Login'),
-          },
-        ]
-      );
+      Alert.alert(t('common.success'), result.message, [
+        { text: t('common.ok'), onPress: () => navigation.navigate('Login') },
+      ]);
     } else {
-      Alert.alert('Registration Failed', result.error);
+      Alert.alert(t('register.registrationFailed'), result.error);
     }
   };
 
   return (
-    <LinearGradient
-      colors={['#f093fb', '#f5576c']}
-      style={styles.container}
-    >
+    <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.content}>
             <View style={styles.header}>
-              <Text style={styles.title}>Create Account</Text>
-              <Text style={styles.subtitle}>Sign up to get started</Text>
+              <Text style={styles.brand}>Freezely</Text>
+              <Text style={styles.title}>{t('register.createAccount')}</Text>
+              <Text style={styles.subtitle}>{t('register.signUpToGetStarted')}</Text>
             </View>
 
             <View style={styles.form}>
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your email"
-                  placeholderTextColor="#a0a0a0"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  editable={!isLoading}
-                />
-              </View>
+              <Text style={styles.label}>{t('common.email')}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder={t('login.enterEmail')}
+                placeholderTextColor="#94A3B8"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                editable={!isLoading}
+              />
 
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Password</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Create a password"
-                  placeholderTextColor="#a0a0a0"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  autoComplete="password-new"
-                  editable={!isLoading}
-                />
-              </View>
+              <Text style={[styles.label, { marginTop: spacing.md }]}>{t('login.password')}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder={t('register.createPassword')}
+                placeholderTextColor="#94A3B8"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoComplete="password-new"
+                editable={!isLoading}
+              />
 
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Confirm Password</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Confirm your password"
-                  placeholderTextColor="#a0a0a0"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry
-                  autoComplete="password-new"
-                  editable={!isLoading}
-                />
-              </View>
+              <Text style={[styles.label, { marginTop: spacing.md }]}>{t('register.confirmPassword')}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder={t('register.confirmYourPassword')}
+                placeholderTextColor="#94A3B8"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                autoComplete="password-new"
+                editable={!isLoading}
+              />
 
               <TouchableOpacity
-                style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
+                style={[styles.signUpBtn, isLoading && { opacity: 0.7 }]}
                 onPress={handleRegister}
                 disabled={isLoading}
+                activeOpacity={0.85}
               >
                 {isLoading ? (
-                  <ActivityIndicator color="#f093fb" />
+                  <ActivityIndicator color={colors.primary} />
                 ) : (
-                  <Text style={styles.registerButtonText}>Sign Up</Text>
+                  <Text style={styles.signUpText}>{t('register.signUpButton')}</Text>
                 )}
               </TouchableOpacity>
 
-              <View style={styles.loginContainer}>
-                <Text style={styles.loginText}>Already have an account? </Text>
-                <TouchableOpacity
-                  onPress={() => navigation.navigate('Login')}
-                  disabled={isLoading}
-                >
-                  <Text style={styles.loginLink}>Login</Text>
+              <View style={styles.loginRow}>
+                <Text style={styles.loginText}>{t('register.alreadyHaveAccount')} </Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Login')} disabled={isLoading} hitSlop={6}>
+                  <Text style={styles.loginLink}>{t('register.loginLink')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -150,92 +131,72 @@ const RegisterScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
+  container: { flex: 1 },
+  keyboardView: { flex: 1 },
+  scrollContent: { flexGrow: 1, justifyContent: 'center' },
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 30,
-    paddingVertical: 50,
+    paddingHorizontal: spacing.xxl,
+    paddingVertical: spacing.xxxl,
   },
-  header: {
-    marginBottom: 50,
+  header: { marginBottom: spacing.xxxl },
+  brand: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '600',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: spacing.sm,
   },
   title: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 10,
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.surface,
+    letterSpacing: -0.4,
+    marginBottom: 6,
   },
-  subtitle: {
-    fontSize: 18,
-    color: '#ffffff',
-    opacity: 0.9,
-  },
-  form: {
-    width: '100%',
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
+  subtitle: { fontSize: 16, color: 'rgba(255,255,255,0.85)' },
+  form: { width: '100%' },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 8,
+    ...typography.label,
+    color: colors.surface,
+    opacity: 0.9,
+    marginBottom: 6,
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 12,
-    padding: 15,
-    fontSize: 16,
-    color: '#333',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: radii.md,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: colors.text,
   },
-  registerButton: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 18,
+  signUpBtn: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+    marginTop: spacing.xl,
+    ...shadows.button,
   },
-  registerButtonDisabled: {
-    opacity: 0.7,
+  signUpText: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
-  registerButtonText: {
-    color: '#f093fb',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  loginContainer: {
+  loginRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: spacing.lg,
   },
-  loginText: {
-    color: '#ffffff',
-    fontSize: 14,
-  },
+  loginText: { color: 'rgba(255,255,255,0.85)', fontSize: 14 },
   loginLink: {
-    color: '#ffffff',
+    color: colors.surface,
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '700',
     textDecorationLine: 'underline',
   },
 });

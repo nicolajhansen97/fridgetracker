@@ -44,17 +44,22 @@ BEGIN
           <tr>
             <td style="padding:44px 40px 8px;">
 
-              <h2 style="margin:0 0 6px;color:#1a1a2e;font-size:28px;font-weight:700;">You''ve been invited! 🎉</h2>
-              <p style="margin:0 0 28px;color:#888;font-size:16px;">Hi there,</p>
+              <h2 style="margin:0 0 6px;color:#1a1a2e;font-size:22px;font-weight:700;">You''ve been invited! 🎉</h2>
+              <p style="margin:0 0 28px;color:#555;font-size:16px;">Hi there,</p>
 
               <!-- Invite card -->
-              <div style="background:linear-gradient(135deg,#f3f4ff 0%,#f9f0ff 100%);border:1px solid #ddddf5;border-radius:12px;padding:22px 24px;margin-bottom:28px;">
-                <p style="margin:0;color:#444;font-size:16px;line-height:1.65;">
-                  <strong style="color:#667eea;">' || p_invited_by_email || '</strong>&nbsp;has invited you to join&nbsp;<strong style="color:#667eea;">&ldquo;' || p_household_name || '&rdquo;</strong>&nbsp;on&nbsp;Freezely.
-                </p>
-              </div>
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:28px;">
+                <tr>
+                  <td style="background-color:#667eea;border-radius:12px;padding:28px 24px;text-align:center;">
+                    <p style="margin:0 0 8px;color:rgba(255,255,255,0.7);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;">Invited by</p>
+                    <p style="margin:0 0 18px;color:#ffffff;font-size:18px;font-weight:800;background-color:rgba(255,255,255,0.15);display:inline-block;padding:6px 16px;border-radius:8px;">' || p_invited_by_email || '</p>
+                    <p style="margin:0 0 8px;color:rgba(255,255,255,0.7);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;">To join household</p>
+                    <p style="margin:0;color:#ffffff;font-size:24px;font-weight:800;">' || p_household_name || '</p>
+                  </td>
+                </tr>
+              </table>
 
-              <p style="margin:0 0 28px;color:#555;font-size:15px;line-height:1.75;">
+              <p style="margin:0 0 28px;color:#333;font-size:15px;line-height:1.75;">
                 Freezely helps families and roommates keep track of what''s in their shared freezer — so everyone knows what''s available and nothing gets forgotten at the back.
               </p>
 
@@ -65,19 +70,19 @@ BEGIN
                   <tr>
                     <td style="padding:6px 0;vertical-align:top;">
                       <span style="display:inline-block;background:#667eea;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;font-size:12px;font-weight:700;line-height:22px;margin-right:12px;">1</span>
-                      <span style="color:#555;font-size:15px;">Download <strong>Freezely</strong> from the App Store or Google Play</span>
+                      <span style="color:#333;font-size:15px;">Download <strong>Freezely</strong> from the App Store or Google Play</span>
                     </td>
                   </tr>
                   <tr>
                     <td style="padding:6px 0;vertical-align:top;">
                       <span style="display:inline-block;background:#667eea;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;font-size:12px;font-weight:700;line-height:22px;margin-right:12px;">2</span>
-                      <span style="color:#555;font-size:15px;">Sign up or log in using <strong>this email address</strong></span>
+                      <span style="color:#333;font-size:15px;">Sign up or log in using <strong>this email address</strong></span>
                     </td>
                   </tr>
                   <tr>
                     <td style="padding:6px 0;vertical-align:top;">
                       <span style="display:inline-block;background:#667eea;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;font-size:12px;font-weight:700;line-height:22px;margin-right:12px;">3</span>
-                      <span style="color:#555;font-size:15px;">Your invitation will be waiting for you in the app</span>
+                      <span style="color:#333;font-size:15px;">Your invitation will be waiting for you in the app</span>
                     </td>
                   </tr>
                 </table>
@@ -88,15 +93,13 @@ BEGIN
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td align="center" style="padding:0 8px 0 0;">
-                    <a href="https://apps.apple.com/us/app/alliance-center-for-last-war/id6758313587"
-                       style="display:inline-block;background:#000000;color:#ffffff;text-decoration:none;border-radius:12px;padding:15px 28px;font-size:14px;font-weight:600;letter-spacing:0.2px;line-height:1;">
-                      🍎&nbsp;&nbsp;App Store
+                    <a href="https://apps.apple.com/ie/app/freezely/id6759265489" style="display:inline-block;text-decoration:none;">
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Download_on_the_App_Store_Badge.svg/200px-Download_on_the_App_Store_Badge.svg.png" alt="Download on the App Store" height="44" style="height:44px;border:0;" />
                     </a>
                   </td>
                   <td align="center" style="padding:0 0 0 8px;">
-                    <a href="https://play.google.com/store/apps/details?id=com.nicolajhansen97.aclw"
-                       style="display:inline-block;background:#01875f;color:#ffffff;text-decoration:none;border-radius:12px;padding:15px 28px;font-size:14px;font-weight:600;letter-spacing:0.2px;line-height:1;">
-                      ▶&nbsp;&nbsp;Google Play
+                    <a href="https://play.google.com/store/apps/details?id=com.nicolajhansen97.aclw" style="display:inline-block;text-decoration:none;">
+                      <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="64" style="height:64px;border:0;" />
                     </a>
                   </td>
                 </tr>

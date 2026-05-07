@@ -7,340 +7,331 @@ import {
   ScrollView,
   Alert,
   RefreshControl,
+  TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFridge } from '../context/FridgeContext';
+import { useLanguage } from '../i18n';
+import {
+  Screen,
+  ScreenHeader,
+  Card,
+  Icon,
+  IconButton,
+  Pill,
+  Badge,
+  EmptyState,
+  PrimaryButton,
+} from '../components/ui';
+import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
 
 const FridgeInventoryScreen = ({ navigation }) => {
-  const { items, loading, deleteItem, loadItems } = useFridge();
+  const { items, deleteItem, consumeItem, loadItems } = useFridge();
+  const { t } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showExpiringSoon, setShowExpiringSoon] = useState(false);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadItems();
-    setRefreshing(false);
+    try {
+      await loadItems();
+    } catch (e) {
+      console.error('Refresh error:', e);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const formatDateEuropean = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
+    const d = new Date(dateString);
+    return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
   };
 
   const handleDelete = (item) => {
-    Alert.alert(
-      'Delete Item',
-      `Are you sure you want to delete "${item.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const result = await deleteItem(item.id);
-            if (!result.success) {
-              Alert.alert('Error', result.error);
-            }
-          },
+    Alert.alert(item.name, null, [
+      {
+        text: t('inventory.useItem'),
+        onPress: async () => {
+          const result = await consumeItem(item.id);
+          if (!result.success) Alert.alert(t('common.error'), result.error);
         },
-      ]
-    );
+      },
+      {
+        text: t('inventory.throwAway'),
+        style: 'destructive',
+        onPress: async () => {
+          const result = await deleteItem(item.id);
+          if (!result.success) Alert.alert(t('common.error'), result.error);
+        },
+      },
+      { text: t('common.cancel'), style: 'cancel' },
+    ]);
   };
 
-  const groupByDrawer = () => {
-    const grouped = {};
-    items.forEach((item) => {
-      const drawer = item.drawer || 'Other';
-      if (!grouped[drawer]) {
-        grouped[drawer] = [];
-      }
-      grouped[drawer].push(item);
-    });
-    return grouped;
+  const isExpiringSoon = (dateString) => {
+    if (!dateString) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const sevenDays = new Date(today);
+    sevenDays.setDate(today.getDate() + 7);
+    return new Date(dateString) <= sevenDays;
   };
 
-  const groupedItems = groupByDrawer();
-  const drawers = Object.keys(groupedItems).sort();
+  const filteredItems = items.filter((item) => {
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const nameMatch = item.name.toLowerCase().includes(query);
+      const positionMatch = item.position && String(item.position) === searchQuery.trim();
+      if (!nameMatch && !positionMatch) return false;
+    }
+    if (showExpiringSoon && !isExpiringSoon(item.expiry_date)) return false;
+    return true;
+  });
+
+  const grouped = filteredItems.reduce((acc, item) => {
+    const k = item.drawer || 'Other';
+    (acc[k] ||= []).push(item);
+    return acc;
+  }, {});
+  const drawers = Object.keys(grouped).sort();
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={['#43e97b', '#38f9d7']} style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>My Freezer</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => navigation.navigate('AddItem')}
-          >
-            <Text style={styles.addButtonText}>+ Add</Text>
-          </TouchableOpacity>
+    <Screen>
+      <ScreenHeader
+        title={t('inventory.myFreezer')}
+        onBack={() => navigation.goBack()}
+        backLabel={t('common.back')}
+      />
+
+      <View style={styles.searchRow}>
+        <View style={styles.searchInputWrapper}>
+          <Icon name="search" size={16} color={colors.textMuted} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={t('inventory.searchItems')}
+            placeholderTextColor={colors.textSubtle}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            clearButtonMode="while-editing"
+          />
         </View>
-      </LinearGradient>
+        <Pill
+          label={t('inventory.expiring')}
+          icon={
+            <Icon
+              name="time-outline"
+              size={14}
+              color={showExpiringSoon ? colors.surface : colors.textMuted}
+            />
+          }
+          selected={showExpiringSoon}
+          onPress={() => setShowExpiringSoon((v) => !v)}
+        />
+      </View>
 
       <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         {items.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>❄️</Text>
-            <Text style={styles.emptyTitle}>Your freezer is empty!</Text>
-            <Text style={styles.emptyText}>
-              Start adding items to track what's in your freezer
-            </Text>
-            <TouchableOpacity
-              style={styles.emptyButton}
-              onPress={() => navigation.navigate('AddItem')}
-            >
-              <Text style={styles.emptyButtonText}>Add First Item</Text>
-            </TouchableOpacity>
-          </View>
+          <EmptyState
+            icon="snow-outline"
+            title={t('inventory.freezerEmpty')}
+            description={t('inventory.startAdding')}
+            action={
+              <PrimaryButton
+                title={t('inventory.addFirstItem')}
+                onPress={() => navigation.navigate('AddItem')}
+              />
+            }
+          />
+        ) : filteredItems.length === 0 ? (
+          <EmptyState
+            icon="search"
+            title={t('inventory.noResults')}
+            description={t('inventory.tryDifferentSearch')}
+          />
         ) : (
           drawers.map((drawer) => (
             <View key={drawer} style={styles.drawerSection}>
-              <Text style={styles.drawerTitle}>
-                📦 {drawer}
-              </Text>
-
-              {groupedItems[drawer].map((item) => (
-                <View key={item.id} style={styles.itemCard}>
-                  <View style={styles.itemContent}>
-                    <View style={styles.itemMain}>
-                      <Text style={styles.itemName}>{item.name}</Text>
-                      {item.notes && (
-                        <Text style={styles.itemNotes}>{item.notes}</Text>
-                      )}
+              <View style={styles.drawerTitleRow}>
+                <Icon name="cube-outline" size={18} color={colors.textMuted} />
+                <Text style={styles.drawerTitle}>{drawer}</Text>
+              </View>
+              {grouped[drawer].map((item) => {
+                const expiringSoon = isExpiringSoon(item.expiry_date);
+                return (
+                  <Card key={item.id} style={styles.itemCard} padded={false}>
+                    <View style={styles.itemRow}>
+                      <View style={styles.iconBox}>
+                        <Icon name="snow-outline" size={20} color={colors.primary} />
+                      </View>
+                      <View style={styles.itemContent}>
+                        <Text style={styles.itemName}>{item.name}</Text>
+                        {item.notes ? (
+                          <Text style={styles.itemNotes} numberOfLines={1}>{item.notes}</Text>
+                        ) : null}
+                        <View style={styles.badges}>
+                          {item.quantity ? (
+                            <Badge tone="primary">
+                              {item.quantity}{item.unit ? ` ${item.unit}` : ''}
+                            </Badge>
+                          ) : null}
+                          {item.position ? (
+                            <Badge tone="info">
+                              {t('inventory.pkg', { position: item.position })}
+                            </Badge>
+                          ) : null}
+                          {item.expiry_date ? (
+                            <Badge tone={expiringSoon ? 'danger' : 'default'}>
+                              {t('inventory.exp', { date: formatDateEuropean(item.expiry_date) })}
+                            </Badge>
+                          ) : null}
+                        </View>
+                      </View>
+                      <View style={styles.actions}>
+                        <IconButton
+                          name="pencil-outline"
+                          variant="surface"
+                          size={32}
+                          onPress={() => navigation.navigate('EditItem', { item })}
+                        />
+                        <IconButton
+                          name="trash-outline"
+                          variant="surface"
+                          size={32}
+                          onPress={() => handleDelete(item)}
+                        />
+                      </View>
                     </View>
-
-                    <View style={styles.itemDetails}>
-                      {item.quantity && (
-                        <View style={styles.badge}>
-                          <Text style={styles.badgeText}>
-                            Qty: {item.quantity}
-                          </Text>
-                        </View>
-                      )}
-                      {item.position && (
-                        <View style={styles.badgePosition}>
-                          <Text style={styles.badgeText}>
-                            Pkg #{item.position}
-                          </Text>
-                        </View>
-                      )}
-                      {item.expiry_date && (
-                        <View style={styles.badgeExpiry}>
-                          <Text style={styles.badgeText}>
-                            Exp: {formatDateEuropean(item.expiry_date)}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-
-                  <View style={styles.actionButtons}>
-                    <TouchableOpacity
-                      style={styles.editButton}
-                      onPress={() => navigation.navigate('EditItem', { item })}
-                    >
-                      <Text style={styles.editButtonText}>✏️</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={() => handleDelete(item)}
-                    >
-                      <Text style={styles.deleteButtonText}>🗑️</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
+                  </Card>
+                );
+              })}
             </View>
           ))
         )}
 
-        <View style={styles.bottomSpace} />
+        <View style={{ height: 96 }} />
       </ScrollView>
-    </SafeAreaView>
+
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => navigation.navigate('AddItem')}
+        style={styles.fab}
+      >
+        <LinearGradient
+          colors={gradients.hero}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.fabInner}
+        >
+          <Icon name="add" size={28} color={colors.surface} />
+        </LinearGradient>
+      </TouchableOpacity>
+    </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f7fa',
-  },
-  header: {
-    paddingTop: 20,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-  },
-  headerContent: {
+  searchRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
   },
-  backButton: {
-    padding: 8,
+  searchInputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  backButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  addButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 15,
-  },
-  addButtonText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 16,
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.text,
   },
   content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    marginTop: 20,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 80,
-  },
-  emptyIcon: {
-    fontSize: 80,
-    marginBottom: 20,
-  },
-  emptyTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#888',
-    textAlign: 'center',
-    marginBottom: 30,
-    paddingHorizontal: 40,
-  },
-  emptyButton: {
-    backgroundColor: '#43e97b',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 25,
-  },
-  emptyButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
   },
   drawerSection: {
-    marginBottom: 25,
+    marginBottom: spacing.xxl,
   },
-  drawerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
-  },
-  itemCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 10,
+  drawerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    gap: 8,
+    marginBottom: spacing.md,
+  },
+  drawerTitle: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  itemCard: {
+    marginBottom: spacing.sm,
+    overflow: 'hidden',
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  iconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.md,
+    backgroundColor: '#ECFEFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   itemContent: {
     flex: 1,
-  },
-  itemMain: {
-    marginBottom: 8,
+    minWidth: 0,
   },
   itemName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+    ...typography.bodyStrong,
+    color: colors.text,
   },
   itemNotes: {
-    fontSize: 14,
-    color: '#666',
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: 2,
   },
-  itemDetails: {
+  badges: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
+    marginTop: 8,
   },
-  badge: {
-    backgroundColor: '#43e97b',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  badgeExpiry: {
-    backgroundColor: '#f093fb',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  badgePosition: {
-    backgroundColor: '#6c63ff',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  badgeText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  actionButtons: {
+  actions: {
     flexDirection: 'column',
-    marginLeft: 10,
+    gap: 6,
   },
-  editButton: {
-    padding: 8,
-    marginBottom: 5,
+  fab: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: spacing.xl,
+    borderRadius: radii.lg + 2,
+    ...shadows.fab,
   },
-  editButtonText: {
-    fontSize: 20,
-  },
-  deleteButton: {
-    padding: 8,
-  },
-  deleteButtonText: {
-    fontSize: 20,
-  },
-  bottomSpace: {
-    height: 30,
+  fabInner: {
+    width: 56,
+    height: 56,
+    borderRadius: radii.lg + 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
