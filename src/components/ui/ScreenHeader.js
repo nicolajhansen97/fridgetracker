@@ -1,15 +1,17 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, gradients, radii, spacing, typography } from '../../theme';
 
 const ScreenHeader = ({ title, subtitle, onBack, right, backLabel }) => {
+  const insets = useSafeAreaInsets();
   return (
     <LinearGradient
       colors={gradients.hero}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={styles.container}
+      style={[styles.container, { paddingTop: insets.top + spacing.md }]}
     >
       <View style={styles.row}>
         <View style={styles.side}>
@@ -33,7 +35,7 @@ const ScreenHeader = ({ title, subtitle, onBack, right, backLabel }) => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: spacing.md,
+    // paddingTop is set inline so it can include the safe-area inset
     paddingBottom: spacing.xl,
     paddingHorizontal: spacing.lg,
     borderBottomLeftRadius: radii.header,

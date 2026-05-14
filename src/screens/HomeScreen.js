@@ -8,6 +8,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useFridge } from '../context/FridgeContext';
 import { useHousehold } from '../context/HouseholdContext';
@@ -27,6 +28,7 @@ const HomeScreen = ({ navigation }) => {
   const { items, loadItems } = useFridge();
   const { currentHousehold, loadHouseholds } = useHousehold();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
 
   // Compute summary
@@ -126,7 +128,7 @@ const HomeScreen = ({ navigation }) => {
         colors={gradients.hero}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.heroHeader}
+        style={[styles.heroHeader, { paddingTop: insets.top + spacing.md }]}
       >
         <Text style={styles.greeting}>{greeting}</Text>
         <Text style={styles.userLine} numberOfLines={1}>
@@ -262,7 +264,7 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   heroHeader: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    // paddingTop is set inline to include the safe-area inset
     paddingBottom: spacing.xl,
     borderBottomLeftRadius: radii.header,
     borderBottomRightRadius: radii.header,

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFridge } from '../context/FridgeContext';
+import { useDrawers } from '../context/DrawerContext';
 import { useLanguage } from '../i18n';
 import {
   Screen,
@@ -27,7 +28,9 @@ import { colors, gradients, radii, shadows, spacing, typography } from '../theme
 
 const FridgeInventoryScreen = ({ navigation }) => {
   const { items, deleteItem, consumeItem, loadItems } = useFridge();
+  const { drawers: drawerDefs } = useDrawers();
   const { t } = useLanguage();
+  const hasDrawers = (drawerDefs?.length || 0) > 0;
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showExpiringSoon, setShowExpiringSoon] = useState(false);
@@ -103,6 +106,15 @@ const FridgeInventoryScreen = ({ navigation }) => {
         title={t('inventory.myFreezer')}
         onBack={() => navigation.goBack()}
         backLabel={t('common.back')}
+        right={
+          <IconButton
+            name="cube-outline"
+            variant="onHero"
+            size={36}
+            onPress={() => navigation.navigate('ManageDrawers')}
+            accessibilityLabel={t('drawers.title')}
+          />
+        }
       />
 
       <View style={styles.searchRow}>
@@ -135,7 +147,19 @@ const FridgeInventoryScreen = ({ navigation }) => {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        {items.length === 0 ? (
+        {items.length === 0 && !hasDrawers ? (
+          <EmptyState
+            icon="cube-outline"
+            title={t('inventory.noDrawersTitle')}
+            description={t('inventory.noDrawersDesc')}
+            action={
+              <PrimaryButton
+                title={t('drawers.addCompartment')}
+                onPress={() => navigation.navigate('ManageDrawers')}
+              />
+            }
+          />
+        ) : items.length === 0 ? (
           <EmptyState
             icon="snow-outline"
             title={t('inventory.freezerEmpty')}

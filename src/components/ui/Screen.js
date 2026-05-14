@@ -1,10 +1,15 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme';
 
-// Screen wrapper that provides the bg color and safe area handling.
-const Screen = ({ children, style, edges }) => {
+// Default edges intentionally exclude 'top' so that gradient headers can
+// extend all the way behind the status bar. Headers themselves add
+// `insets.top` to their internal padding so their content still sits below
+// the notch.
+const DEFAULT_EDGES = ['left', 'right', 'bottom'];
+
+const Screen = ({ children, style, edges = DEFAULT_EDGES }) => {
   return (
     <SafeAreaView style={[styles.container, style]} edges={edges}>
       {children}

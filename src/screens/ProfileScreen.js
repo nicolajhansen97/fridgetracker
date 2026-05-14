@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
 import { useHousehold } from '../context/HouseholdContext';
@@ -43,6 +44,7 @@ const ProfileScreen = ({ navigation }) => {
   const { currentHousehold, householdMembers, invitations } = useHousehold();
   const { checking: checkingForUpdate, checkManually } = useOTAUpdate();
   const { t, locale, setLocale, languages } = useLanguage();
+  const insets = useSafeAreaInsets();
 
   const handleCheckForUpdates = async () => {
     const result = await checkManually();
@@ -143,7 +145,7 @@ const ProfileScreen = ({ navigation }) => {
         colors={gradients.hero}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.identityHeader}
+        style={[styles.identityHeader, { paddingTop: insets.top + spacing.md }]}
       >
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{initials}</Text>
@@ -373,7 +375,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    // paddingTop is set inline to include the safe-area inset
     paddingBottom: spacing.xl,
     gap: spacing.md,
     borderBottomLeftRadius: radii.header,

@@ -8,6 +8,7 @@ import {
   Alert,
   RefreshControl,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   ScrollView,
   LayoutAnimation,
@@ -89,7 +90,11 @@ const ShoppingListScreen = () => {
 
   const submit = async () => {
     const name = draft.trim();
-    if (!name) return;
+    if (!name) {
+      // Empty Return → just dismiss the keyboard instead of leaving the user stuck.
+      Keyboard.dismiss();
+      return;
+    }
     const dup = items.find(
       (i) => i.name.toLowerCase() === name.toLowerCase() && !i.checked
     );
@@ -239,6 +244,7 @@ const ShoppingListScreen = () => {
         <ScrollView
           contentContainerStyle={styles.list}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />

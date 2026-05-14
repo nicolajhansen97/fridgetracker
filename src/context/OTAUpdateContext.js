@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import * as Updates from 'expo-updates';
+import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Auto-prompt only once per hour after a "Later" dismissal. Manual checks
@@ -7,52 +8,113 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const DISMISS_COOLDOWN_MS = 60 * 60 * 1000;
 const DISMISS_KEY = 'freezely_ota_dismissed_until';
 
+// In Expo Go, Updates.* throw "not accessible in Expo Go" — Updates.isEnabled
+// doesn't reliably guard against this, so use appOwnership as the source of
+// truth. 'expo' = running inside Expo Go; null/'standalone' = real build.
+const IS_EXPO_GO = Constants.appOwnership === 'expo';
+
 const OTAUpdateContext = createContext(null);
 
+// Best-effort check + fetch. Idempotent — safe to call repeatedly. Native
+// expo-updates dedupes downloads internally so calling fetchUpdateAsync on
+// an already-downloaded bundle is a no-op.
+const runCheck = async () => {
+  if (IS_EXPO_GO) return;
+  if (!Updates.isEnabled) return;
+  try {
+    const result = await Updates.checkForUpdateAsync();
+    if (result?.isAvailable) {
+      await Updates.fetchUpdateAsync();
+    }
+  } catch (e) {
+    console.log('OTA check failed:', e?.message || e);
+  }
+};
+
 export const OTAUpdateProvider = ({ children }) => {
-  const [updateAvailable, setUpdateAvailable] = useState(false);
+  // expo-updates' reactive hook. Surfaces native module state regardless of
+  // whether the native auto-check or our own check triggered it. This is the
+  // critical piece — without it, my own checkForUpdateAsync would report
+  // "no update" once native auto-fetch finished, and the modal would never
+  // show during the current session.
+  const updatesState = Updates.useUpdates();
+
   const [reloading, setReloading] = useState(false);
   const [checking, setChecking] = useState(false);
-  const cancelledRef = useRef(false);
+  const [dismissedThisSession, setDismissedThisSession] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  // Latch: once we've seen an update signal this session we keep the modal up
+  // until the user dismisses or applies it. Without this, the modal flickers
+  // off and back on as expo-updates transitions
+  // isUpdateAvailable=true → both false (briefly) → isUpdatePending=true,
+  // which the user perceives as the prompt appearing twice for one update.
+  const [updateSeen, setUpdateSeen] = useState(false);
 
-  // Internal: returns { isAvailable, suppressed?, error? }
-  const runCheck = async ({ skipCooldown }) => {
-    if (!Updates.isEnabled) return { isAvailable: false };
-
-    if (!skipCooldown) {
-      const dismissedUntil = await AsyncStorage.getItem(DISMISS_KEY);
-      if (dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)) {
-        return { isAvailable: false, suppressed: true };
-      }
-    }
-
-    const result = await Updates.checkForUpdateAsync();
-    if (!result.isAvailable) return { isAvailable: false };
-
-    await Updates.fetchUpdateAsync();
-    if (!cancelledRef.current) setUpdateAvailable(true);
-    return { isAvailable: true };
-  };
-
-  // Auto-check on mount.
+  // Load the persisted dismissal cooldown on mount.
   useEffect(() => {
-    cancelledRef.current = false;
-    runCheck({ skipCooldown: false }).catch((e) => {
-      console.log('OTA auto-check failed:', e?.message || e);
-    });
-    return () => { cancelledRef.current = true; };
+    AsyncStorage.getItem(DISMISS_KEY)
+      .then((val) => {
+        if (val) {
+          const ts = parseInt(val, 10);
+          if (!Number.isNaN(ts) && ts > Date.now()) setCooldownUntil(ts);
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  // Manual check (called from Settings/Profile). Returns the result so the
-  // caller can show a "you're up to date" alert when nothing's there.
+  // Check exactly once per cold start. We used to also re-check on
+  // background→foreground via AppState, but the user found that too noisy,
+  // so resuming the app from background no longer triggers a re-check —
+  // the next cold start will pick up any new OTA.
+  useEffect(() => {
+    if (IS_EXPO_GO) return;
+    if (!Updates.isEnabled) return;
+    runCheck();
+  }, []);
+
+  // Latch any update signal from useUpdates().
+  useEffect(() => {
+    if (updatesState?.isUpdateAvailable || updatesState?.isUpdatePending) {
+      setUpdateSeen(true);
+    }
+  }, [updatesState?.isUpdateAvailable, updatesState?.isUpdatePending]);
+
+  // Modal shows when EITHER:
+  //   - a new bundle is on the server but not yet fetched (isUpdateAvailable)
+  //   - a new bundle has been fetched and is pending (isUpdatePending)
+  // …AND the user hasn't dismissed it this session, AND we're not in a
+  // post-dismissal cooldown.
+  const updateAvailable = useMemo(() => {
+    if (IS_EXPO_GO) return false;
+    if (!Updates.isEnabled) return false;
+    if (dismissedThisSession) return false;
+    if (cooldownUntil && Date.now() < cooldownUntil) return false;
+    return updateSeen;
+  }, [updateSeen, dismissedThisSession, cooldownUntil]);
+
+  // Manual check (from Profile). Ignores cooldown and session-dismissal so
+  // the user can always force a check.
   const checkManually = async () => {
+    if (IS_EXPO_GO) return { isAvailable: false, disabled: true };
     if (!Updates.isEnabled) return { isAvailable: false, disabled: true };
     setChecking(true);
+    setDismissedThisSession(false);
+    setCooldownUntil(0);
+    setUpdateSeen(false);
     try {
-      // Manual check ignores the dismissal cooldown.
-      return await runCheck({ skipCooldown: true });
+      const result = await Updates.checkForUpdateAsync();
+      if (result?.isAvailable) {
+        await Updates.fetchUpdateAsync();
+        setUpdateSeen(true);
+        return { isAvailable: true };
+      }
+      // Could already be fetched and pending.
+      if (updatesState?.isUpdatePending) {
+        setUpdateSeen(true);
+        return { isAvailable: true };
+      }
+      return { isAvailable: false };
     } catch (e) {
-      console.log('OTA manual check failed:', e?.message || e);
       return { isAvailable: false, error: e?.message || String(e) };
     } finally {
       setChecking(false);
@@ -70,10 +132,13 @@ export const OTAUpdateProvider = ({ children }) => {
   };
 
   const dismiss = async () => {
+    const until = Date.now() + DISMISS_COOLDOWN_MS;
     try {
-      await AsyncStorage.setItem(DISMISS_KEY, String(Date.now() + DISMISS_COOLDOWN_MS));
+      await AsyncStorage.setItem(DISMISS_KEY, String(until));
     } catch {}
-    setUpdateAvailable(false);
+    setCooldownUntil(until);
+    setDismissedThisSession(true);
+    setUpdateSeen(false);
   };
 
   return (

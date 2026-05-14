@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ' *)",
+      "Bash(git -c http.sslBackend=schannel push -u origin v1.0.3)",
+      "Bash(git remote *)",
+      "Bash(git -c http.sslBackend=schannel -c http.schannelCheckRevoke=false ls-remote origin v1.0.3)",
+      "Bash(git -c http.sslBackend=schannel -c http.schannelCheckRevoke=false ls-remote origin)",
+      "Bash(git -c http.sslBackend=schannel -c http.schannelCheckRevoke=false push -u origin v1.0.3)",
+      "Bash(supabase --version)"
+    ]
+  }
+}

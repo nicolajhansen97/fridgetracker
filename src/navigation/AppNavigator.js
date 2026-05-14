@@ -1,9 +1,10 @@
 import React from 'react';
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../i18n';
 import { colors, shadows } from '../theme';
@@ -52,6 +53,7 @@ const FreezerStackNavigator = () => (
 const ProfileStackNavigator = () => (
   <ProfileStack.Navigator screenOptions={stackScreenOptions}>
     <ProfileStack.Screen name="Profile" component={ProfileScreen} />
+    <ProfileStack.Screen name="ManageDrawers" component={ManageDrawersScreen} />
     <ProfileStack.Screen name="ManageHousehold" component={ManageHouseholdScreen} />
     <ProfileStack.Screen name="ActivityHistory" component={ActivityHistoryScreen} />
     <ProfileStack.Screen name="Changelog" component={ChangelogScreen} />
@@ -67,15 +69,45 @@ const tabIcon = (focusedName, unfocusedName) => ({ focused, color }) => (
   />
 );
 
+const tabIconWithBeta = (focusedName, unfocusedName) => ({ focused, color }) => (
+  <View style={styles.tabIconWrap}>
+    <Ionicons
+      name={focused ? focusedName : unfocusedName}
+      size={24}
+      color={color}
+    />
+    <View style={styles.betaBadge}>
+      <Text style={styles.betaText} numberOfLines={1} allowFontScaling={false}>
+        BETA
+      </Text>
+    </View>
+  </View>
+);
+
 const MainTabs = () => {
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
+
+  // Tab bar height = a fixed content area + the device's bottom safe-area
+  // inset. On iPhones with a home indicator this matches the system pill;
+  // on Android with gesture nav / 3-button nav this stops the system bar
+  // from covering the tabs.
+  const tabBarBaseHeight = 56;
+  const tabBarStyle = [
+    styles.tabBar,
+    {
+      height: tabBarBaseHeight + insets.bottom,
+      paddingBottom: insets.bottom + 4,
+    },
+  ];
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle,
         tabBarLabelStyle: styles.tabLabel,
         tabBarItemStyle: styles.tabItem,
         tabBarHideOnKeyboard: Platform.OS === 'android',
@@ -110,7 +142,7 @@ const MainTabs = () => {
         component={RecipeSuggestionsScreen}
         options={{
           title: t('tabs.recipes'),
-          tabBarIcon: tabIcon('restaurant', 'restaurant-outline'),
+          tabBarIcon: tabIconWithBeta('restaurant', 'restaurant-outline'),
         }}
       />
       <Tab.Screen
@@ -150,7 +182,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     borderTopWidth: 1,
     paddingTop: 6,
-    height: Platform.OS === 'ios' ? 84 : 64,
+    // height + paddingBottom are computed in MainTabs from useSafeAreaInsets
     ...shadows.card,
   },
   tabLabel: {
@@ -161,6 +193,31 @@ const styles = StyleSheet.create({
   },
   tabItem: {
     paddingVertical: 4,
+  },
+  tabIconWrap: {
+    width: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  betaBadge: {
+    position: 'absolute',
+    top: -7,
+    right: -14,
+    backgroundColor: '#F97316',
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    minWidth: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  betaText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+    lineHeight: 11,
+    includeFontPadding: false,
   },
 });
 

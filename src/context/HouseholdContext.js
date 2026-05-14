@@ -156,19 +156,30 @@ export const HouseholdProvider = ({ children }) => {
 
   const createHousehold = async (name) => {
     try {
-      // Use RPC function to atomically create household and add member
+      // Use RPC function to atomically create household, add owner,
+      // and migrate the user's personal items into the new household.
       const { data, error } = await supabase
         .rpc('create_household_with_owner', {
-          household_name: name
+          p_household_name: name
         });
 
       if (error) throw error;
 
-      // data is an array, get first item
-      const householdData = data[0];
+      // The RPC returns a row matching the shape of a `households` row
+      // (id, name, created_by, …). We layer on the role so switchHousehold
+      // gets the same shape as rows from the `households` table query.
+      const row = data[0];
+      const household = {
+        id: row.id,
+        name: row.name,
+        created_by: row.created_by,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        role: 'owner',
+      };
 
       await loadHouseholds();
-      return { success: true, household: householdData };
+      return { success: true, household };
     } catch (error) {
       console.error('Error creating household:', error);
       return { success: false, error: error.message };
