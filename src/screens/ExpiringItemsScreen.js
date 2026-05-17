@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useFridge } from '../context/FridgeContext';
 import { useLanguage } from '../i18n';
+import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
 import {
   Screen,
   ScreenHeader,
@@ -38,6 +39,7 @@ const statusTone = (status) => {
 
 const ExpiringItemsScreen = ({ navigation }) => {
   const { items, loading, deleteItem, loadItems } = useFridge();
+  const { getEffectiveExpiry, getDaysUntilExpiry, getFreezerInfo } = useFridgeExpiry();
   const { t } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
   const [expiringItems, setExpiringItems] = useState([]);
@@ -47,15 +49,12 @@ const ExpiringItemsScreen = ({ navigation }) => {
       setExpiringItems([]);
       return;
     }
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
 
     const list = items
-      .filter((i) => i.expiry_date)
       .map((item) => {
-        const expiryDate = new Date(item.expiry_date);
-        expiryDate.setHours(0, 0, 0, 0);
-        const diffDays = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+        const effectiveExpiry = getEffectiveExpiry(item);
+        if (!effectiveExpiry) return null;
+        const diffDays = getDaysUntilExpiry(item);
 
         let status = 'good';
         let statusText = '';
@@ -66,7 +65,7 @@ const ExpiringItemsScreen = ({ navigation }) => {
         else if (diffDays <= 7)  { status = 'warning';  statusText = t('expiring.daysLeft', { count: diffDays }); }
         else return null;
 
-        return { ...item, daysLeft: diffDays, status, statusText };
+        return { ...item, effectiveExpiry, daysLeft: diffDays, status, statusText };
       })
       .filter(Boolean)
       .sort((a, b) => a.daysLeft - b.daysLeft);
@@ -143,7 +142,21 @@ const ExpiringItemsScreen = ({ navigation }) => {
                 </View>
 
                 <View style={styles.details}>
-                  <DetailRow label={t('expiring.expires')} value={formatDate(item.expiry_date)} />
+                  <DetailRow label={t('expiring.expires')} value={formatDate(item.effectiveExpiry)} />
+                  {item.frozen_date ? (() => {
+                    const info = getFreezerInfo(item.name);
+                    const label = info.isCategory
+                      ? t(`shopping.cat_${info.labelKey}`)
+                      : t(`freezerLabel.${info.labelKey}`);
+                    return (
+                      <Text style={styles.explainer}>
+                        {t('expiring.basedOn', { months: info.months, category: label })}
+                      </Text>
+                    );
+                  })() : null}
+                  {item.frozen_date ? (
+                    <DetailRow label={t('expiring.frozenOn')} value={formatDate(item.frozen_date)} />
+                  ) : null}
                   {item.quantity && item.quantity > 1 ? (
                     <DetailRow label={t('expiring.quantity')} value={item.quantity} />
                   ) : null}
@@ -227,6 +240,14 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.text,
     flex: 1,
+  },
+  explainer: {
+    ...typography.caption,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+    marginLeft: 84,
+    marginTop: 2,
+    marginBottom: 4,
   },
   badgeWide: {
     alignSelf: 'stretch',

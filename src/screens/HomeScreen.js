@@ -12,7 +12,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useFridge } from '../context/FridgeContext';
 import { useHousehold } from '../context/HouseholdContext';
+import { useActivity } from '../context/ActivityContext';
 import { useLanguage } from '../i18n';
+import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
 import WhatsNewModal from '../components/WhatsNewModal';
 import {
   Screen,
@@ -27,6 +29,8 @@ const HomeScreen = ({ navigation }) => {
   const { user } = useAuth();
   const { items, loadItems } = useFridge();
   const { currentHousehold, loadHouseholds } = useHousehold();
+  const { activities, loadActivities } = useActivity();
+  const { getEffectiveExpiry, getDaysUntilExpiry, isPastFreezerWindow } = useFridgeExpiry();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
@@ -34,7 +38,7 @@ const HomeScreen = ({ navigation }) => {
   // Compute summary
   const summary = useMemo(() => {
     if (!items || items.length === 0) {
-      return { totalItems: 0, expiringCount: 0, drawersUsed: 0, expiringList: [], recent: [] };
+      return { totalItems: 0, expiringCount: 0, pastWindowCount: 0, drawersUsed: 0, expiringList: [] };
     }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -42,24 +46,32 @@ const HomeScreen = ({ navigation }) => {
     sevenDays.setDate(today.getDate() + 7);
 
     const expiringList = items
-      .filter((i) => i.expiry_date)
-      .map((i) => ({ ...i, _exp: new Date(i.expiry_date) }))
-      .filter((i) => i._exp <= sevenDays)
+      .map((i) => {
+        const exp = getEffectiveExpiry(i);
+        return exp ? { ...i, _exp: exp } : null;
+      })
+      .filter((i) => i && i._exp <= sevenDays)
       .sort((a, b) => a._exp - b._exp);
 
     const drawersUsed = new Set(items.map((i) => i.drawer)).size;
-    const recent = [...items]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, 4);
+    const pastWindowCount = items.filter(isPastFreezerWindow).length;
 
     return {
       totalItems: items.length,
       expiringCount: expiringList.length,
+      pastWindowCount,
       drawersUsed,
       expiringList: expiringList.slice(0, 3),
-      recent,
     };
-  }, [items]);
+  }, [items, getEffectiveExpiry, isPastFreezerWindow]);
+
+  // Recent activity is sourced from the activity log, not the items table,
+  // so we surface every action (added, used, removed, updated) — not just
+  // newly-created items.
+  const recentActivities = useMemo(
+    () => (activities || []).slice(0, 4),
+    [activities]
+  );
 
   const greeting = useMemo(() => {
     const h = new Date().getHours();
@@ -71,7 +83,7 @@ const HomeScreen = ({ navigation }) => {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([loadItems(), loadHouseholds()]);
+      await Promise.all([loadItems(), loadHouseholds(), loadActivities()]);
     } catch (e) {
       console.error('Refresh error:', e);
     } finally {
@@ -79,24 +91,18 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const formatExpiry = (isoDate) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const exp = new Date(isoDate);
-    exp.setHours(0, 0, 0, 0);
-    const diffDays = Math.ceil((exp - today) / 86400000);
+  const formatExpiry = (item) => {
+    const diffDays = getDaysUntilExpiry(item);
+    if (diffDays === null) return '';
     if (diffDays < 0) return t('expiring.expired');
     if (diffDays === 0) return t('expiring.expiresToday');
     if (diffDays === 1) return t('expiring.expiresTomorrow');
     return t('expiring.daysLeft', { count: diffDays });
   };
 
-  const expiryTone = (isoDate) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const exp = new Date(isoDate);
-    exp.setHours(0, 0, 0, 0);
-    const diffDays = Math.ceil((exp - today) / 86400000);
+  const expiryTone = (item) => {
+    const diffDays = getDaysUntilExpiry(item);
+    if (diffDays === null) return colors.primary;
     if (diffDays <= 1) return colors.danger;
     if (diffDays <= 3) return colors.warning;
     return colors.primary;
@@ -120,6 +126,30 @@ const HomeScreen = ({ navigation }) => {
 
   const goToInventory = () => {
     navigation.navigate('FreezerTab', { screen: 'FridgeInventory' });
+  };
+
+  const goToStats = () => {
+    navigation.navigate('FreezerStats');
+  };
+
+  const actionIconName = (action) => {
+    switch (action) {
+      case 'created': return 'add-circle-outline';
+      case 'updated': return 'create-outline';
+      case 'consumed': return 'restaurant-outline';
+      case 'deleted': return 'trash-outline';
+      default: return 'document-text-outline';
+    }
+  };
+
+  const actionColor = (action) => {
+    switch (action) {
+      case 'created': return '#065F46';
+      case 'updated': return '#92400E';
+      case 'consumed': return '#075985';
+      case 'deleted': return colors.danger;
+      default: return colors.textMuted;
+    }
   };
 
   return (
@@ -178,6 +208,26 @@ const HomeScreen = ({ navigation }) => {
           style={{ marginTop: spacing.md }}
         />
 
+        {/* Stats entry point */}
+        {summary.totalItems > 0 && (
+          <TouchableOpacity activeOpacity={0.85} onPress={goToStats} style={{ marginTop: spacing.md }}>
+            <Card style={styles.statsCard}>
+              <View style={styles.statsCardIcon}>
+                <Icon name="bar-chart-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.statsCardTitle}>{t('home.yourFreezerStats')}</Text>
+                <Text style={styles.statsCardSub} numberOfLines={1}>
+                  {summary.pastWindowCount > 0
+                    ? t('stats.pastWindowSummary', { count: summary.pastWindowCount })
+                    : t('stats.cardSubtitle')}
+                </Text>
+              </View>
+              <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+            </Card>
+          </TouchableOpacity>
+        )}
+
         {/* Expiring soon list */}
         {summary.expiringList.length > 0 && (
           <>
@@ -202,7 +252,7 @@ const HomeScreen = ({ navigation }) => {
                   key={item.id}
                   style={[styles.expiringRow, idx < summary.expiringList.length - 1 && styles.expiringDivider]}
                 >
-                  <View style={[styles.expiringDot, { backgroundColor: expiryTone(item.expiry_date) }]} />
+                  <View style={[styles.expiringDot, { backgroundColor: expiryTone(item) }]} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={styles.expiringName} numberOfLines={1}>{item.name}</Text>
                     <View style={styles.expiringMetaRow}>
@@ -210,8 +260,8 @@ const HomeScreen = ({ navigation }) => {
                       <Text style={styles.expiringMeta}>{item.drawer}</Text>
                     </View>
                   </View>
-                  <Text style={[styles.expiringStatus, { color: expiryTone(item.expiry_date) }]}>
-                    {formatExpiry(item.expiry_date)}
+                  <Text style={[styles.expiringStatus, { color: expiryTone(item) }]}>
+                    {formatExpiry(item)}
                   </Text>
                 </View>
               ))}
@@ -220,21 +270,42 @@ const HomeScreen = ({ navigation }) => {
         )}
 
         {/* Recent activity */}
-        {summary.recent.length > 0 && (
+        {recentActivities.length > 0 && (
           <>
-            <SectionTitle>{t('home.recentActivity')}</SectionTitle>
-            <Card padded={false}>
-              {summary.recent.map((item, idx) => (
-                <View
-                  key={item.id}
-                  style={[styles.activityRow, idx < summary.recent.length - 1 && styles.activityDivider]}
+            <SectionTitle
+              action={
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('ProfileTab', { screen: 'ActivityHistory' })}
+                  hitSlop={6}
+                  style={styles.sectionActionBtn}
                 >
-                  <View style={styles.activityDot} />
+                  <Text style={styles.sectionAction}>{t('home.viewAll')}</Text>
+                  <Icon name="chevron-forward" size={14} color={colors.primary} />
+                </TouchableOpacity>
+              }
+            >
+              {t('home.recentActivity')}
+            </SectionTitle>
+            <Card padded={false}>
+              {recentActivities.map((activity, idx) => (
+                <View
+                  key={activity.id}
+                  style={[styles.activityRow, idx < recentActivities.length - 1 && styles.activityDivider]}
+                >
+                  <View style={[styles.activityIconWrap, { backgroundColor: actionColor(activity.action) + '1A' }]}>
+                    <Icon
+                      name={actionIconName(activity.action)}
+                      size={14}
+                      color={actionColor(activity.action)}
+                    />
+                  </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={styles.activityTitle} numberOfLines={1}>{item.name}</Text>
+                    <Text style={styles.activityTitle} numberOfLines={1}>{activity.item_name}</Text>
                     <View style={styles.activityMetaRow}>
-                      <Icon name="cube-outline" size={12} color={colors.textMuted} />
-                      <Text style={styles.activityMeta}>{item.drawer} · {getTimeAgo(item.created_at)}</Text>
+                      <Text style={[styles.activityAction, { color: actionColor(activity.action) }]}>
+                        {t(`home.action_${activity.action}`)}
+                      </Text>
+                      <Text style={styles.activityMeta}>· {getTimeAgo(activity.created_at)}</Text>
                     </View>
                   </View>
                 </View>
@@ -321,6 +392,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  statsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  statsCardIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
+    backgroundColor: '#ECFEFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statsCardTitle: {
+    ...typography.bodyStrong,
+    color: colors.text,
+  },
+  statsCardSub: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+
   expiringRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -367,11 +461,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  activityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
+  activityIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   activityTitle: {
     ...typography.body,
@@ -383,6 +478,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     marginTop: 2,
+  },
+  activityAction: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   activityMeta: {
     ...typography.caption,

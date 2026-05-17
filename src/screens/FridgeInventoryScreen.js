@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFridge } from '../context/FridgeContext';
 import { useDrawers } from '../context/DrawerContext';
 import { useLanguage } from '../i18n';
+import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
 import {
   Screen,
   ScreenHeader,
@@ -29,6 +30,7 @@ import { colors, gradients, radii, shadows, spacing, typography } from '../theme
 const FridgeInventoryScreen = ({ navigation }) => {
   const { items, deleteItem, consumeItem, loadItems } = useFridge();
   const { drawers: drawerDefs } = useDrawers();
+  const { getEffectiveExpiry, isExpiringSoon: isItemExpiringSoon } = useFridgeExpiry();
   const { t } = useLanguage();
   const hasDrawers = (drawerDefs?.length || 0) > 0;
   const [refreshing, setRefreshing] = useState(false);
@@ -73,15 +75,6 @@ const FridgeInventoryScreen = ({ navigation }) => {
     ]);
   };
 
-  const isExpiringSoon = (dateString) => {
-    if (!dateString) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const sevenDays = new Date(today);
-    sevenDays.setDate(today.getDate() + 7);
-    return new Date(dateString) <= sevenDays;
-  };
-
   const filteredItems = items.filter((item) => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -89,7 +82,7 @@ const FridgeInventoryScreen = ({ navigation }) => {
       const positionMatch = item.position && String(item.position) === searchQuery.trim();
       if (!nameMatch && !positionMatch) return false;
     }
-    if (showExpiringSoon && !isExpiringSoon(item.expiry_date)) return false;
+    if (showExpiringSoon && !isItemExpiringSoon(item)) return false;
     return true;
   });
 
@@ -185,7 +178,8 @@ const FridgeInventoryScreen = ({ navigation }) => {
                 <Text style={styles.drawerTitle}>{drawer}</Text>
               </View>
               {grouped[drawer].map((item) => {
-                const expiringSoon = isExpiringSoon(item.expiry_date);
+                const effectiveExpiry = getEffectiveExpiry(item);
+                const expiringSoon = isItemExpiringSoon(item);
                 return (
                   <Card key={item.id} style={styles.itemCard} padded={false}>
                     <View style={styles.itemRow}>
@@ -208,9 +202,9 @@ const FridgeInventoryScreen = ({ navigation }) => {
                               {t('inventory.pkg', { position: item.position })}
                             </Badge>
                           ) : null}
-                          {item.expiry_date ? (
+                          {effectiveExpiry ? (
                             <Badge tone={expiringSoon ? 'danger' : 'default'}>
-                              {t('inventory.exp', { date: formatDateEuropean(item.expiry_date) })}
+                              {t('inventory.exp', { date: formatDateEuropean(effectiveExpiry) })}
                             </Badge>
                           ) : null}
                         </View>

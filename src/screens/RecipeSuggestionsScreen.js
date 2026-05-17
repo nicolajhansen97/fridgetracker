@@ -31,6 +31,7 @@ import {
   EmptyState,
 } from '../components/ui';
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
+import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
 
 const FAMILY_SIZE_KEY = 'freezely_family_size';
 
@@ -62,20 +63,19 @@ const formatQty = (qty) => {
   return fracStr ? `${whole} ${fracStr}` : String(whole > 0 ? whole : rounded);
 };
 
-const getDaysUntilExpiry = (expiryDate) => {
-  if (!expiryDate) return Infinity;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const expiry = new Date(expiryDate);
-  expiry.setHours(0, 0, 0, 0);
-  return Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
-};
 
 const RecipeSuggestionsScreen = ({ navigation }) => {
   const { items, loadItems } = useFridge();
   const { addItem: addToShoppingList } = useShoppingList();
   const { savedRecipes, saveRecipe, unsaveRecipe, dbRowToRecipe } = useSavedRecipes();
+  const { getDaysUntilExpiry: getItemDaysUntilExpiry } = useFridgeExpiry();
   const { t, locale } = useLanguage();
+
+  // Wrap so items with no expiry sort to the bottom of the urgency list.
+  const getDaysUntilExpiry = (item) => {
+    const d = getItemDaysUntilExpiry(item);
+    return d === null ? Infinity : d;
+  };
 
   const [activeTab, setActiveTab] = useState('discover'); // 'discover' | 'saved'
 
@@ -115,13 +115,13 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
     const map = new Map();
     items.forEach((item) => {
       const existing = map.get(item.name);
-      const days = getDaysUntilExpiry(item.expiry_date);
+      const days = getDaysUntilExpiry(item);
       if (!existing || days < existing.daysUntilExpiry) {
         map.set(item.name, { name: item.name, daysUntilExpiry: days });
       }
     });
     return [...map.values()].sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
-  }, [items]);
+  }, [items, getItemDaysUntilExpiry]);
 
   const allItemNames = useMemo(() => ingredientList.map((i) => i.name), [ingredientList]);
 

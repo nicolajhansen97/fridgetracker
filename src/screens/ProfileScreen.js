@@ -212,6 +212,12 @@ const ProfileScreen = ({ navigation }) => {
             title={t('home.activityHistory')}
             onPress={() => navigation.navigate('ActivityHistory')}
           />
+          <Divider />
+          <NavRow
+            iconName="snow-outline"
+            title={t('freezerSettings.profileRow')}
+            onPress={() => navigation.navigate('FreezerStorageSettings')}
+          />
         </Card>
 
         <SectionTitle>{t('settings.household')}</SectionTitle>

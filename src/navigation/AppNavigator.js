@@ -19,6 +19,8 @@ import EditItemScreen from '../screens/EditItemScreen';
 import ManageDrawersScreen from '../screens/ManageDrawersScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ExpiringItemsScreen from '../screens/ExpiringItemsScreen';
+import FreezerStatsScreen from '../screens/FreezerStatsScreen';
+import FreezerStorageSettingsScreen from '../screens/FreezerStorageSettingsScreen';
 import ActivityHistoryScreen from '../screens/ActivityHistoryScreen';
 import ManageHouseholdScreen from '../screens/ManageHouseholdScreen';
 import RecipeSuggestionsScreen from '../screens/RecipeSuggestionsScreen';
@@ -38,6 +40,7 @@ const HomeStackNavigator = () => (
   <HomeStack.Navigator screenOptions={stackScreenOptions}>
     <HomeStack.Screen name="Home" component={HomeScreen} />
     <HomeStack.Screen name="ExpiringItems" component={ExpiringItemsScreen} />
+    <HomeStack.Screen name="FreezerStats" component={FreezerStatsScreen} />
   </HomeStack.Navigator>
 );
 
@@ -58,6 +61,7 @@ const ProfileStackNavigator = () => (
     <ProfileStack.Screen name="ActivityHistory" component={ActivityHistoryScreen} />
     <ProfileStack.Screen name="Changelog" component={ChangelogScreen} />
     <ProfileStack.Screen name="Feedback" component={FeedbackScreen} />
+    <ProfileStack.Screen name="FreezerStorageSettings" component={FreezerStorageSettingsScreen} />
   </ProfileStack.Navigator>
 );
 
