@@ -457,6 +457,15 @@ export default {
   },
 
   changelog: {
+    // v1.0.5
+    v105_useby_title: 'A consommer avant, pas DLUO',
+    v105_useby_desc: 'La date sur l\'emballage compte peu une fois congele. Les articles affichent maintenant une date "A consommer avant" basee sur la duree de conservation de chaque aliment au congelateur.',
+    v105_times_title: 'Ajustez vos durees',
+    v105_times_desc: "Un nouvel ecran Durees au congelateur vous permet de modifier la duree recommandee pour 16 categories, avec plus de detail pour la viande hachee, le bacon et le poisson maigre. Reinitialisez une seule valeur ou toutes aux valeurs par defaut. Sur Profil → Durees au congelateur.",
+    v105_stats_title: 'Statistiques du congelateur',
+    v105_stats_desc: 'Voyez ce que vous mangez vs. ce que vous jetez, ce qui est le plus gaspille, votre temps moyen au congelateur, et plus. Sur Accueil → Vos statistiques.',
+    v105_activity_title: 'Activite recente plus riche',
+    v105_activity_desc: 'Accueil affiche maintenant tout ce qui se passe. Ajoutes, utilises, jetes ou modifies apparaissent, pas seulement les nouveaux articles.',
     // v1.0.4
     v104_ai_title: 'Aide-recettes pour votre congelateur',
     v104_ai_desc: 'Vous ne savez pas quoi cuisiner ? Choisissez ce que vous voulez utiliser et recevez des recettes adaptees en quelques secondes.',

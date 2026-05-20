@@ -457,6 +457,15 @@ export default {
   },
 
   changelog: {
+    // v1.0.5
+    v105_useby_title: 'Consumir antes, no caducidad',
+    v105_useby_desc: 'La fecha del envase importa poco una vez congelado. Los artículos muestran ahora una fecha "Consumir antes de" basada en cuánto aguanta cada alimento en el congelador.',
+    v105_times_title: 'Ajusta tus tiempos',
+    v105_times_desc: 'Una nueva pantalla de Tiempos de congelación te permite editar el tiempo recomendado para 16 categorías, con más detalle para carne picada, beicon y pescado magro. Restablece un solo valor o todos a nuestros valores predeterminados. En Perfil → Tiempos de congelación.',
+    v105_stats_title: 'Estadísticas del congelador',
+    v105_stats_desc: 'Mira cuánto consumes vs. tiras, qué se desperdicia más, tu tiempo medio en el congelador y más. En Inicio → Estadísticas del congelador.',
+    v105_activity_title: 'Actividad reciente más completa',
+    v105_activity_desc: 'Inicio muestra ahora todo lo que ocurre. Añadidos, usados, tirados o editados aparecen, no solo los nuevos.',
     // v1.0.4
     v104_ai_title: 'Ayudante de recetas para tu congelador',
     v104_ai_desc: '¿No sabes qué cocinar? Elige lo que quieres usar de tu congelador y recibe ideas de recetas en segundos.',

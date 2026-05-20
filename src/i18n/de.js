@@ -457,6 +457,15 @@ export default {
   },
 
   changelog: {
+    // v1.0.5
+    v105_useby_title: 'Verbrauchen-bis, nicht Mindesthaltbar',
+    v105_useby_desc: 'Das Datum auf der Verpackung spielt nach dem Einfrieren kaum eine Rolle. Artikel zeigen jetzt ein "Verbrauchen bis"-Datum basierend darauf, wie lange jedes Lebensmittel im Gefrierschrank gut bleibt.',
+    v105_times_title: 'Lagerzeiten anpassen',
+    v105_times_desc: 'Ein neuer Bildschirm "Lagerzeiten im Gefrierschrank" lässt dich die empfohlene Gefrierzeit für 16 Kategorien anpassen, mit zusätzlichen Optionen für Hackfleisch, Speck und mageren Fisch. Setze einen einzelnen Wert oder alle auf unsere Standardwerte zurück. Zu finden unter Profil → Lagerzeiten im Gefrierschrank.',
+    v105_stats_title: 'Gefrierschrank-Statistik',
+    v105_stats_desc: 'Sieh, wie viel du isst vs. wegwirfst, was am häufigsten verschwendet wird, deine durchschnittliche Gefrierzeit und mehr. Zu finden unter Start → Deine Gefrierstatistik.',
+    v105_activity_title: 'Ausführlichere Aktivität',
+    v105_activity_desc: 'Start zeigt jetzt alles, was passiert. Hinzugefügte, verbrauchte, weggeworfene oder bearbeitete Artikel tauchen auf, nicht nur neu hinzugefügte.',
     // v1.0.4
     v104_ai_title: 'Rezepthelfer für deinen Gefrierschrank',
     v104_ai_desc: 'Keine Idee, was kochen? Wähle aus, was du verwenden willst, und erhalte in Sekunden passende Rezeptvorschläge.',

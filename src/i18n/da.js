@@ -492,6 +492,15 @@ export default {
   },
 
   changelog: {
+    // v1.0.5
+    v105_useby_title: 'Brug-før, ikke bedst-før',
+    v105_useby_desc: 'Datoen på pakken betyder ikke så meget, når varen er frosset. Varer viser nu en "Brug før"-dato baseret på hvor længe hver fødevare holder i fryseren.',
+    v105_times_title: 'Justér holdbarhedstider',
+    v105_times_desc: 'En ny skærm til Holdbarhed i fryser lader dig redigere den anbefalede frysertid for 16 fødevarekategorier, med ekstra detalje for fars, bacon og mager fisk. Nulstil en enkelt værdi eller alle tilbage til vores standarder. Find det i Profil → Holdbarhed i fryser.',
+    v105_stats_title: 'Fryserstatistik',
+    v105_stats_desc: 'Se hvor meget du spiser vs. smider ud, hvad der oftest går til spilde, din gennemsnitlige frysertid og mere. Find det på Hjem → Din fryserstatistik.',
+    v105_activity_title: 'Mere udførlig aktivitet',
+    v105_activity_desc: 'Hjem viser nu alt der sker. Tilføjede, brugte, smidte ud eller redigerede varer dukker op, ikke kun nye.',
     // v1.0.4
     v104_ai_title: 'Opskrift-hjælper til din fryser',
     v104_ai_desc: 'I tvivl om hvad du skal lave? Vælg hvad du vil bruge fra fryseren og få tilpassede opskriftsforslag på få sekunder.',

@@ -390,6 +390,15 @@ export default {
     v101_shopping_desc: 'Add a shared shopping list with your household. Tap items to check them off as you shop.',
     v101_text_title: 'Better text scaling',
     v101_text_desc: 'Fixed layout issues when using larger text in iOS accessibility settings.',
+    // v1.0.5
+    v105_useby_title: 'Use-before, not best-before',
+    v105_useby_desc: 'The package date doesn\'t really matter once frozen. Items now show a "Use before" date based on how long each food stays good in the freezer.',
+    v105_times_title: 'Tune your storage times',
+    v105_times_desc: 'A new Freezer Storage Settings screen lets you edit the recommended freezer time for 16 food categories, with extra granularity for ground meat, bacon, and lean fish. Reset any single value or all of them back to our defaults. Find it in Profile → Freezer storage times.',
+    v105_stats_title: 'Freezer stats',
+    v105_stats_desc: 'See how much you eat vs. throw out, what gets wasted most, your average freezer time, and more. Find it on Home → Your Freezer Stats.',
+    v105_activity_title: 'Richer recent activity',
+    v105_activity_desc: 'Home now surfaces everything that happens. Items added, used, thrown out, or edited all show up, not just newly added ones.',
     // v1.0.4
     v104_ai_title: 'Recipe helper for your freezer',
     v104_ai_desc: 'Wondering what to cook? Pick what you want to use from your freezer and get tailored recipe ideas in seconds.',
