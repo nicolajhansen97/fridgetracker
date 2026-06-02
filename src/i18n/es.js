@@ -172,7 +172,7 @@ export default {
     frozenDate: 'Fecha de congelaci\u00f3n',
     selectDate: 'Seleccionar fecha',
     expiryDate: 'Consumir preferentemente antes (en el envase)',
-    selectDateFormat: 'Seleccionar fecha (DD-MM-AAAA)',
+    selectDateFormat: 'Seleccionar fecha ({format})',
     clearDate: 'Borrar fecha',
     notes: 'Notas (opcional)',
     notesPlaceholder: 'Notas adicionales...',
@@ -198,6 +198,10 @@ export default {
     usePackageNumbers: 'Usar n\u00fameros de paquete',
     usePackageNumbersDesc: 'Asignar autom\u00e1ticamente un n\u00famero a cada paquete para encontrarlo en el congelador',
     language: 'Idioma',
+    dateFormat: 'Formato de fecha',
+    dateFormatDesc: 'Cómo se muestran las fechas en la aplicación',
+    dateFormat_european: 'Europeo',
+    dateFormat_american: 'Americano',
     security: 'Seguridad',
     biometricLogin: 'Inicio de sesi\u00f3n con {type}',
     biometricAvailable: 'Use {type} para un inicio de sesi\u00f3n r\u00e1pido y seguro',
@@ -457,6 +461,11 @@ export default {
   },
 
   changelog: {
+    // v1.0.6
+    v106_dateformat_title: 'Elige tu formato de fecha',
+    v106_dateformat_desc: '¿Prefieres MM/DD/AAAA? Cambia entre el formato de fecha europeo y americano cuando quieras desde tu perfil.',
+    v106_stats_title: 'Pantalla de estadísticas renovada',
+    v106_stats_desc: 'Las estadísticas del congelador tienen un nuevo aspecto y nuevos datos: qué hay en tu congelador por categoría, un gráfico de actividad semanal, los artículos para usar en 7 días y tu artículo congelado hace más tiempo.',
     // v1.0.5
     v105_useby_title: 'Consumir antes, no caducidad',
     v105_useby_desc: 'La fecha del envase importa poco una vez congelado. Los artículos muestran ahora una fecha "Consumir antes de" basada en cuánto aguanta cada alimento en el congelador.',
@@ -530,5 +539,13 @@ export default {
     pastWindowSummary: '{count} producto fuera del tiempo seguro',
     pastWindowSummary_plural: '{count} productos fuera del tiempo seguro',
     cardSubtitle: 'Ver uso e información de desperdicio',
+    expiringSoonTitle: 'Usar en 7 días',
+    addedWindow: 'Añadidos',
+    compositionSection: 'Qué hay en tu congelador',
+    weeklySection: 'Actividad por semana',
+    legendAdded: 'Añadidos',
+    legendUsed: 'Usados',
+    oldestSection: 'Más tiempo en el congelador',
+    oldestFrozen: 'congelado el {date}',
   },
 };

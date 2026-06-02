@@ -47,13 +47,7 @@ const EditItemScreen = ({ route, navigation }) => {
 
   const { updateItem } = useFridge();
   const { drawers } = useDrawers();
-  const { t } = useLanguage();
-
-  const formatDateForDisplay = (dateString) => {
-    if (!dateString) return '';
-    const d = new Date(dateString);
-    return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
-  };
+  const { t, formatDate, dateFormatPattern } = useLanguage();
 
   const handleFrozenDateConfirm = (date) => {
     setSelectedFrozenDate(date);
@@ -207,7 +201,7 @@ const EditItemScreen = ({ route, navigation }) => {
               disabled={isLoading}
             >
               <Text style={[styles.dateText, !frozenDate && styles.datePlaceholder]}>
-                {frozenDate ? formatDateForDisplay(frozenDate) : t('addItem.selectDate')}
+                {frozenDate ? formatDate(frozenDate) : t('addItem.selectDate')}
               </Text>
               <Icon name="snow-outline" size={18} color={colors.textMuted} />
             </TouchableOpacity>
@@ -232,7 +226,7 @@ const EditItemScreen = ({ route, navigation }) => {
               disabled={isLoading}
             >
               <Text style={[styles.dateText, !expiryDate && styles.datePlaceholder]}>
-                {expiryDate ? formatDateForDisplay(expiryDate) : t('addItem.selectDateFormat')}
+                {expiryDate ? formatDate(expiryDate) : t('addItem.selectDateFormat', { format: dateFormatPattern })}
               </Text>
               <Icon name="calendar-outline" size={18} color={colors.textMuted} />
             </TouchableOpacity>

@@ -49,19 +49,13 @@ const AddItemScreen = ({ navigation }) => {
 
   const { addItem, getNextAvailablePosition } = useFridge();
   const { drawers } = useDrawers();
-  const { t } = useLanguage();
+  const { t, formatDate, dateFormatPattern } = useLanguage();
 
   useEffect(() => {
     AsyncStorage.getItem(USE_PACKAGE_NUMBERS_KEY).then((val) => {
       setUsePackageNumbers(val === 'true');
     });
   }, []);
-
-  const formatDateForDisplay = (dateString) => {
-    if (!dateString) return '';
-    const d = new Date(dateString);
-    return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
-  };
 
   const handleFrozenDateConfirm = (date) => {
     setSelectedFrozenDate(date);
@@ -227,7 +221,7 @@ const AddItemScreen = ({ navigation }) => {
               disabled={isLoading}
             >
               <Text style={[styles.dateText, !frozenDate && styles.datePlaceholder]}>
-                {frozenDate ? formatDateForDisplay(frozenDate) : t('addItem.selectDate')}
+                {frozenDate ? formatDate(frozenDate) : t('addItem.selectDate')}
               </Text>
               <Icon name="snow-outline" size={18} color={colors.textMuted} />
             </TouchableOpacity>
@@ -252,7 +246,7 @@ const AddItemScreen = ({ navigation }) => {
               disabled={isLoading}
             >
               <Text style={[styles.dateText, !expiryDate && styles.datePlaceholder]}>
-                {expiryDate ? formatDateForDisplay(expiryDate) : t('addItem.selectDateFormat')}
+                {expiryDate ? formatDate(expiryDate) : t('addItem.selectDateFormat', { format: dateFormatPattern })}
               </Text>
               <Icon name="calendar-outline" size={18} color={colors.textMuted} />
             </TouchableOpacity>

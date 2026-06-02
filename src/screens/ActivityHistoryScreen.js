@@ -36,7 +36,7 @@ const actionColorMap = {
 
 const ActivityHistoryScreen = ({ navigation }) => {
   const { activities, loading, loadActivities, getActivityDescription } = useActivity();
-  const { t } = useLanguage();
+  const { t, formatDate } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = async () => {
@@ -56,7 +56,7 @@ const ActivityHistoryScreen = ({ navigation }) => {
     if (diffMins < 60) return t('activity.minAgo', { count: diffMins });
     if (diffHours < 24) return t('activity.hourAgo', { count: diffHours });
     if (diffDays < 7) return t('activity.dayAgo', { count: diffDays });
-    return `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
+    return formatDate(timestamp);
   };
 
   const fieldLabels = {

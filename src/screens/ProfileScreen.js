@@ -43,7 +43,7 @@ const ProfileScreen = ({ navigation }) => {
   } = useAuth();
   const { currentHousehold, householdMembers, invitations } = useHousehold();
   const { checking: checkingForUpdate, checkManually } = useOTAUpdate();
-  const { t, locale, setLocale, languages } = useLanguage();
+  const { t, locale, setLocale, languages, dateFormat, setDateFormat, dateFormats } = useLanguage();
   const insets = useSafeAreaInsets();
 
   const handleCheckForUpdates = async () => {
@@ -262,6 +262,24 @@ const ProfileScreen = ({ navigation }) => {
                 icon={lang.flag}
                 selected={locale === lang.code}
                 onPress={() => setLocale(lang.code)}
+                style={{ marginBottom: 8, marginRight: 8 }}
+              />
+            ))}
+          </View>
+        </Card>
+
+        <SectionTitle>{t('settings.dateFormat')}</SectionTitle>
+        <Card>
+          <Text style={[styles.settingDescription, { marginBottom: spacing.sm }]}>
+            {t('settings.dateFormatDesc')}
+          </Text>
+          <View style={styles.langGrid}>
+            {dateFormats.map((df) => (
+              <Pill
+                key={df.code}
+                label={`${t(`settings.dateFormat_${df.code}`)} (${df.pattern})`}
+                selected={dateFormat === df.code}
+                onPress={() => setDateFormat(df.code)}
                 style={{ marginBottom: 8, marginRight: 8 }}
               />
             ))}

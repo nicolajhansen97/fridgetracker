@@ -31,7 +31,7 @@ const FridgeInventoryScreen = ({ navigation }) => {
   const { items, deleteItem, consumeItem, loadItems } = useFridge();
   const { drawers: drawerDefs } = useDrawers();
   const { getEffectiveExpiry, isExpiringSoon: isItemExpiringSoon } = useFridgeExpiry();
-  const { t } = useLanguage();
+  const { t, formatDate } = useLanguage();
   const hasDrawers = (drawerDefs?.length || 0) > 0;
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,12 +46,6 @@ const FridgeInventoryScreen = ({ navigation }) => {
     } finally {
       setRefreshing(false);
     }
-  };
-
-  const formatDateEuropean = (dateString) => {
-    if (!dateString) return '';
-    const d = new Date(dateString);
-    return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
   };
 
   const handleDelete = (item) => {
@@ -204,7 +198,7 @@ const FridgeInventoryScreen = ({ navigation }) => {
                           ) : null}
                           {effectiveExpiry ? (
                             <Badge tone={expiringSoon ? 'danger' : 'default'}>
-                              {t('inventory.exp', { date: formatDateEuropean(effectiveExpiry) })}
+                              {t('inventory.exp', { date: formatDate(effectiveExpiry) })}
                             </Badge>
                           ) : null}
                         </View>

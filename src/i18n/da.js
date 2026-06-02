@@ -191,7 +191,7 @@ export default {
     frozenDate: 'Frysedato',
     selectDate: 'Vælg dato',
     expiryDate: 'Bedst før (på emballagen)',
-    selectDateFormat: 'Vælg dato (DD-MM-ÅÅÅÅ)',
+    selectDateFormat: 'Vælg dato ({format})',
     clearDate: 'Ryd dato',
     notes: 'Noter (valgfrit)',
     notesPlaceholder: 'Eventuelle yderligere noter...',
@@ -221,6 +221,10 @@ export default {
     usePackageNumbers: 'Brug pakkenumre',
     usePackageNumbersDesc: 'Tildel automatisk et nummer til hver pakke, så du kan finde den i fryseren',
     language: 'Sprog',
+    dateFormat: 'Datoformat',
+    dateFormatDesc: 'Hvordan datoer vises i hele appen',
+    dateFormat_european: 'Europæisk',
+    dateFormat_american: 'Amerikansk',
     security: 'Sikkerhed',
     biometricLogin: '{type}-login',
     biometricAvailable: 'Brug {type} til hurtig og sikker login',
@@ -492,6 +496,11 @@ export default {
   },
 
   changelog: {
+    // v1.0.6
+    v106_dateformat_title: 'Vælg dit datoformat',
+    v106_dateformat_desc: 'Foretrækker du MM/DD/ÅÅÅÅ? Skift mellem europæisk og amerikansk datoformat når som helst på din profil.',
+    v106_stats_title: 'Skarpere statistikskærm',
+    v106_stats_desc: 'Fryserstatistikken har fået et friskt look og ny indsigt: hvad der er i din fryser efter kategori, et ugentligt aktivitetsdiagram, varer der skal bruges inden 7 dage, og din ældste frosne vare.',
     // v1.0.5
     v105_useby_title: 'Brug-før, ikke bedst-før',
     v105_useby_desc: 'Datoen på pakken betyder ikke så meget, når varen er frosset. Varer viser nu en "Brug før"-dato baseret på hvor længe hver fødevare holder i fryseren.',
@@ -565,5 +574,13 @@ export default {
     pastWindowSummary: '{count} vare over anbefalet frysetid',
     pastWindowSummary_plural: '{count} varer over anbefalet frysetid',
     cardSubtitle: 'Se brug og spildindsigt',
+    expiringSoonTitle: 'Brug inden 7 dage',
+    addedWindow: 'Tilføjet',
+    compositionSection: 'Hvad er i din fryser',
+    weeklySection: 'Aktivitet pr. uge',
+    legendAdded: 'Tilføjet',
+    legendUsed: 'Brugt',
+    oldestSection: 'Længst i fryseren',
+    oldestFrozen: 'frosset {date}',
   },
 };

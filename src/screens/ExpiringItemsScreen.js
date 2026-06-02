@@ -40,7 +40,7 @@ const statusTone = (status) => {
 const ExpiringItemsScreen = ({ navigation }) => {
   const { items, loading, deleteItem, loadItems } = useFridge();
   const { getEffectiveExpiry, getDaysUntilExpiry, getFreezerInfo } = useFridgeExpiry();
-  const { t } = useLanguage();
+  const { t, formatDate } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
   const [expiringItems, setExpiringItems] = useState([]);
 
@@ -77,12 +77,6 @@ const ExpiringItemsScreen = ({ navigation }) => {
     setRefreshing(true);
     try { await loadItems(); } catch (e) { console.error('Refresh error:', e); }
     finally { setRefreshing(false); }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const d = new Date(dateString);
-    return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
   };
 
   const handleDelete = (item) => {

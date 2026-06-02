@@ -172,7 +172,7 @@ export default {
     frozenDate: 'Einfrierdatum',
     selectDate: 'Datum auswählen',
     expiryDate: 'Mindesthaltbarkeit (auf der Verpackung)',
-    selectDateFormat: 'Datum auswählen (TT-MM-JJJJ)',
+    selectDateFormat: 'Datum auswählen ({format})',
     clearDate: 'Datum löschen',
     notes: 'Notizen (optional)',
     notesPlaceholder: 'Zusätzliche Notizen...',
@@ -198,6 +198,10 @@ export default {
     usePackageNumbers: 'Paketnummern verwenden',
     usePackageNumbersDesc: 'Weisen Sie jedem Paket automatisch eine Nummer zu, damit Sie es im Gefrierschrank finden',
     language: 'Sprache',
+    dateFormat: 'Datumsformat',
+    dateFormatDesc: 'Wie Datumsangaben in der App angezeigt werden',
+    dateFormat_european: 'Europäisch',
+    dateFormat_american: 'Amerikanisch',
     security: 'Sicherheit',
     biometricLogin: '{type}-Anmeldung',
     biometricAvailable: 'Verwenden Sie {type} für eine schnelle und sichere Anmeldung',
@@ -457,6 +461,11 @@ export default {
   },
 
   changelog: {
+    // v1.0.6
+    v106_dateformat_title: 'Wähle dein Datumsformat',
+    v106_dateformat_desc: 'Lieber MM/TT/JJJJ? Wechsle jederzeit zwischen europäischem und amerikanischem Datumsformat in deinem Profil.',
+    v106_stats_title: 'Übersichtlichere Statistik',
+    v106_stats_desc: 'Die Gefrierschrank-Statistik hat einen frischen Look und neue Einblicke: was nach Kategorie im Gefrierschrank ist, ein wöchentliches Aktivitätsdiagramm, in 7 Tagen zu verbrauchende Artikel und dein am längsten gefrorenes Produkt.',
     // v1.0.5
     v105_useby_title: 'Verbrauchen-bis, nicht Mindesthaltbar',
     v105_useby_desc: 'Das Datum auf der Verpackung spielt nach dem Einfrieren kaum eine Rolle. Artikel zeigen jetzt ein "Verbrauchen bis"-Datum basierend darauf, wie lange jedes Lebensmittel im Gefrierschrank gut bleibt.',
@@ -530,5 +539,13 @@ export default {
     pastWindowSummary: '{count} Artikel über empfohlene Gefrierzeit',
     pastWindowSummary_plural: '{count} Artikel über empfohlene Gefrierzeit',
     cardSubtitle: 'Nutzungs- und Verlust-Einblicke ansehen',
+    expiringSoonTitle: 'In 7 Tagen verbrauchen',
+    addedWindow: 'Hinzugefügt',
+    compositionSection: 'Was im Gefrierschrank ist',
+    weeklySection: 'Aktivität pro Woche',
+    legendAdded: 'Hinzugefügt',
+    legendUsed: 'Verbraucht',
+    oldestSection: 'Am längsten im Gefrierschrank',
+    oldestFrozen: 'eingefroren {date}',
   },
 };

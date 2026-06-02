@@ -172,7 +172,7 @@ export default {
     frozenDate: 'Date de congelation',
     selectDate: 'Selectionner une date',
     expiryDate: "À consommer de préférence avant (sur l'emballage)",
-    selectDateFormat: 'Selectionner une date (JJ-MM-AAAA)',
+    selectDateFormat: 'Selectionner une date ({format})',
     clearDate: 'Effacer la date',
     notes: 'Notes (optionnel)',
     notesPlaceholder: 'Notes supplementaires...',
@@ -198,6 +198,10 @@ export default {
     usePackageNumbers: 'Utiliser les numeros de colis',
     usePackageNumbersDesc: 'Attribuer automatiquement un numero a chaque colis pour le retrouver dans le congelateur',
     language: 'Langue',
+    dateFormat: 'Format de date',
+    dateFormatDesc: "Comment les dates s'affichent dans l'application",
+    dateFormat_european: 'Europeen',
+    dateFormat_american: 'Americain',
     security: 'Securite',
     biometricLogin: 'Connexion {type}',
     biometricAvailable: 'Utilisez {type} pour une connexion rapide et securisee',
@@ -457,6 +461,11 @@ export default {
   },
 
   changelog: {
+    // v1.0.6
+    v106_dateformat_title: 'Choisissez votre format de date',
+    v106_dateformat_desc: 'Vous preferez MM/JJ/AAAA ? Basculez entre les formats de date europeen et americain a tout moment depuis votre profil.',
+    v106_stats_title: 'Un ecran de stats plus clair',
+    v106_stats_desc: 'Les stats du congelateur ont un nouveau look et de nouvelles infos : le contenu de votre congelateur par categorie, un graphique d\'activite hebdomadaire, les articles a consommer sous 7 jours et votre article congele depuis le plus longtemps.',
     // v1.0.5
     v105_useby_title: 'A consommer avant, pas DLUO',
     v105_useby_desc: 'La date sur l\'emballage compte peu une fois congele. Les articles affichent maintenant une date "A consommer avant" basee sur la duree de conservation de chaque aliment au congelateur.',
@@ -530,5 +539,13 @@ export default {
     pastWindowSummary: '{count} produit hors période sûre de congélation',
     pastWindowSummary_plural: '{count} produits hors période sûre de congélation',
     cardSubtitle: 'Voir l\'utilisation et le gaspillage',
+    expiringSoonTitle: 'A consommer sous 7 jours',
+    addedWindow: 'Ajoutes',
+    compositionSection: 'Dans votre congelateur',
+    weeklySection: 'Activite par semaine',
+    legendAdded: 'Ajoutes',
+    legendUsed: 'Consommes',
+    oldestSection: 'Le plus longtemps au congelateur',
+    oldestFrozen: 'congele le {date}',
   },
 };

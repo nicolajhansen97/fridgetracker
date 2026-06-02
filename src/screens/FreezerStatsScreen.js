@@ -23,6 +23,7 @@ import {
 } from '../components/ui';
 import { colors, gradients, radii, spacing, typography } from '../theme';
 import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
+import { getCategory } from '../utils/foodCategories';
 
 const MS_PER_DAY = 86400000;
 const WINDOW_DAYS = 90;
@@ -30,13 +31,47 @@ const WINDOW_DAYS = 90;
 // 90-day stats without adding a Postgres RPC. 500 covers a heavy user for
 // well over the window; lighter users won't fill it.
 const ACTIVITY_LIMIT = 500;
+const TREND_WEEKS = 8;   // how many weeks the activity chart spans
+const MAX_BAR = 84;      // tallest bar in the weekly chart, px
+const MAX_COMPOSITION = 6; // category rows before the rest folds into "other"
+
+// Soft icon-chip palette, paired tint + background.
+const CHIP = {
+  primary: { tint: colors.primary, soft: '#ECFEFF' },
+  info: { tint: colors.info, soft: colors.infoSoft },
+  success: { tint: colors.success, soft: colors.successSoft },
+  danger: { tint: colors.danger, soft: colors.dangerSoft },
+  warning: { tint: colors.warning, soft: colors.warningSoft },
+  indigo: { tint: colors.secondary, soft: '#EEF2FF' },
+  muted: { tint: colors.textMuted, soft: colors.surfaceMuted },
+};
+
+const StatTile = ({ chip, iconName, value, label, valueColor, onPress }) => {
+  const inner = (
+    <Card style={styles.tile}>
+      <View style={[styles.tileIcon, { backgroundColor: chip.soft }]}>
+        <Icon name={iconName} size={18} color={chip.tint} />
+      </View>
+      <Text style={[styles.tileValue, valueColor && { color: valueColor }]}>{value}</Text>
+      <Text style={styles.tileLabel}>{label}</Text>
+    </Card>
+  );
+  if (onPress) {
+    return (
+      <TouchableOpacity activeOpacity={0.85} style={styles.tileWrap} onPress={onPress}>
+        {inner}
+      </TouchableOpacity>
+    );
+  }
+  return <View style={styles.tileWrap}>{inner}</View>;
+};
 
 const FreezerStatsScreen = ({ navigation }) => {
   const { items } = useFridge();
   const { currentHousehold } = useHousehold();
   const { savedRecipes } = useSavedRecipes();
-  const { isPastFreezerWindow } = useFridgeExpiry();
-  const { t } = useLanguage();
+  const { isPastFreezerWindow, getExpiryStatus } = useFridgeExpiry();
+  const { t, formatDate } = useLanguage();
 
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -77,8 +112,8 @@ const FreezerStatsScreen = ({ navigation }) => {
       (a) => new Date(a.created_at).getTime() >= windowStart
     );
     const inPrevWindow = activities.filter((a) => {
-      const t = new Date(a.created_at).getTime();
-      return t >= prevWindowStart && t < windowStart;
+      const ts = new Date(a.created_at).getTime();
+      return ts >= prevWindowStart && ts < windowStart;
     });
 
     const countByAction = (list) =>
@@ -148,9 +183,68 @@ const FreezerStatsScreen = ({ navigation }) => {
     });
     const avgDaysFrozen = pairCount > 0 ? Math.round(totalDays / pairCount) : null;
 
-    // Items currently past their effective freezer window — what was
-    // misleadingly hidden before we built effectiveExpiry.
+    // --- Current-inventory derived stats ---
+
+    // Items past / approaching their effective freezer window.
     const pastWindowCount = items.filter(isPastFreezerWindow).length;
+    let expiringSoonCount = 0;
+    items.forEach((it) => {
+      const s = getExpiryStatus(it);
+      if (s === 'soon' || s === 'critical') expiringSoonCount += 1;
+    });
+
+    // Composition: how the current inventory splits across food categories.
+    const catCounts = new Map();
+    items.forEach((it) => {
+      const cat = getCategory(it.name || '') || 'other';
+      catCounts.set(cat, (catCounts.get(cat) || 0) + 1);
+    });
+    let composition = [...catCounts.entries()]
+      .map(([key, count]) => ({ key, count }))
+      .sort((a, b) => b.count - a.count);
+    if (composition.length > MAX_COMPOSITION) {
+      const head = composition.slice(0, MAX_COMPOSITION - 1);
+      const rest = composition
+        .slice(MAX_COMPOSITION - 1)
+        .reduce((s, c) => s + c.count, 0);
+      // The kept slice may already contain "other"; merge into it rather than
+      // adding a second entry (which would collide on the React key).
+      const existingOther = head.find((c) => c.key === 'other');
+      if (existingOther) {
+        existingOther.count += rest;
+      } else {
+        head.push({ key: 'other', count: rest });
+      }
+      composition = head.sort((a, b) => b.count - a.count);
+    }
+    const compositionMax = Math.max(1, ...composition.map((c) => c.count));
+
+    // Oldest item still in the freezer.
+    let oldest = null;
+    items.forEach((it) => {
+      if (!it.frozen_date) return;
+      const ts = new Date(it.frozen_date).getTime();
+      if (isNaN(ts)) return;
+      const days = Math.floor((now - ts) / MS_PER_DAY);
+      if (!oldest || days > oldest.days) {
+        oldest = { name: it.name, days, frozenDate: it.frozen_date };
+      }
+    });
+    if (oldest && oldest.days < 1) oldest = null;
+
+    // Weekly added-vs-used trend, oldest week first.
+    const weekMs = 7 * MS_PER_DAY;
+    const weekly = Array.from({ length: TREND_WEEKS }, () => ({ added: 0, used: 0 }));
+    activities.forEach((a) => {
+      const ts = new Date(a.created_at).getTime();
+      const ageWeeks = Math.floor((now - ts) / weekMs);
+      if (ageWeeks < 0 || ageWeeks >= TREND_WEEKS) return;
+      const idx = TREND_WEEKS - 1 - ageWeeks;
+      if (a.action === 'created') weekly[idx].added += 1;
+      else if (a.action === 'consumed') weekly[idx].used += 1;
+    });
+    const weeklyMax = Math.max(1, ...weekly.flatMap((w) => [w.added, w.used]));
+    const weeklyHasData = weekly.some((w) => w.added > 0 || w.used > 0);
 
     return {
       eatenPct,
@@ -159,15 +253,23 @@ const FreezerStatsScreen = ({ navigation }) => {
       topThrown,
       avgDaysFrozen,
       pastWindowCount,
+      expiringSoonCount,
+      composition,
+      compositionMax,
+      oldest,
+      weekly,
+      weeklyMax,
+      weeklyHasData,
       totalItems: items.length,
       pairCount,
       hasAnyActivity: inWindow.length > 0,
     };
-  }, [activities, items, isPastFreezerWindow]);
+  }, [activities, items, isPastFreezerWindow, getExpiryStatus]);
 
   const goToInventory = () => {
     navigation.navigate('FreezerTab', { screen: 'FridgeInventory' });
   };
+  const goToExpiring = () => navigation.navigate('ExpiringItems');
 
   const renderDelta = () => {
     if (stats.eatenDelta === null) return null;
@@ -235,6 +337,9 @@ const FreezerStatsScreen = ({ navigation }) => {
               {stats.eatenPct !== null ? (
                 <>
                   <Text style={styles.heroValue}>{stats.eatenPct}%</Text>
+                  <View style={styles.heroBarTrack}>
+                    <View style={[styles.heroBarFill, { width: `${stats.eatenPct}%` }]} />
+                  </View>
                   <Text style={styles.heroSub}>
                     {t('stats.eatenSub', {
                       used: stats.window.consumed,
@@ -248,49 +353,136 @@ const FreezerStatsScreen = ({ navigation }) => {
               )}
             </LinearGradient>
 
-            {/* Quick numbers row */}
-            <View style={styles.statsRow}>
-              <Card style={styles.statCard}>
-                <Icon name="snow-outline" size={18} color={colors.primary} />
-                <Text style={styles.statValue}>{stats.totalItems}</Text>
-                <Text style={styles.statLabel}>{t('stats.inFreezerNow')}</Text>
-              </Card>
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={{ flex: 1 }}
-                onPress={stats.pastWindowCount > 0 ? goToInventory : undefined}
-              >
-                <Card style={styles.statCard}>
-                  <Icon
-                    name="alert-circle-outline"
-                    size={18}
-                    color={stats.pastWindowCount > 0 ? colors.danger : colors.textMuted}
-                  />
-                  <Text
-                    style={[
-                      styles.statValue,
-                      stats.pastWindowCount > 0 && { color: colors.danger },
-                    ]}
-                  >
-                    {stats.pastWindowCount}
-                  </Text>
-                  <Text style={styles.statLabel}>{t('stats.pastSafeWindow')}</Text>
-                </Card>
-              </TouchableOpacity>
+            {/* Quick numbers */}
+            <View style={styles.grid}>
+              <View style={styles.gridRow}>
+                <StatTile
+                  chip={CHIP.primary}
+                  iconName="snow-outline"
+                  value={stats.totalItems}
+                  label={t('stats.inFreezerNow')}
+                />
+                <StatTile
+                  chip={CHIP.warning}
+                  iconName="time-outline"
+                  value={stats.expiringSoonCount}
+                  label={t('stats.expiringSoonTitle')}
+                  valueColor={stats.expiringSoonCount > 0 ? colors.warning : undefined}
+                  onPress={stats.expiringSoonCount > 0 ? goToExpiring : undefined}
+                />
+              </View>
+              <View style={styles.gridRow}>
+                <StatTile
+                  chip={CHIP.info}
+                  iconName="add-circle-outline"
+                  value={stats.window.created}
+                  label={t('stats.addedWindow')}
+                />
+                <StatTile
+                  chip={CHIP.success}
+                  iconName="restaurant-outline"
+                  value={stats.window.consumed}
+                  label={t('stats.usedThisWindow')}
+                />
+              </View>
+              <View style={styles.gridRow}>
+                <StatTile
+                  chip={CHIP.danger}
+                  iconName="trash-outline"
+                  value={stats.window.deleted}
+                  label={t('stats.thrownThisWindow')}
+                />
+                <StatTile
+                  chip={stats.pastWindowCount > 0 ? CHIP.danger : CHIP.muted}
+                  iconName="alert-circle-outline"
+                  value={stats.pastWindowCount}
+                  label={t('stats.pastSafeWindow')}
+                  valueColor={stats.pastWindowCount > 0 ? colors.danger : undefined}
+                  onPress={stats.pastWindowCount > 0 ? goToInventory : undefined}
+                />
+              </View>
             </View>
 
-            <View style={styles.statsRow}>
-              <Card style={styles.statCard}>
-                <Icon name="restaurant-outline" size={18} color="#075985" />
-                <Text style={styles.statValue}>{stats.window.consumed}</Text>
-                <Text style={styles.statLabel}>{t('stats.usedThisWindow')}</Text>
-              </Card>
-              <Card style={styles.statCard}>
-                <Icon name="trash-outline" size={18} color={colors.danger} />
-                <Text style={styles.statValue}>{stats.window.deleted}</Text>
-                <Text style={styles.statLabel}>{t('stats.thrownThisWindow')}</Text>
-              </Card>
-            </View>
+            {/* Freezer composition */}
+            {stats.composition.length > 0 && (
+              <>
+                <SectionTitle
+                  icon={<Icon name="pie-chart-outline" size={14} color={colors.textMuted} />}
+                >
+                  {t('stats.compositionSection')}
+                </SectionTitle>
+                <Card>
+                  {stats.composition.map((c, idx) => (
+                    <View key={c.key} style={[styles.compItem, idx > 0 && { marginTop: spacing.md }]}>
+                      <View style={styles.compHeader}>
+                        <Text style={styles.compLabel} numberOfLines={1}>
+                          {t(`shopping.cat_${c.key}`)}
+                        </Text>
+                        <Text style={styles.compCount}>{c.count}</Text>
+                      </View>
+                      <View style={styles.compTrack}>
+                        <View
+                          style={[
+                            styles.compFill,
+                            { width: `${Math.round((c.count / stats.compositionMax) * 100)}%` },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  ))}
+                </Card>
+              </>
+            )}
+
+            {/* Weekly activity trend */}
+            {stats.weeklyHasData && (
+              <>
+                <SectionTitle
+                  icon={<Icon name="trending-up-outline" size={14} color={colors.textMuted} />}
+                >
+                  {t('stats.weeklySection')}
+                </SectionTitle>
+                <Card>
+                  <View style={styles.chart}>
+                    {stats.weekly.map((w, i) => (
+                      <View key={i} style={styles.chartCol}>
+                        <View style={styles.chartBarWrap}>
+                          <View
+                            style={[
+                              styles.chartBar,
+                              {
+                                height: Math.max(3, (w.added / stats.weeklyMax) * MAX_BAR),
+                                backgroundColor: colors.primary,
+                              },
+                            ]}
+                          />
+                          <View
+                            style={[
+                              styles.chartBar,
+                              styles.chartBarRight,
+                              {
+                                height: Math.max(3, (w.used / stats.weeklyMax) * MAX_BAR),
+                                backgroundColor: colors.secondary,
+                              },
+                            ]}
+                          />
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                  <View style={styles.legend}>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
+                      <Text style={styles.legendText}>{t('stats.legendAdded')}</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendDot, { backgroundColor: colors.secondary }]} />
+                      <Text style={styles.legendText}>{t('stats.legendUsed')}</Text>
+                    </View>
+                  </View>
+                </Card>
+              </>
+            )}
 
             {/* Avg freezer time */}
             {stats.avgDaysFrozen !== null && (
@@ -310,8 +502,34 @@ const FreezerStatsScreen = ({ navigation }) => {
                         {t('stats.avgFreezerTimeDesc', { count: stats.pairCount })}
                       </Text>
                     </View>
-                    <View style={styles.avgIconWrap}>
+                    <View style={[styles.avgIconWrap, { backgroundColor: '#ECFEFF' }]}>
                       <Icon name="snow-outline" size={22} color={colors.primary} />
+                    </View>
+                  </View>
+                </Card>
+              </>
+            )}
+
+            {/* Oldest item in the freezer */}
+            {stats.oldest && (
+              <>
+                <SectionTitle
+                  icon={<Icon name="hourglass-outline" size={14} color={colors.textMuted} />}
+                >
+                  {t('stats.oldestSection')}
+                </SectionTitle>
+                <Card>
+                  <View style={styles.avgRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.avgValue} numberOfLines={1}>{stats.oldest.name}</Text>
+                      <Text style={styles.avgSub}>
+                        {t('stats.avgDays', { count: stats.oldest.days })}
+                        {'  ·  '}
+                        {t('stats.oldestFrozen', { date: formatDate(stats.oldest.frozenDate) })}
+                      </Text>
+                    </View>
+                    <View style={[styles.avgIconWrap, { backgroundColor: colors.warningSoft }]}>
+                      <Icon name="hourglass-outline" size={22} color={colors.warning} />
                     </View>
                   </View>
                 </Card>
@@ -356,16 +574,16 @@ const FreezerStatsScreen = ({ navigation }) => {
               {t('stats.cookbookSection')}
             </SectionTitle>
             <Card>
-              <View style={styles.cookbookRow}>
+              <View style={styles.avgRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.cookbookValue}>{savedRecipes.length}</Text>
-                  <Text style={styles.cookbookSub}>
+                  <Text style={styles.avgValue}>{savedRecipes.length}</Text>
+                  <Text style={styles.avgSub}>
                     {savedRecipes.length === 1
                       ? t('stats.cookbookSingular')
                       : t('stats.cookbookPlural')}
                   </Text>
                 </View>
-                <View style={styles.cookbookIconWrap}>
+                <View style={[styles.avgIconWrap, { backgroundColor: '#EEF2FF' }]}>
                   <Icon name="restaurant-outline" size={22} color="#6366F1" />
                 </View>
               </View>
@@ -406,11 +624,23 @@ const styles = StyleSheet.create({
     letterSpacing: -2,
     marginTop: 4,
   },
+  heroBarTrack: {
+    height: 8,
+    borderRadius: radii.pill,
+    backgroundColor: colors.whiteAlpha30,
+    overflow: 'hidden',
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  heroBarFill: {
+    height: '100%',
+    borderRadius: radii.pill,
+    backgroundColor: colors.surface,
+  },
   heroSub: {
     color: colors.whiteAlpha80,
     fontSize: 13,
     fontWeight: '500',
-    marginTop: 2,
   },
   heroDelta: {
     fontSize: 12,
@@ -423,27 +653,115 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
 
-  statsRow: {
+  grid: {},
+  gridRow: {
     flexDirection: 'row',
     gap: spacing.md,
     marginBottom: spacing.md,
   },
-  statCard: {
+  tileWrap: {
+    flex: 1,
+  },
+  tile: {
     flex: 1,
     paddingVertical: spacing.lg,
     alignItems: 'flex-start',
   },
-  statValue: {
+  tileIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileValue: {
     fontSize: 28,
     fontWeight: '700',
     color: colors.text,
     letterSpacing: -0.5,
-    marginTop: 8,
+    marginTop: 10,
   },
-  statLabel: {
+  tileLabel: {
     ...typography.caption,
     color: colors.textMuted,
     marginTop: 2,
+  },
+
+  // Composition bars
+  compItem: {},
+  compHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  compLabel: {
+    ...typography.bodyStrong,
+    color: colors.text,
+    flex: 1,
+    marginRight: spacing.sm,
+    textTransform: 'capitalize',
+  },
+  compCount: {
+    ...typography.bodyStrong,
+    color: colors.textMuted,
+  },
+  compTrack: {
+    height: 8,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surfaceMuted,
+    overflow: 'hidden',
+  },
+  compFill: {
+    height: '100%',
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
+  },
+
+  // Weekly chart
+  chart: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: MAX_BAR,
+  },
+  chartCol: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  chartBarWrap: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  chartBar: {
+    width: 7,
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
+  },
+  chartBarRight: {
+    marginLeft: 3,
+  },
+  legend: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendText: {
+    ...typography.caption,
+    color: colors.textMuted,
   },
 
   avgRow: {
@@ -465,9 +783,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: radii.md,
-    backgroundColor: '#ECFEFF',
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: spacing.md,
   },
 
   thrownRow: {
@@ -510,30 +828,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     paddingHorizontal: 2,
     fontStyle: 'italic',
-  },
-
-  cookbookRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cookbookValue: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.text,
-    letterSpacing: -0.3,
-  },
-  cookbookSub: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  cookbookIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.md,
-    backgroundColor: '#EEF2FF',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 
   footnote: {
