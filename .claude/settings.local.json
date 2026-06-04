@@ -17,7 +17,38 @@
       "Bash(git clone:*)",
       "Bash(gh api:*)",
       "Bash(git checkout:*)",
-      "Bash(npx expo run:ios:*)"
+      "Bash(npx expo run:ios:*)",
+      "WebFetch(domain:forkify-api.herokuapp.com)",
+      "Bash(git ls-tree:*)",
+      "Bash(dir:*)",
+      "Bash(npx image-size:*)",
+      "Bash(python -c \"from PIL import Image; [print\\(f, Image.open\\(f\\).size\\) for f in [''assets/icon.png'', ''assets/adaptive-icon.png'']]\")",
+      "Bash(emulator -list-avds)",
+      "Bash(\"$ANDROID_HOME/emulator/emulator\" -list-avds)",
+      "Bash(\"$LOCALAPPDATA/Android/Sdk/emulator/emulator\" -list-avds)",
+      "Bash(npx expo:*)",
+      "Bash(adb devices:*)",
+      "Bash(adb shell:*)",
+      "Bash(adb install:*)",
+      "Bash(adb exec-out:*)",
+      "Read(//c/Users/nicol/**)",
+      "PowerShell(Start-Process \"c:\\\\Users\\\\nicol\\\\fridgetracker\\\\prototypes\\\\modernization.html\")",
+      "Bash(node -e ' *)",
+      "Bash(awk '/^  shopping: \\\\{/,/^  \\\\},/' src/i18n/en.js)",
+      "Bash(NODE_OPTIONS=--use-system-ca npm install @react-navigation/bottom-tabs@^6)",
+      "Bash(NODE_OPTIONS=--use-system-ca npx expo install @expo/vector-icons)",
+      "Bash(node .claude-tmp-verify.js)",
+      "WebSearch",
+      "WebFetch(domain:jaredsinclair.com)",
+      "WebFetch(domain:glovorydesign.medium.com)",
+      "WebFetch(domain:9to5mac.com)",
+      "Bash(node -e \"['en','da','de','fr','es'].forEach\\(l => { try { const d = require\\('c:/Users/nicol/fridgetracker/src/i18n/' + l + '.js'\\); const ok = d.default.expiring && d.default.expiring.quantity && d.default.freezerLabel && d.default.freezerLabel.groundMeat; console.log\\(l + ':', ok ? 'OK' : 'MISSING KEYS', '- expiring.quantity =', JSON.stringify\\(d.default.expiring && d.default.expiring.quantity\\), '- freezerLabel.groundMeat =', JSON.stringify\\(d.default.freezerLabel && d.default.freezerLabel.groundMeat\\)\\); } catch\\(e\\) { console.log\\(l + ': PARSE ERROR -', e.message\\); } }\\)\")",
+      "Bash(node -e \"['en','da','de','fr','es'].forEach\\(l => { try { const d = require\\('c:/Users/nicol/fridgetracker/src/i18n/' + l + '.js'\\).default; const ok = d.freezerSettings && d.freezerSettings.title && d.freezerSettings.profileRow && d.freezerSettings.defaultHint && d.freezerLabel && d.freezerLabel.groundMeat; console.log\\(l + ':', ok ? 'OK' : 'MISSING', '| title=' + JSON.stringify\\(d.freezerSettings && d.freezerSettings.title\\), '| profileRow=' + JSON.stringify\\(d.freezerSettings && d.freezerSettings.profileRow\\)\\); } catch\\(e\\) { console.log\\(l + ': PARSE ERROR -', e.message\\); } }\\)\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\nicol\\pages\\freezely",
+      "c:\\Users\\nicol\\pages\\.github\\workflows",
+      "c:\\Users\\nicol\\pages"
     ]
   }
 }

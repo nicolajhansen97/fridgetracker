@@ -19,6 +19,7 @@ import EditItemScreen from '../screens/EditItemScreen';
 import ManageDrawersScreen from '../screens/ManageDrawersScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ExpiringItemsScreen from '../screens/ExpiringItemsScreen';
+import ExpiryCalendarScreen from '../screens/ExpiryCalendarScreen';
 import FreezerStatsScreen from '../screens/FreezerStatsScreen';
 import FreezerStorageSettingsScreen from '../screens/FreezerStorageSettingsScreen';
 import ActivityHistoryScreen from '../screens/ActivityHistoryScreen';
@@ -40,6 +41,7 @@ const HomeStackNavigator = () => (
   <HomeStack.Navigator screenOptions={stackScreenOptions}>
     <HomeStack.Screen name="Home" component={HomeScreen} />
     <HomeStack.Screen name="ExpiringItems" component={ExpiringItemsScreen} />
+    <HomeStack.Screen name="Calendar" component={ExpiryCalendarScreen} />
     <HomeStack.Screen name="FreezerStats" component={FreezerStatsScreen} />
   </HomeStack.Navigator>
 );

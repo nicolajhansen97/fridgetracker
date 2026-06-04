@@ -2,7 +2,7 @@
   "expo": {
     "name": "Freezely",
     "slug": "fridgetracker",
-    "version": "1.0.0",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -33,7 +33,9 @@
         "projectId": "11a9bd44-499c-4a15-b141-bfdfe8837f9d"
       },
       "supabaseUrl": "https://zuzfcnrejdtjehfocwos.supabase.co",
-      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1emZjbnJlamR0amVoZm9jd29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMDU1NTYsImV4cCI6MjA4Mzg4MTU1Nn0.ktaHZZxsjzcSmOtybhhehgNeT0m-OvR6XaNyL3nt0Ks"
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1emZjbnJlamR0amVoZm9jd29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMDU1NTYsImV4cCI6MjA4Mzg4MTU1Nn0.ktaHZZxsjzcSmOtybhhehgNeT0m-OvR6XaNyL3nt0Ks",
+      "revenueCatIosKey": "appl_jaKhVJPpPmsMFfAcBBGFsxwRQsC",
+      "revenueCatAndroidKey": ""
     },
     "plugins": [
       "@react-native-community/datetimepicker"

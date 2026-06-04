@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LanguageProvider } from './src/i18n';
 import { AuthProvider } from './src/context/AuthContext';
+import { PremiumProvider } from './src/context/PremiumContext';
 import { HouseholdProvider } from './src/context/HouseholdContext';
 import { FridgeProvider } from './src/context/FridgeContext';
 import { DrawerProvider } from './src/context/DrawerContext';
@@ -28,6 +29,7 @@ export default function App() {
       <LanguageProvider>
         <AuthProvider>
           <HouseholdProvider>
+          <PremiumProvider>
             <DrawerProvider>
               <FridgeProvider>
                 <ActivityProvider>
@@ -46,6 +48,7 @@ export default function App() {
                 </ActivityProvider>
               </FridgeProvider>
             </DrawerProvider>
+          </PremiumProvider>
           </HouseholdProvider>
         </AuthProvider>
       </LanguageProvider>

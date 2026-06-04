@@ -16,8 +16,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
 import { useHousehold } from '../context/HouseholdContext';
 import { useOTAUpdate } from '../context/OTAUpdateContext';
+import { usePremium } from '../context/PremiumContext';
 import { useLanguage } from '../i18n';
 import { CURRENT_VERSION } from '../changelog';
+import PaywallModal from '../components/PaywallModal';
 import {
   Screen,
   Card,
@@ -42,6 +44,7 @@ const ProfileScreen = ({ navigation }) => {
     checkBiometricEnabled,
   } = useAuth();
   const { currentHousehold, householdMembers, invitations } = useHousehold();
+  const { isPremium, premiumSource, manageSubscription, devPro, setDevPremium } = usePremium();
   const { checking: checkingForUpdate, checkManually } = useOTAUpdate();
   const { t, locale, setLocale, languages, dateFormat, setDateFormat, dateFormats } = useLanguage();
   const insets = useSafeAreaInsets();
@@ -67,6 +70,7 @@ const ProfileScreen = ({ navigation }) => {
   const [familySize, setFamilySize] = useState(4);
   const [usePackageNumbers, setUsePackageNumbers] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [paywallVisible, setPaywallVisible] = useState(false);
 
   useEffect(() => {
     checkBiometricStatus();
@@ -198,6 +202,65 @@ const ProfileScreen = ({ navigation }) => {
             </View>
           </Card>
         </TouchableOpacity>
+
+        <SectionTitle>{t('premium.subscriptionSection')}</SectionTitle>
+        <Card padded={false}>
+          <View style={styles.subRow}>
+            <View style={styles.subIconWrap}>
+              <Icon name="sparkles" size={18} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.subTitle}>{isPremium ? 'Freezely Pro' : 'Freezely'}</Text>
+              <Text style={styles.subStatus}>
+                {!isPremium
+                  ? t('premium.statusFree')
+                  : premiumSource === 'household'
+                  ? t('premium.statusProHousehold')
+                  : t('premium.statusPro')}
+              </Text>
+            </View>
+            <View style={[styles.planBadge, isPremium ? styles.planBadgePro : styles.planBadgeFree]}>
+              <Text style={[styles.planBadgeText, isPremium && styles.planBadgeTextPro]}>
+                {isPremium ? t('premium.proBadge') : t('premium.freeBadge')}
+              </Text>
+            </View>
+          </View>
+          {premiumSource !== 'household' && (
+            <>
+              <Divider />
+              {premiumSource === 'self' ? (
+                <NavRow
+                  iconName="card-outline"
+                  title={t('premium.manage')}
+                  onPress={manageSubscription}
+                />
+              ) : (
+                <NavRow
+                  iconName="arrow-up-circle-outline"
+                  title={t('premium.upgrade')}
+                  onPress={() => setPaywallVisible(true)}
+                />
+              )}
+            </>
+          )}
+          {__DEV__ ? (
+            <>
+              <Divider />
+              <SettingRow
+                label="DEV: Force Pro"
+                description="Local testing only — not shown in production"
+                right={
+                  <Switch
+                    value={devPro}
+                    onValueChange={setDevPremium}
+                    trackColor={{ false: colors.borderStrong, true: colors.primary }}
+                    thumbColor={colors.surface}
+                  />
+                }
+              />
+            </>
+          ) : null}
+        </Card>
 
         <SectionTitle>{t('settings.title')}</SectionTitle>
         <Card padded={false}>
@@ -355,6 +418,8 @@ const ProfileScreen = ({ navigation }) => {
         />
         <View style={{ height: spacing.xxxl }} />
       </ScrollView>
+
+      <PaywallModal visible={paywallVisible} onClose={() => setPaywallVisible(false)} />
     </Screen>
   );
 };
@@ -555,6 +620,51 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.border,
     marginHorizontal: spacing.lg,
+  },
+
+  subRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+  },
+  subIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
+    backgroundColor: '#ECFEFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subTitle: {
+    ...typography.bodyStrong,
+    color: colors.text,
+  },
+  subStatus: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  planBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radii.pill,
+  },
+  planBadgeFree: {
+    backgroundColor: colors.surfaceMuted,
+  },
+  planBadgePro: {
+    backgroundColor: colors.primary,
+  },
+  planBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    color: colors.textMuted,
+  },
+  planBadgeTextPro: {
+    color: colors.surface,
   },
 });
 

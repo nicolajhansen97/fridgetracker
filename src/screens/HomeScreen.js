@@ -132,6 +132,10 @@ const HomeScreen = ({ navigation }) => {
     navigation.navigate('FreezerStats');
   };
 
+  const goToCalendar = () => {
+    navigation.navigate('Calendar');
+  };
+
   const actionIconName = (action) => {
     switch (action) {
       case 'created': return 'add-circle-outline';
@@ -207,6 +211,22 @@ const HomeScreen = ({ navigation }) => {
           icon={<Icon name="add" size={18} color={colors.surface} />}
           style={{ marginTop: spacing.md }}
         />
+
+        {/* Expiry calendar entry point */}
+        <TouchableOpacity activeOpacity={0.85} onPress={goToCalendar} style={{ marginTop: spacing.md }}>
+          <Card style={styles.statsCard}>
+            <View style={styles.statsCardIcon}>
+              <Icon name="calendar-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.statsCardTitle}>{t('calendar.homeCardTitle')}</Text>
+              <Text style={styles.statsCardSub} numberOfLines={1}>
+                {t('calendar.homeCardSubtitle')}
+              </Text>
+            </View>
+            <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+          </Card>
+        </TouchableOpacity>
 
         {/* Stats entry point */}
         {summary.totalItems > 0 && (
