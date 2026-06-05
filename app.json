@@ -42,8 +42,13 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Freezely uses your photos so you can add a picture to a freezer item.",
-          "cameraPermission": "Freezely uses your camera so you can take a photo of a freezer item."
+          "photosPermission": "Freezely uses your photos so you can add a picture to a freezer item."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Freezely uses your camera to scan barcodes and take photos of items."
         }
       ],
       [

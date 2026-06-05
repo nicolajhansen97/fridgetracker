@@ -15,7 +15,9 @@ export const CHANGELOG = [
     date: '2026-06-05',
     features: [
       { icon: '📅', titleKey: 'changelog.v107_calendar_title', descKey: 'changelog.v107_calendar_desc' },
-      { icon: '🥄', titleKey: 'changelog.v107_partial_title', descKey: 'changelog.v107_partial_desc' },
+      { icon: '📷', titleKey: 'changelog.v107_scan_title',     descKey: 'changelog.v107_scan_desc' },
+      { icon: '✨', titleKey: 'changelog.v107_photo_title',    descKey: 'changelog.v107_photo_desc' },
+      { icon: '🥄', titleKey: 'changelog.v107_partial_title',  descKey: 'changelog.v107_partial_desc' },
     ],
   },
   {

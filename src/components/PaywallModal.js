@@ -133,6 +133,7 @@ const PaywallModal = ({ visible, onClose }) => {
             <Text style={styles.subtitle}>{t('premium.upgradeSubtitle')}</Text>
 
             <View style={styles.benefits}>
+              <Benefit text={t('premium.benefitScan')} />
               <Benefit text={t('premium.benefitCalendar')} />
               <Benefit text={t('premium.benefitExpiry')} />
               <Benefit text={t('premium.benefitSupport')} />
