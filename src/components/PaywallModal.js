@@ -8,12 +8,19 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLanguage } from '../i18n';
 import { usePremium } from '../context/PremiumContext';
 import Icon from './ui/Icon';
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
+
+// Required by App Review (Guideline 3.1.2) for auto-renewable subscriptions:
+// the paywall must link to a Terms of Use (EULA) and a Privacy Policy. We use
+// Apple's standard EULA for terms and the hosted Freezely privacy policy.
+const TERMS_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+const PRIVACY_URL = 'https://nicolajhansen97.github.io/pages/privacy-policy.html';
 
 // Controlled paywall: pass `visible` + `onClose`. Any screen can trigger it.
 // Offers two plans — individual ($0.99) and household ($1.49, covers everyone
@@ -161,6 +168,17 @@ const PaywallModal = ({ visible, onClose }) => {
               <Text style={styles.laterText}>{t('premium.maybeLater')}</Text>
             </TouchableOpacity>
 
+            <Text style={styles.disclosure}>{t('premium.autoRenewDisclosure')}</Text>
+            <View style={styles.linksRow}>
+              <TouchableOpacity onPress={() => Linking.openURL(TERMS_URL)} hitSlop={8}>
+                <Text style={styles.linkText}>{t('premium.termsOfUse')}</Text>
+              </TouchableOpacity>
+              <Text style={styles.linkSep}>·</Text>
+              <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_URL)} hitSlop={8}>
+                <Text style={styles.linkText}>{t('premium.privacyPolicy')}</Text>
+              </TouchableOpacity>
+            </View>
+
             {!canPurchase ? <Text style={styles.devNote}>{t('premium.unavailableNote')}</Text> : null}
           </ScrollView>
         </View>
@@ -304,6 +322,30 @@ const styles = StyleSheet.create({
   laterText: {
     ...typography.button,
     color: colors.textMuted,
+  },
+  disclosure: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: colors.textSubtle,
+    textAlign: 'center',
+    marginTop: spacing.md,
+  },
+  linksRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: spacing.sm,
+  },
+  linkText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textMuted,
+    textDecorationLine: 'underline',
+  },
+  linkSep: {
+    fontSize: 12,
+    color: colors.textSubtle,
   },
   devNote: {
     ...typography.caption,

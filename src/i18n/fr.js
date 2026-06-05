@@ -461,6 +461,9 @@ export default {
   },
 
   changelog: {
+    // v1.0.7
+    v107_calendar_title: "Calendrier d'expiration",
+    v107_calendar_desc: "Visualisez tout ce qui expire bientot dans un calendrier mensuel clair, pour toujours savoir quoi utiliser en premier.",
     // v1.0.6
     v106_dateformat_title: 'Choisissez votre format de date',
     v106_dateformat_desc: 'Vous preferez MM/JJ/AAAA ? Basculez entre les formats de date europeen et americain a tout moment depuis votre profil.',
@@ -593,6 +596,9 @@ export default {
     cancelAnytime: 'Annulez à tout moment',
     restore: 'Restaurer les achats',
     maybeLater: 'Plus tard',
+    termsOfUse: "Conditions d'utilisation",
+    privacyPolicy: 'Politique de confidentialité',
+    autoRenewDisclosure: "Les abonnements se renouvellent automatiquement sauf résiliation au moins 24 heures avant la fin de la période en cours. Gérez ou résiliez à tout moment dans les réglages de votre compte App Store.",
     manage: "Gérer l'abonnement",
     purchaseFailed: 'Une erreur est survenue. Veuillez réessayer.',
     restored: 'Achats restaurés',

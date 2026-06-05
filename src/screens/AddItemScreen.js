@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
@@ -26,6 +27,7 @@ import {
 import { colors, radii, spacing, typography } from '../theme';
 
 const USE_PACKAGE_NUMBERS_KEY = 'freezely_use_package_numbers';
+const LAST_DRAWER_KEY = 'freezely_last_drawer';
 const UNITS = ['pcs', 'kg', 'g', 'lbs', 'oz', 'portions'];
 
 const AddItemScreen = ({ navigation }) => {
@@ -49,13 +51,31 @@ const AddItemScreen = ({ navigation }) => {
 
   const { addItem, getNextAvailablePosition } = useFridge();
   const { drawers } = useDrawers();
-  const { t, formatDate, dateFormatPattern } = useLanguage();
+  const { t, formatDate } = useLanguage();
 
   useEffect(() => {
     AsyncStorage.getItem(USE_PACKAGE_NUMBERS_KEY).then((val) => {
       setUsePackageNumbers(val === 'true');
     });
   }, []);
+
+  // Smart default for the compartment: pre-select the last one the user added
+  // to (or the only one that exists), so the common case is zero taps here.
+  useEffect(() => {
+    if (drawer || !drawers || drawers.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const last = await AsyncStorage.getItem(LAST_DRAWER_KEY);
+        if (!cancelled && last && drawers.some((d) => d.name === last)) {
+          setDrawer(last);
+          return;
+        }
+      } catch {}
+      if (!cancelled && drawers.length === 1) setDrawer(drawers[0].name);
+    })();
+    return () => { cancelled = true; };
+  }, [drawers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFrozenDateConfirm = (date) => {
     setSelectedFrozenDate(date);
@@ -98,9 +118,10 @@ const AddItemScreen = ({ navigation }) => {
     setIsLoading(false);
 
     if (result.success) {
-      Alert.alert(t('common.success'), t('addItem.itemAdded'), [
-        { text: t('common.ok'), onPress: () => navigation.goBack() },
-      ]);
+      // Remember the compartment for next time, then drop straight back to the
+      // freezer — the new item is right there, so no extra confirmation tap.
+      try { await AsyncStorage.setItem(LAST_DRAWER_KEY, drawer); } catch {}
+      navigation.goBack();
     } else {
       if (result.error && result.error.includes('Position')) {
         Alert.alert(t('addItem.positionInUse'), result.error, [{ text: t('common.ok') }]);
@@ -144,9 +165,14 @@ const AddItemScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
             {drawers.length === 0 ? (
-              <View style={styles.warning}>
+              <TouchableOpacity
+                style={styles.warning}
+                onPress={() => navigation.navigate('ManageDrawers')}
+                activeOpacity={0.85}
+              >
                 <Text style={styles.warningText}>{t('addItem.noCompartments')}</Text>
-              </View>
+                <Text style={styles.warningCta}>{t('addItem.manageCompartments')} ›</Text>
+              </TouchableOpacity>
             ) : (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillRow}>
                 {drawers.map((d) => (
@@ -164,30 +190,38 @@ const AddItemScreen = ({ navigation }) => {
             )}
           </View>
 
-          <Input
-            label={t('addItem.quantity')}
-            placeholder="1"
-            value={quantity}
-            onChangeText={setQuantity}
-            keyboardType="number-pad"
-            editable={!isLoading}
-            style={styles.field}
-          />
-
+          {/* Quantity + unit — one decision, one row */}
           <View style={styles.field}>
-            <Text style={styles.label}>{t('addItem.unit')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillRow}>
-              {UNITS.map((u) => (
-                <Pill
-                  key={u}
-                  label={u}
-                  selected={unit === u}
-                  onPress={() => setUnit(u)}
-                  disabled={isLoading}
-                  style={{ marginRight: 8 }}
-                />
-              ))}
-            </ScrollView>
+            <Text style={styles.label}>{t('addItem.quantity')}</Text>
+            <View style={styles.qtyRow}>
+              <TextInput
+                style={styles.qtyInput}
+                placeholder="1"
+                placeholderTextColor={colors.textSubtle}
+                value={quantity}
+                onChangeText={setQuantity}
+                keyboardType="number-pad"
+                editable={!isLoading}
+              />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.pillRow}
+                style={styles.unitScroll}
+                keyboardShouldPersistTaps="handled"
+              >
+                {UNITS.map((u) => (
+                  <Pill
+                    key={u}
+                    label={u}
+                    selected={unit === u}
+                    onPress={() => setUnit(u)}
+                    disabled={isLoading}
+                    style={{ marginRight: 8 }}
+                  />
+                ))}
+              </ScrollView>
+            </View>
           </View>
 
           {usePackageNumbers && (
@@ -213,59 +247,63 @@ const AddItemScreen = ({ navigation }) => {
             </View>
           )}
 
-          <View style={styles.field}>
-            <Text style={styles.label}>{t('addItem.frozenDate')}</Text>
-            <TouchableOpacity
-              style={styles.datePicker}
-              onPress={() => setFrozenDatePickerVisibility(true)}
-              disabled={isLoading}
-            >
-              <Text style={[styles.dateText, !frozenDate && styles.datePlaceholder]}>
-                {frozenDate ? formatDate(frozenDate) : t('addItem.selectDate')}
-              </Text>
-              <Icon name="snow-outline" size={18} color={colors.textMuted} />
-            </TouchableOpacity>
-            <DateTimePickerModal
-              isVisible={isFrozenDatePickerVisible}
-              mode="date"
-              onConfirm={handleFrozenDateConfirm}
-              onCancel={() => setFrozenDatePickerVisibility(false)}
-              date={selectedFrozenDate || new Date()}
-              maximumDate={new Date()}
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              pickerContainerStyleIOS={{ backgroundColor: 'white' }}
-              textColor="#000000"
-            />
+          {/* Dates side by side */}
+          <View style={[styles.field, styles.dateRow]}>
+            <View style={styles.dateCol}>
+              <Text style={styles.label}>{t('addItem.frozenDate')}</Text>
+              <TouchableOpacity
+                style={styles.datePicker}
+                onPress={() => setFrozenDatePickerVisibility(true)}
+                disabled={isLoading}
+              >
+                <Text style={[styles.dateText, !frozenDate && styles.datePlaceholder]} numberOfLines={1}>
+                  {frozenDate ? formatDate(frozenDate) : t('addItem.selectDate')}
+                </Text>
+                <Icon name="snow-outline" size={18} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.dateCol}>
+              <Text style={styles.label}>{t('addItem.expiryDate')}</Text>
+              <TouchableOpacity
+                style={styles.datePicker}
+                onPress={() => setDatePickerVisibility(true)}
+                disabled={isLoading}
+              >
+                <Text style={[styles.dateText, !expiryDate && styles.datePlaceholder]} numberOfLines={1}>
+                  {expiryDate ? formatDate(expiryDate) : t('addItem.selectDate')}
+                </Text>
+                <Icon name="calendar-outline" size={18} color={colors.accent} />
+              </TouchableOpacity>
+              {expiryDate ? (
+                <TouchableOpacity onPress={clearDate} hitSlop={6} style={{ marginTop: 6, alignSelf: 'flex-start' }}>
+                  <Text style={styles.linkText}>{t('addItem.clearDate')}</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </View>
 
-          <View style={styles.field}>
-            <Text style={styles.label}>{t('addItem.expiryDate')}</Text>
-            <TouchableOpacity
-              style={styles.datePicker}
-              onPress={() => setDatePickerVisibility(true)}
-              disabled={isLoading}
-            >
-              <Text style={[styles.dateText, !expiryDate && styles.datePlaceholder]}>
-                {expiryDate ? formatDate(expiryDate) : t('addItem.selectDateFormat', { format: dateFormatPattern })}
-              </Text>
-              <Icon name="calendar-outline" size={18} color={colors.textMuted} />
-            </TouchableOpacity>
-            {expiryDate ? (
-              <TouchableOpacity onPress={clearDate} hitSlop={6} style={{ marginTop: 6, alignSelf: 'flex-start' }}>
-                <Text style={styles.linkText}>{t('addItem.clearDate')}</Text>
-              </TouchableOpacity>
-            ) : null}
-            <DateTimePickerModal
-              isVisible={isDatePickerVisible}
-              mode="date"
-              onConfirm={handleDateConfirm}
-              onCancel={() => setDatePickerVisibility(false)}
-              date={selectedDate || new Date()}
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              pickerContainerStyleIOS={{ backgroundColor: 'white' }}
-              textColor="#000000"
-            />
-          </View>
+          <DateTimePickerModal
+            isVisible={isFrozenDatePickerVisible}
+            mode="date"
+            onConfirm={handleFrozenDateConfirm}
+            onCancel={() => setFrozenDatePickerVisibility(false)}
+            date={selectedFrozenDate || new Date()}
+            maximumDate={new Date()}
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            pickerContainerStyleIOS={{ backgroundColor: 'white' }}
+            textColor="#000000"
+          />
+          <DateTimePickerModal
+            isVisible={isDatePickerVisible}
+            mode="date"
+            onConfirm={handleDateConfirm}
+            onCancel={() => setDatePickerVisibility(false)}
+            date={selectedDate || new Date()}
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            pickerContainerStyleIOS={{ backgroundColor: 'white' }}
+            textColor="#000000"
+          />
 
           <Input
             label={t('addItem.notes')}
@@ -311,12 +349,33 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   linkText: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   pillRow: {
     paddingVertical: 4,
+  },
+  qtyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  qtyInput: {
+    width: 64,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    fontSize: 15,
+    color: colors.text,
+    textAlign: 'center',
+    fontWeight: '700',
+  },
+  unitScroll: {
+    flex: 1,
   },
   row: {
     flexDirection: 'row',
@@ -325,6 +384,14 @@ const styles = StyleSheet.create({
   },
   autoBtn: {
     paddingVertical: 12,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  dateCol: {
+    flex: 1,
+    minWidth: 0,
   },
   warning: {
     backgroundColor: colors.warningSoft,
@@ -338,6 +405,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
   },
+  warningCta: {
+    color: '#92400E',
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: 6,
+  },
   datePicker: {
     backgroundColor: colors.surface,
     borderRadius: radii.md,
@@ -348,10 +422,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 6,
   },
   dateText: {
     fontSize: 15,
     color: colors.text,
+    flexShrink: 1,
   },
   datePlaceholder: {
     color: colors.textSubtle,

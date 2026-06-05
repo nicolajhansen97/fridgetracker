@@ -1,6 +1,5 @@
 import React from 'react';
 import { Text, TextInput } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LanguageProvider } from './src/i18n';
 import { AuthProvider } from './src/context/AuthContext';
@@ -37,7 +36,6 @@ export default function App() {
                     <SavedRecipesProvider>
                     <FreezerSettingsProvider>
                     <OTAUpdateProvider>
-                      <StatusBar style="light" />
                       <AppNavigator />
                       <OTAUpdateModal />
                       <SessionTracker />

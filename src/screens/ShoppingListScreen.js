@@ -231,7 +231,7 @@ const ShoppingListScreen = () => {
             hitSlop={6}
             style={styles.headerListsBtn}
           >
-            <Icon name="list-outline" size={18} color={colors.surface} />
+            <Icon name="list-outline" size={20} color={colors.surface} />
           </TouchableOpacity>
         }
       />
@@ -587,8 +587,8 @@ const SwipeableRow = ({ item, onToggle, onLongPress, onDelete, showAddedBy }) =>
 
 const styles = StyleSheet.create({
   headerListsBtn: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     borderRadius: radii.sm + 2,
     backgroundColor: colors.whiteAlpha20,
     alignItems: 'center',

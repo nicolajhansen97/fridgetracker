@@ -1,11 +1,12 @@
 import React from 'react';
 import { Text, TouchableOpacity, StyleSheet, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { colors, gradients, radii, typography } from '../../theme';
+import { colors, radii, typography } from '../../theme';
 
-// A selectable chip / filter pill. When `selected`, fills with the hero gradient.
-// `icon` may be a string (rendered as <Text>, used for emoji symbols like flags or
-// user-customized drawer icons) or any React node (e.g. an <Icon /> element).
+// A selectable chip / filter pill. When `selected`, fills with a solid graphite
+// surface (clean, iOS-style) — neutral so it doesn't compete with the teal
+// brand accent reserved for primary actions.
+// `icon` may be a string (rendered as <Text>, used for emoji symbols like flags
+// or user-customized drawer icons) or any React node (e.g. an <Icon /> element).
 const renderIcon = (icon, selected) => {
   if (!icon) return null;
   if (typeof icon === 'string') {
@@ -17,31 +18,15 @@ const renderIcon = (icon, selected) => {
 };
 
 const Pill = ({ label, icon, selected, onPress, style, disabled }) => {
-  if (selected) {
-    return (
-      <TouchableOpacity onPress={onPress} disabled={disabled} activeOpacity={0.85} style={style}>
-        <LinearGradient
-          colors={gradients.hero}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.pill}
-        >
-          {renderIcon(icon, true)}
-          <Text style={[styles.label, styles.labelOn]}>{label}</Text>
-        </LinearGradient>
-      </TouchableOpacity>
-    );
-  }
-
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.85}
-      style={[styles.pill, styles.pillOff, style]}
+      style={[styles.pill, selected ? styles.pillOn : styles.pillOff, style]}
     >
-      {renderIcon(icon, false)}
-      <Text style={styles.label}>{label}</Text>
+      {renderIcon(icon, selected)}
+      <Text style={[styles.label, selected && styles.labelOn]}>{label}</Text>
     </TouchableOpacity>
   );
 };
@@ -53,6 +38,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: radii.pill,
+  },
+  pillOn: {
+    backgroundColor: colors.text,
   },
   pillOff: {
     backgroundColor: colors.surface,

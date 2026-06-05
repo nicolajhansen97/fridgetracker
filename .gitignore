@@ -46,3 +46,6 @@ local.properties
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Local design-review screenshots (not part of the app)
+.design-shots/

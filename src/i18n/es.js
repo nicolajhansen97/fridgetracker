@@ -461,6 +461,9 @@ export default {
   },
 
   changelog: {
+    // v1.0.7
+    v107_calendar_title: 'Calendario de caducidad',
+    v107_calendar_desc: 'Mira todo lo que caduca pronto en un calendario mensual claro, para saber siempre qué usar primero.',
     // v1.0.6
     v106_dateformat_title: 'Elige tu formato de fecha',
     v106_dateformat_desc: '¿Prefieres MM/DD/AAAA? Cambia entre el formato de fecha europeo y americano cuando quieras desde tu perfil.',
@@ -593,6 +596,9 @@ export default {
     cancelAnytime: 'Cancela cuando quieras',
     restore: 'Restaurar compras',
     maybeLater: 'Quizás más tarde',
+    termsOfUse: 'Términos de uso',
+    privacyPolicy: 'Política de privacidad',
+    autoRenewDisclosure: 'Las suscripciones se renuevan automáticamente a menos que se cancelen al menos 24 horas antes del final del período actual. Gestiona o cancela cuando quieras en los ajustes de tu cuenta de App Store.',
     manage: 'Gestionar suscripción',
     purchaseFailed: 'Algo salió mal. Inténtalo de nuevo.',
     restored: 'Compras restauradas',

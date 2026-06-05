@@ -1,5 +1,6 @@
 import React from 'react';
 import { Platform, StyleSheet, View, Text } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -168,17 +169,22 @@ const AppNavigator = () => {
   if (loading) return null;
 
   return (
-    <NavigationContainer>
-      {isAuthenticated ? (
-        <MainTabs />
-      ) : (
-        <AuthStack.Navigator screenOptions={stackScreenOptions}>
-          <AuthStack.Screen name="Login" component={LoginScreen} />
-          <AuthStack.Screen name="Register" component={RegisterScreen} />
-          <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-        </AuthStack.Navigator>
-      )}
-    </NavigationContainer>
+    <>
+      {/* Light status-bar icons sit over the in-app gradient headers; the
+          logged-out auth screens use a clean light background, so dark icons. */}
+      <StatusBar style={isAuthenticated ? 'light' : 'dark'} />
+      <NavigationContainer>
+        {isAuthenticated ? (
+          <MainTabs />
+        ) : (
+          <AuthStack.Navigator screenOptions={stackScreenOptions}>
+            <AuthStack.Screen name="Login" component={LoginScreen} />
+            <AuthStack.Screen name="Register" component={RegisterScreen} />
+            <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+          </AuthStack.Navigator>
+        )}
+      </NavigationContainer>
+    </>
   );
 };
 

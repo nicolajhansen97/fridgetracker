@@ -461,6 +461,9 @@ export default {
   },
 
   changelog: {
+    // v1.0.7
+    v107_calendar_title: 'Ablaufkalender',
+    v107_calendar_desc: 'Sieh alles, was bald abläuft, in einem übersichtlichen Monatskalender, damit du immer weißt, was du zuerst verbrauchen solltest.',
     // v1.0.6
     v106_dateformat_title: 'Wähle dein Datumsformat',
     v106_dateformat_desc: 'Lieber MM/TT/JJJJ? Wechsle jederzeit zwischen europäischem und amerikanischem Datumsformat in deinem Profil.',
@@ -593,6 +596,9 @@ export default {
     cancelAnytime: 'Jederzeit kündbar',
     restore: 'Käufe wiederherstellen',
     maybeLater: 'Vielleicht später',
+    termsOfUse: 'Nutzungsbedingungen',
+    privacyPolicy: 'Datenschutzrichtlinie',
+    autoRenewDisclosure: 'Abonnements verlängern sich automatisch, sofern sie nicht mindestens 24 Stunden vor Ablauf des aktuellen Zeitraums gekündigt werden. Verwalte oder kündige jederzeit in den Kontoeinstellungen des App Store.',
     manage: 'Abonnement verwalten',
     purchaseFailed: 'Etwas ist schiefgelaufen. Bitte erneut versuchen.',
     restored: 'Käufe wiederhergestellt',

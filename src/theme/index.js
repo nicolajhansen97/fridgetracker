@@ -11,6 +11,13 @@ export const colors = {
   bg: '#F8FAFC',           // slate-50 — screen background
   surface: '#FFFFFF',      // cards, sheets
   surfaceMuted: '#F1F5F9', // slate-100 — subtle fills (icon bg, inactive chips)
+  primarySoft: '#F0FDFA',  // teal-50 — tinted icon chips / soft accents
+  primaryTint: '#CCFBF1',  // teal-100 — stronger tint / active chip fill
+
+  // Blue accent — pairs with the teal->blue hero gradient. Used for entry-card
+  // icon chips and "view all" links.
+  accent: '#2563EB',       // blue-600 — links, chip icons
+  accentSoft: '#DBEAFE',   // blue-100 — chip backgrounds
 
   // Text
   text: '#0F172A',         // slate-900 — primary text
@@ -39,9 +46,11 @@ export const colors = {
 
 export const gradients = {
   // The single hero gradient used for headers, primary buttons, FABs.
-  hero: ['#14B8A6', '#6366F1'],
-  // Soft fade used for subtle backgrounds (e.g. login bg).
-  heroSoft: ['#5EEAD4', '#A5B4FC'],
+  // Teal -> blue (not indigo/purple): keeps the cold "freezer" identity while
+  // reading as a clean, neutral header.
+  hero: ['#14B8A6', '#3B82F6'],
+  // Soft fade used for subtle backgrounds.
+  heroSoft: ['#5EEAD4', '#93C5FD'],
 };
 
 export const radii = {
@@ -64,37 +73,49 @@ export const spacing = {
 };
 
 export const shadows = {
-  // Subtle elevation for cards.
+  // Hairline-soft elevation for cards. Modern clean surfaces lean on a
+  // 1px border for definition and keep the shadow whisper-light.
   card: {
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  // A touch more lift for raised/interactive cards.
+  cardRaised: {
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowRadius: 14,
+    elevation: 3,
   },
   // Slightly stronger for primary buttons / floating elements.
   button: {
-    shadowColor: '#6366F1',
+    shadowColor: '#0D9488',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 6,
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    elevation: 5,
   },
   // For floating action buttons.
   fab: {
-    shadowColor: '#6366F1',
+    shadowColor: '#0D9488',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 18,
-    elevation: 10,
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 9,
   },
 };
 
 export const typography = {
+  // Large title — iOS-style screen title sitting on a clean surface.
+  largeTitle: { fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
+
   // Headings
-  h1: { fontSize: 28, fontWeight: '700', letterSpacing: -0.4 },
-  h2: { fontSize: 22, fontWeight: '700', letterSpacing: -0.2 },
-  h3: { fontSize: 18, fontWeight: '700', letterSpacing: -0.1 },
+  h1: { fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
+  h2: { fontSize: 22, fontWeight: '700', letterSpacing: -0.3 },
+  h3: { fontSize: 18, fontWeight: '700', letterSpacing: -0.2 },
 
   // Body
   body: { fontSize: 15, fontWeight: '400' },
@@ -102,7 +123,7 @@ export const typography = {
   bodySmall: { fontSize: 13, fontWeight: '400' },
 
   // Labels / metadata
-  label: { fontSize: 12, fontWeight: '600', letterSpacing: 0.3, textTransform: 'uppercase' },
+  label: { fontSize: 12, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' },
   caption: { fontSize: 12, fontWeight: '400' },
-  button: { fontSize: 16, fontWeight: '600', letterSpacing: 0.1 },
+  button: { fontSize: 16, fontWeight: '700', letterSpacing: 0.1 },
 };

@@ -496,6 +496,9 @@ export default {
   },
 
   changelog: {
+    // v1.0.7
+    v107_calendar_title: 'Udløbskalender',
+    v107_calendar_desc: 'Se alt, der snart udløber, i en overskuelig månedskalender, så du altid ved, hvad du skal bruge først.',
     // v1.0.6
     v106_dateformat_title: 'Vælg dit datoformat',
     v106_dateformat_desc: 'Foretrækker du MM/DD/ÅÅÅÅ? Skift mellem europæisk og amerikansk datoformat når som helst på din profil.',
@@ -628,6 +631,9 @@ export default {
     cancelAnytime: 'Opsig når som helst',
     restore: 'Gendan køb',
     maybeLater: 'Måske senere',
+    termsOfUse: 'Vilkår for brug',
+    privacyPolicy: 'Privatlivspolitik',
+    autoRenewDisclosure: 'Abonnementer fornys automatisk, medmindre de opsiges mindst 24 timer før den aktuelle periodes udløb. Administrer eller opsig når som helst i dine App Store-kontoindstillinger.',
     manage: 'Administrer abonnement',
     purchaseFailed: 'Noget gik galt. Prøv igen.',
     restored: 'Køb gendannet',

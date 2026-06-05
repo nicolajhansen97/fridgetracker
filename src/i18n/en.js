@@ -394,6 +394,9 @@ export default {
     v101_shopping_desc: 'Add a shared shopping list with your household. Tap items to check them off as you shop.',
     v101_text_title: 'Better text scaling',
     v101_text_desc: 'Fixed layout issues when using larger text in iOS accessibility settings.',
+    // v1.0.7
+    v107_calendar_title: 'Expiry calendar',
+    v107_calendar_desc: 'See everything that\'s expiring on a clear monthly calendar, so you always know what to use next.',
     // v1.0.6
     v106_dateformat_title: 'Pick your date format',
     v106_dateformat_desc: 'Prefer MM/DD/YYYY? Switch between European and American date formats anytime from your Profile.',
@@ -653,6 +656,9 @@ export default {
     cancelAnytime: 'Cancel anytime',
     restore: 'Restore purchases',
     maybeLater: 'Maybe later',
+    termsOfUse: 'Terms of Use',
+    privacyPolicy: 'Privacy Policy',
+    autoRenewDisclosure: 'Subscriptions renew automatically unless canceled at least 24 hours before the end of the current period. Manage or cancel anytime in your App Store account settings.',
     manage: 'Manage subscription',
     purchaseFailed: 'Something went wrong. Please try again.',
     restored: 'Purchases restored',

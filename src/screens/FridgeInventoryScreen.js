@@ -91,13 +91,11 @@ const FridgeInventoryScreen = ({ navigation }) => {
     <Screen>
       <ScreenHeader
         title={t('inventory.myFreezer')}
-        onBack={() => navigation.goBack()}
-        backLabel={t('common.back')}
         right={
           <IconButton
             name="cube-outline"
             variant="onHero"
-            size={36}
+            size={40}
             onPress={() => navigation.navigate('ManageDrawers')}
             accessibilityLabel={t('drawers.title')}
           />
@@ -209,12 +207,14 @@ const FridgeInventoryScreen = ({ navigation }) => {
                           variant="surface"
                           size={32}
                           onPress={() => navigation.navigate('EditItem', { item })}
+                          accessibilityLabel={t('common.edit')}
                         />
                         <IconButton
                           name="trash-outline"
                           variant="surface"
                           size={32}
                           onPress={() => handleDelete(item)}
+                          accessibilityLabel={t('common.delete')}
                         />
                       </View>
                     </View>
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: radii.md,
-    backgroundColor: '#ECFEFF',
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },

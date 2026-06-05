@@ -20,7 +20,6 @@ import {
   Screen,
   Card,
   Icon,
-  PrimaryButton,
   SectionTitle,
 } from '../components/ui';
 import { colors, gradients, radii, spacing, typography } from '../theme';
@@ -162,12 +161,27 @@ const HomeScreen = ({ navigation }) => {
         colors={gradients.hero}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.heroHeader, { paddingTop: insets.top + spacing.md }]}
+        style={[styles.header, { paddingTop: insets.top + spacing.sm }]}
       >
-        <Text style={styles.greeting}>{greeting}</Text>
-        <Text style={styles.userLine} numberOfLines={1}>
-          {currentHousehold ? currentHousehold.name : (user?.email || 'Freezely')}
-        </Text>
+        {/* Snowfrost — faint brand texture */}
+        <Icon name="snow" size={140} color="rgba(255,255,255,0.12)" style={styles.snowBig} />
+        <Icon name="snow" size={64} color="rgba(255,255,255,0.10)" style={styles.snowSmall} />
+
+        <View style={styles.headerTopRow}>
+          <View style={styles.headerLeft}>
+            <View style={styles.greetingRow}>
+              <Icon name="snow" size={14} color={colors.whiteAlpha80} />
+              <Text style={styles.greeting}>{greeting}</Text>
+            </View>
+            <Text style={styles.userLine} numberOfLines={1}>
+              {currentHousehold ? currentHousehold.name : (user?.email || 'Freezely')}
+            </Text>
+          </View>
+          <TouchableOpacity activeOpacity={0.85} onPress={goToAdd} style={styles.addPill}>
+            <Icon name="add" size={16} color={colors.primary} />
+            <Text style={styles.addPillText}>{t('home.quickAdd')}</Text>
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
 
       <ScrollView
@@ -179,6 +193,7 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.statsRow}>
           <TouchableOpacity activeOpacity={0.85} onPress={goToInventory} style={{ flex: 1 }}>
             <Card style={styles.statCard}>
+              <Icon name="snow" size={56} color="rgba(148,163,184,0.12)" style={styles.statSnow} />
               <Text style={styles.statLabel}>{t('home.totalItems')}</Text>
               <Text style={styles.statValue}>{summary.totalItems}</Text>
               <Text style={styles.statSub}>
@@ -193,6 +208,7 @@ const HomeScreen = ({ navigation }) => {
             style={{ flex: 1 }}
           >
             <Card style={styles.statCard}>
+              <Icon name="snow" size={56} color="rgba(148,163,184,0.12)" style={styles.statSnow} />
               <Text style={styles.statLabel}>{t('home.expiringSoon')}</Text>
               <Text style={[styles.statValue, summary.expiringCount > 0 && { color: colors.danger }]}>
                 {summary.expiringCount}
@@ -204,23 +220,15 @@ const HomeScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Quick add */}
-        <PrimaryButton
-          title={t('home.quickAdd')}
-          onPress={goToAdd}
-          icon={<Icon name="add" size={18} color={colors.surface} />}
-          style={{ marginTop: spacing.md }}
-        />
-
         {/* Expiry calendar entry point */}
         <TouchableOpacity activeOpacity={0.85} onPress={goToCalendar} style={{ marginTop: spacing.md }}>
-          <Card style={styles.statsCard}>
-            <View style={styles.statsCardIcon}>
-              <Icon name="calendar-outline" size={20} color={colors.primary} />
+          <Card style={styles.entryCard}>
+            <View style={styles.entryCardIcon}>
+              <Icon name="calendar-outline" size={20} color={colors.accent} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.statsCardTitle}>{t('calendar.homeCardTitle')}</Text>
-              <Text style={styles.statsCardSub} numberOfLines={1}>
+              <Text style={styles.entryCardTitle}>{t('calendar.homeCardTitle')}</Text>
+              <Text style={styles.entryCardSub} numberOfLines={1}>
                 {t('calendar.homeCardSubtitle')}
               </Text>
             </View>
@@ -231,13 +239,13 @@ const HomeScreen = ({ navigation }) => {
         {/* Stats entry point */}
         {summary.totalItems > 0 && (
           <TouchableOpacity activeOpacity={0.85} onPress={goToStats} style={{ marginTop: spacing.md }}>
-            <Card style={styles.statsCard}>
-              <View style={styles.statsCardIcon}>
-                <Icon name="bar-chart-outline" size={20} color={colors.primary} />
+            <Card style={styles.entryCard}>
+              <View style={styles.entryCardIcon}>
+                <Icon name="bar-chart-outline" size={20} color={colors.accent} />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={styles.statsCardTitle}>{t('home.yourFreezerStats')}</Text>
-                <Text style={styles.statsCardSub} numberOfLines={1}>
+                <Text style={styles.entryCardTitle}>{t('home.yourFreezerStats')}</Text>
+                <Text style={styles.entryCardSub} numberOfLines={2}>
                   {summary.pastWindowCount > 0
                     ? t('stats.pastWindowSummary', { count: summary.pastWindowCount })
                     : t('stats.cardSubtitle')}
@@ -248,7 +256,7 @@ const HomeScreen = ({ navigation }) => {
           </TouchableOpacity>
         )}
 
-        {/* Expiring soon list */}
+        {/* Expiring soon list — "use first" */}
         {summary.expiringList.length > 0 && (
           <>
             <SectionTitle
@@ -260,7 +268,7 @@ const HomeScreen = ({ navigation }) => {
                   style={styles.sectionActionBtn}
                 >
                   <Text style={styles.sectionAction}>{t('home.viewAll')}</Text>
-                  <Icon name="chevron-forward" size={14} color={colors.primary} />
+                  <Icon name="chevron-forward" size={14} color={colors.accent} />
                 </TouchableOpacity>
               }
             >
@@ -300,7 +308,7 @@ const HomeScreen = ({ navigation }) => {
                   style={styles.sectionActionBtn}
                 >
                   <Text style={styles.sectionAction}>{t('home.viewAll')}</Text>
-                  <Icon name="chevron-forward" size={14} color={colors.primary} />
+                  <Icon name="chevron-forward" size={14} color={colors.accent} />
                 </TouchableOpacity>
               }
             >
@@ -353,24 +361,64 @@ const HomeScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  heroHeader: {
+  header: {
     paddingHorizontal: spacing.lg,
     // paddingTop is set inline to include the safe-area inset
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.md,
     borderBottomLeftRadius: radii.header,
     borderBottomRightRadius: radii.header,
+    overflow: 'hidden',
+  },
+  snowBig: {
+    position: 'absolute',
+    right: -26,
+    top: -14,
+  },
+  snowSmall: {
+    position: 'absolute',
+    right: 58,
+    bottom: -10,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  headerLeft: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: spacing.sm,
+  },
+  greetingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   greeting: {
-    color: 'rgba(255,255,255,0.85)',
+    color: colors.whiteAlpha80,
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: 0.1,
   },
+  addPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: radii.pill,
+  },
+  addPillText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
   userLine: {
-    color: colors.surface,
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: -0.3,
+    color: colors.surface,
     marginTop: 2,
   },
   content: {
@@ -384,14 +432,20 @@ const styles = StyleSheet.create({
   },
   statCard: {
     paddingVertical: spacing.lg,
+    overflow: 'hidden',
+  },
+  statSnow: {
+    position: 'absolute',
+    right: -8,
+    bottom: -8,
   },
   statLabel: {
     ...typography.label,
     color: colors.textMuted,
   },
   statValue: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: 34,
+    fontWeight: '800',
     color: colors.text,
     letterSpacing: -0.6,
     marginTop: 6,
@@ -403,7 +457,7 @@ const styles = StyleSheet.create({
   },
   sectionAction: {
     ...typography.caption,
-    color: colors.primary,
+    color: colors.accent,
     fontWeight: '700',
     marginRight: 2,
   },
@@ -412,25 +466,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  statsCard: {
+  entryCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
-  statsCardIcon: {
-    width: 40,
-    height: 40,
+  entryCardIcon: {
+    width: 44,
+    height: 44,
     borderRadius: radii.md,
-    backgroundColor: '#ECFEFF',
+    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statsCardTitle: {
+  entryCardTitle: {
     ...typography.bodyStrong,
+    fontSize: 16,
     color: colors.text,
   },
-  statsCardSub: {
+  entryCardSub: {
     ...typography.caption,
+    fontSize: 13,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -453,20 +509,21 @@ const styles = StyleSheet.create({
   },
   expiringName: {
     ...typography.bodyStrong,
+    fontSize: 16,
     color: colors.text,
   },
   expiringMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 2,
+    marginTop: 3,
   },
   expiringMeta: {
     ...typography.caption,
     color: colors.textMuted,
   },
   expiringStatus: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
   },
 
@@ -518,7 +575,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#ECFEFF',
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,

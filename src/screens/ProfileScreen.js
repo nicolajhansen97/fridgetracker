@@ -10,7 +10,6 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
@@ -28,6 +27,7 @@ import {
   SectionTitle,
   SecondaryButton,
 } from '../components/ui';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
 
 const FAMILY_SIZE_KEY = 'freezely_family_size';
@@ -151,6 +151,10 @@ const ProfileScreen = ({ navigation }) => {
         end={{ x: 1, y: 1 }}
         style={[styles.identityHeader, { paddingTop: insets.top + spacing.md }]}
       >
+        {/* Snowfrost — faint brand texture */}
+        <Icon name="snow" size={120} color="rgba(255,255,255,0.10)" style={styles.snowBig} />
+        <Icon name="snow" size={54} color="rgba(255,255,255,0.08)" style={styles.snowSmall} />
+
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{initials}</Text>
         </View>
@@ -158,7 +162,7 @@ const ProfileScreen = ({ navigation }) => {
           <Text style={styles.identityEmail} numberOfLines={1}>{user?.email || 'User'}</Text>
           {currentHousehold ? (
             <View style={styles.identityHouseholdRow}>
-              <Icon name="people-outline" size={13} color="rgba(255,255,255,0.85)" />
+              <Icon name="people-outline" size={13} color={colors.whiteAlpha80} />
               <Text style={styles.identityHousehold} numberOfLines={1}>
                 {currentHousehold.name}
               </Text>
@@ -465,34 +469,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     // paddingTop is set inline to include the safe-area inset
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.lg,
     gap: spacing.md,
-    borderBottomLeftRadius: radii.header,
-    borderBottomRightRadius: radii.header,
+    borderBottomLeftRadius: radii.lg,
+    borderBottomRightRadius: radii.lg,
+    overflow: 'hidden',
+  },
+  snowBig: {
+    position: 'absolute',
+    right: -16,
+    top: -10,
+  },
+  snowSmall: {
+    position: 'absolute',
+    right: 70,
+    bottom: -12,
   },
   avatar: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: colors.whiteAlpha20,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.4)',
+    borderColor: colors.whiteAlpha30,
   },
   avatarText: {
     color: colors.surface,
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   identityEmail: {
-    color: colors.surface,
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     letterSpacing: -0.2,
+    color: colors.surface,
   },
   identityHousehold: {
-    color: 'rgba(255,255,255,0.85)',
+    color: colors.whiteAlpha80,
     fontSize: 13,
     marginTop: 2,
   },

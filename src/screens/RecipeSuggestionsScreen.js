@@ -348,8 +348,6 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
     <Screen>
       <ScreenHeader
         title={t('recipes.title')}
-        onBack={() => navigation.goBack()}
-        backLabel={t('common.back')}
       />
 
       <View style={styles.tabRow}>

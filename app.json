@@ -38,7 +38,20 @@
       "revenueCatAndroidKey": ""
     },
     "plugins": [
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Freezely uses your photos so you can add a picture to a freezer item.",
+          "cameraPermission": "Freezely uses your camera so you can take a photo of a freezer item."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#14B8A6"
+        }
+      ]
     ],
     "updates": {
       "url": "https://u.expo.dev/11a9bd44-499c-4a15-b141-bfdfe8837f9d",

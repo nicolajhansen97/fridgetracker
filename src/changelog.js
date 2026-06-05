@@ -5,11 +5,18 @@
 // The app shows the "What's New" popup once per version.
 // ─────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.0.6';
+export const CURRENT_VERSION = '1.0.7';
 
 // Features use translation keys — add the matching keys to each language file.
 // The i18n system falls back to English automatically if a language is missing a key.
 export const CHANGELOG = [
+  {
+    version: '1.0.7',
+    date: '2026-06-05',
+    features: [
+      { icon: '📅', titleKey: 'changelog.v107_calendar_title', descKey: 'changelog.v107_calendar_desc' },
+    ],
+  },
   {
     version: '1.0.6',
     date: '2026-06-02',
