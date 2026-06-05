@@ -26,9 +26,10 @@ import {
   PrimaryButton,
 } from '../components/ui';
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
+import ItemActionSheet from '../components/ItemActionSheet';
 
 const FridgeInventoryScreen = ({ navigation }) => {
-  const { items, deleteItem, consumeItem, loadItems } = useFridge();
+  const { items, deleteItem, consumeItem, consumePartial, loadItems } = useFridge();
   const { drawers: drawerDefs } = useDrawers();
   const { getEffectiveExpiry, isExpiringSoon: isItemExpiringSoon } = useFridgeExpiry();
   const { t, formatDate } = useLanguage();
@@ -36,6 +37,7 @@ const FridgeInventoryScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showExpiringSoon, setShowExpiringSoon] = useState(false);
+  const [actionItem, setActionItem] = useState(null);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -48,25 +50,43 @@ const FridgeInventoryScreen = ({ navigation }) => {
     }
   };
 
-  const handleDelete = (item) => {
-    Alert.alert(item.name, null, [
-      {
-        text: t('inventory.useItem'),
-        onPress: async () => {
-          const result = await consumeItem(item.id);
-          if (!result.success) Alert.alert(t('common.error'), result.error);
-        },
-      },
-      {
-        text: t('inventory.throwAway'),
-        style: 'destructive',
-        onPress: async () => {
-          const result = await deleteItem(item.id);
-          if (!result.success) Alert.alert(t('common.error'), result.error);
-        },
-      },
-      { text: t('common.cancel'), style: 'cancel' },
-    ]);
+  const handleDelete = (item) => setActionItem(item);
+
+  const closeActions = () => setActionItem(null);
+
+  const onUse = async () => {
+    const item = actionItem;
+    closeActions();
+    if (!item) return;
+    const result = await consumeItem(item.id);
+    if (!result.success) Alert.alert(t('common.error'), result.error);
+  };
+
+  const onThrow = async () => {
+    const item = actionItem;
+    closeActions();
+    if (!item) return;
+    const result = await deleteItem(item.id);
+    if (!result.success) Alert.alert(t('common.error'), result.error);
+  };
+
+  // remaining <= 0 → used all of it (full consume); otherwise log the used
+  // portion as consumed and reduce the quantity.
+  const onPartial = async (remaining) => {
+    const item = actionItem;
+    closeActions();
+    if (!item) return;
+    const current = Number(item.quantity) || 0;
+    const used = current - remaining;
+    let result;
+    if (remaining <= 0) {
+      result = await consumeItem(item.id);
+    } else if (used > 0) {
+      result = await consumePartial(item.id, used);
+    } else {
+      return; // nothing actually used
+    }
+    if (!result.success) Alert.alert(t('common.error'), result.error);
   };
 
   const filteredItems = items.filter((item) => {
@@ -210,11 +230,11 @@ const FridgeInventoryScreen = ({ navigation }) => {
                           accessibilityLabel={t('common.edit')}
                         />
                         <IconButton
-                          name="trash-outline"
+                          name="checkmark-circle-outline"
                           variant="surface"
                           size={32}
                           onPress={() => handleDelete(item)}
-                          accessibilityLabel={t('common.delete')}
+                          accessibilityLabel={item.name}
                         />
                       </View>
                     </View>
@@ -242,6 +262,15 @@ const FridgeInventoryScreen = ({ navigation }) => {
           <Icon name="add" size={28} color={colors.surface} />
         </LinearGradient>
       </TouchableOpacity>
+
+      <ItemActionSheet
+        visible={!!actionItem}
+        item={actionItem}
+        onClose={closeActions}
+        onUse={onUse}
+        onThrow={onThrow}
+        onPartial={onPartial}
+      />
     </Screen>
   );
 };

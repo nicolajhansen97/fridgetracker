@@ -153,6 +153,10 @@ export default {
     confirmDelete: '¿Está seguro de que desea eliminar "{name}"?',
     useItem: 'Consumido',
     throwAway: 'Tirar',
+    partiallyUsed: 'Usado en parte',
+    howMuchLeft: '¿Cuánto queda?',
+    wasAmount: 'Era {amount}',
+    wasUsed: 'Era {was} (usado {used})',
     pkg: 'Paq. #{position}',
     exp: 'Usar antes de {date}',
   },
@@ -336,6 +340,7 @@ export default {
     created: 'CREADO',
     updated: 'ACTUALIZADO',
     consumed: 'CONSUMIDO',
+    partialUsed: 'Usado {used} ({left} restante)',
     deleted: 'ELIMINADO',
     by: 'Por:',
     changes: 'Cambios:',
@@ -464,6 +469,8 @@ export default {
     // v1.0.7
     v107_calendar_title: 'Calendario de caducidad',
     v107_calendar_desc: 'Mira todo lo que caduca pronto en un calendario mensual claro, para saber siempre qué usar primero.',
+    v107_partial_title: 'Usado en parte',
+    v107_partial_desc: '¿Usaste solo una parte? Toca Usado en parte, indica cuánto queda y Freezely conserva el resto en vez de quitarlo todo.',
     // v1.0.6
     v106_dateformat_title: 'Elige tu formato de fecha',
     v106_dateformat_desc: '¿Prefieres MM/DD/AAAA? Cambia entre el formato de fecha europeo y americano cuando quieras desde tu perfil.',

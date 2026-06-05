@@ -153,6 +153,10 @@ export default {
     confirmDelete: 'Etes-vous sur de vouloir supprimer "{name}" ?',
     useItem: 'Consommé',
     throwAway: 'Jeter',
+    partiallyUsed: 'Partiellement utilisé',
+    howMuchLeft: 'Combien en reste-t-il ?',
+    wasAmount: 'Était {amount}',
+    wasUsed: 'Était {was} (utilisé {used})',
     pkg: 'Colis #{position}',
     exp: 'Utiliser avant {date}',
   },
@@ -335,6 +339,7 @@ export default {
     dayAgo: 'Il y a {count}j',
     created: 'CRÉÉ',
     consumed: 'CONSOMMÉ',
+    partialUsed: 'Utilisé {used} ({left} restant)',
     updated: 'MIS A JOUR',
     deleted: 'SUPPRIME',
     by: 'Par :',
@@ -464,6 +469,8 @@ export default {
     // v1.0.7
     v107_calendar_title: "Calendrier d'expiration",
     v107_calendar_desc: "Visualisez tout ce qui expire bientot dans un calendrier mensuel clair, pour toujours savoir quoi utiliser en premier.",
+    v107_partial_title: 'Partiellement utilisé',
+    v107_partial_desc: "Vous n'avez utilisé qu'une partie ? Touchez Partiellement utilisé, indiquez ce qu'il reste, et Freezely garde le reste au lieu de tout retirer.",
     // v1.0.6
     v106_dateformat_title: 'Choisissez votre format de date',
     v106_dateformat_desc: 'Vous preferez MM/JJ/AAAA ? Basculez entre les formats de date europeen et americain a tout moment depuis votre profil.',

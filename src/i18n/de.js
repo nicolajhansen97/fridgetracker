@@ -153,6 +153,10 @@ export default {
     confirmDelete: 'Möchten Sie „{name}" wirklich löschen?',
     useItem: 'Verbraucht',
     throwAway: 'Wegwerfen',
+    partiallyUsed: 'Teilweise verbraucht',
+    howMuchLeft: 'Wie viel ist noch übrig?',
+    wasAmount: 'War {amount}',
+    wasUsed: 'War {was} (verbraucht {used})',
     pkg: 'Pkg. #{position}',
     exp: 'Verwenden bis {date}',
   },
@@ -336,6 +340,7 @@ export default {
     created: 'ERSTELLT',
     updated: 'AKTUALISIERT',
     consumed: 'VERBRAUCHT',
+    partialUsed: 'Verbraucht {used} ({left} übrig)',
     deleted: 'GELÖSCHT',
     by: 'Von:',
     changes: 'Änderungen:',
@@ -464,6 +469,8 @@ export default {
     // v1.0.7
     v107_calendar_title: 'Ablaufkalender',
     v107_calendar_desc: 'Sieh alles, was bald abläuft, in einem übersichtlichen Monatskalender, damit du immer weißt, was du zuerst verbrauchen solltest.',
+    v107_partial_title: 'Teilweise verbraucht',
+    v107_partial_desc: 'Nur einen Teil verbraucht? Tippe auf Teilweise verbraucht, gib an, wie viel übrig ist, und Freezely behält den Rest, statt alles zu entfernen.',
     // v1.0.6
     v106_dateformat_title: 'Wähle dein Datumsformat',
     v106_dateformat_desc: 'Lieber MM/TT/JJJJ? Wechsle jederzeit zwischen europäischem und amerikanischem Datumsformat in deinem Profil.',

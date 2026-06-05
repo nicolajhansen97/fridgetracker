@@ -95,17 +95,27 @@ const ActivityHistoryScreen = ({ navigation }) => {
           />
         ) : (
           activities.map((activity) => {
-            const changes = activity.changes
-              ? Object.entries(activity.changes).filter(([field, change]) => {
-                  if (!change) return false;
-                  if (change.old === null && change.new === null) return false;
-                  if ((field === 'notes' || field === 'position') &&
-                      (change.old == null || change.new == null || change.old === '' || change.new === '')) {
-                    return false;
-                  }
-                  return true;
-                })
-              : [];
+            const ch = activity.changes || {};
+            // Partial use: show a clean "used X (Y left)" line, not raw fields.
+            const isPartial = activity.action === 'consumed' && ch.partial === true;
+            const partialUnit = ch.unit ? ` ${ch.unit}` : '';
+
+            // Consumed events carry an internal scalar snapshot (quantity/unit/
+            // partial) that isn't useful as a raw change list — skip it.
+            const changes = activity.action === 'consumed'
+              ? []
+              : (activity.changes
+                  ? Object.entries(activity.changes).filter(([field, change]) => {
+                      if (field === 'partial' || field === 'unit' || field === 'remaining') return false;
+                      if (!change) return false;
+                      if (change.old === null && change.new === null) return false;
+                      if ((field === 'notes' || field === 'position') &&
+                          (change.old == null || change.new == null || change.old === '' || change.new === '')) {
+                        return false;
+                      }
+                      return true;
+                    })
+                  : []);
 
             return (
               <Card key={activity.id} style={styles.card}>
@@ -124,6 +134,15 @@ const ActivityHistoryScreen = ({ navigation }) => {
                 </View>
 
                 <Text style={styles.description}>{getActivityDescription(activity)}</Text>
+
+                {isPartial ? (
+                  <Text style={styles.partialLine}>
+                    {t('activity.partialUsed', {
+                      used: `${ch.quantity}${partialUnit}`,
+                      left: `${ch.remaining}${partialUnit}`,
+                    })}
+                  </Text>
+                ) : null}
 
                 <View style={styles.userRow}>
                   <Text style={styles.userLabel}>{t('activity.by')}</Text>
@@ -192,6 +211,12 @@ const styles = StyleSheet.create({
   description: {
     ...typography.bodyStrong,
     color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  partialLine: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '600',
     marginBottom: spacing.sm,
   },
   userRow: {

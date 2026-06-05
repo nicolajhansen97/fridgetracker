@@ -170,6 +170,10 @@ export default {
     confirmDelete: 'Er du sikker på, at du vil slette "{name}"?',
     useItem: 'Brugt',
     throwAway: 'Smid ud',
+    partiallyUsed: 'Delvist brugt',
+    howMuchLeft: 'Hvor meget er der tilbage?',
+    wasAmount: 'Var {amount}',
+    wasUsed: 'Var {was} (brugt {used})',
     pkg: 'Pkg #{position}',
     exp: 'Brug før {date}',
   },
@@ -367,6 +371,7 @@ export default {
     created: 'OPRETTET',
     updated: 'OPDATERET',
     consumed: 'BRUGT',
+    partialUsed: 'Brugt {used} ({left} tilbage)',
     deleted: 'SLETTET',
     by: 'Af:',
     changes: 'Ændringer:',
@@ -499,6 +504,8 @@ export default {
     // v1.0.7
     v107_calendar_title: 'Udløbskalender',
     v107_calendar_desc: 'Se alt, der snart udløber, i en overskuelig månedskalender, så du altid ved, hvad du skal bruge først.',
+    v107_partial_title: 'Delvist brugt',
+    v107_partial_desc: 'Brugt kun en del? Tryk Delvist brugt, indtast hvor meget der er tilbage, så beholder Freezely resten i stedet for at fjerne det hele.',
     // v1.0.6
     v106_dateformat_title: 'Vælg dit datoformat',
     v106_dateformat_desc: 'Foretrækker du MM/DD/ÅÅÅÅ? Skift mellem europæisk og amerikansk datoformat når som helst på din profil.',

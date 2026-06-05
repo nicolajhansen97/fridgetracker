@@ -175,6 +175,31 @@ export const FridgeProvider = ({ children }) => {
     }
   };
 
+  // Partial use: log the used amount as a 'consumed' event and reduce the
+  // item's quantity (removing it if nothing is left). Backed by the
+  // consume_fridge_item_partial RPC (see SQL Scripts/ADD_PARTIAL_CONSUME.sql).
+  const consumePartial = async (id, used) => {
+    try {
+      const { error } = await supabase.rpc('consume_fridge_item_partial', {
+        p_item_id: id,
+        p_used: used,
+      });
+      if (error) throw error;
+      setItems(
+        items
+          .map((item) => {
+            if (item.id !== id) return item;
+            const remaining = (Number(item.quantity) || 0) - used;
+            return remaining > 0 ? { ...item, quantity: remaining } : null;
+          })
+          .filter(Boolean)
+      );
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+
   const getNextAvailablePosition = () => {
     const usedPositions = new Set(
       items
@@ -197,6 +222,7 @@ export const FridgeProvider = ({ children }) => {
         updateItem,
         deleteItem,
         consumeItem,
+        consumePartial,
         loadItems,
         getNextAvailablePosition,
       }}

@@ -170,6 +170,10 @@ export default {
     confirmDelete: 'Are you sure you want to delete "{name}"?',
     useItem: 'Used it',
     throwAway: 'Throw away',
+    partiallyUsed: 'Partially used',
+    howMuchLeft: 'How much is left?',
+    wasAmount: 'Was {amount}',
+    wasUsed: 'Was {was} (used {used})',
     pkg: 'Pkg #{position}',
     exp: 'Use before {date}',
   },
@@ -371,6 +375,7 @@ export default {
     created: 'CREATED',
     updated: 'UPDATED',
     consumed: 'USED',
+    partialUsed: 'Used {used} ({left} left)',
     deleted: 'DELETED',
     by: 'By:',
     changes: 'Changes:',
@@ -397,6 +402,8 @@ export default {
     // v1.0.7
     v107_calendar_title: 'Expiry calendar',
     v107_calendar_desc: 'See everything that\'s expiring on a clear monthly calendar, so you always know what to use next.',
+    v107_partial_title: 'Partially used',
+    v107_partial_desc: 'Used only part of something? Tap Partially used, enter how much is left, and Freezely keeps the rest instead of removing it all.',
     // v1.0.6
     v106_dateformat_title: 'Pick your date format',
     v106_dateformat_desc: 'Prefer MM/DD/YYYY? Switch between European and American date formats anytime from your Profile.',
