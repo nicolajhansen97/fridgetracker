@@ -39,7 +39,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -55,7 +55,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
             <TextInput
               style={styles.input}
               placeholder={t('login.enterEmail')}
-              placeholderTextColor={colors.textSubtle}
+              placeholderTextColor="#94A3B8"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -70,18 +70,11 @@ const ForgotPasswordScreen = ({ navigation }) => {
               disabled={isLoading}
               activeOpacity={0.85}
             >
-              <LinearGradient
-                colors={gradients.hero}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.resetGradient}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color={colors.surface} />
-                ) : (
-                  <Text style={styles.resetText}>{t('forgotPassword.sendResetLink')}</Text>
-                )}
-              </LinearGradient>
+              {isLoading ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <Text style={styles.resetText}>{t('forgotPassword.sendResetLink')}</Text>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -95,39 +88,40 @@ const ForgotPasswordScreen = ({ navigation }) => {
           </View>
         </View>
       </KeyboardAvoidingView>
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
+  container: { flex: 1 },
   keyboardView: { flex: 1 },
   content: {
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: spacing.xxl,
   },
-  header: { marginBottom: spacing.xxl },
+  header: { marginBottom: spacing.xxxl },
   title: {
-    ...typography.largeTitle,
-    color: colors.text,
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.surface,
+    letterSpacing: -0.4,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 15,
-    color: colors.textMuted,
+    color: 'rgba(255,255,255,0.85)',
     lineHeight: 22,
   },
   form: { width: '100%' },
   label: {
     ...typography.label,
-    color: colors.textMuted,
+    color: colors.surface,
+    opacity: 0.9,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: 'rgba(255,255,255,0.95)',
     borderRadius: radii.md,
     paddingHorizontal: 14,
     paddingVertical: 14,
@@ -136,18 +130,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   resetBtn: {
+    backgroundColor: colors.surface,
     borderRadius: radii.md,
-    overflow: 'hidden',
-    ...shadows.button,
-  },
-  resetGradient: {
     paddingVertical: 16,
     alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.md,
+    ...shadows.button,
   },
   resetText: {
-    color: colors.surface,
+    color: colors.primary,
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.2,
@@ -158,9 +148,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   backText: {
-    color: colors.primary,
+    color: colors.surface,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });
 

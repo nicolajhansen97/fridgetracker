@@ -80,16 +80,13 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
         <View style={styles.content}>
           <View style={styles.header}>
-            <View style={styles.brandMark}>
-              <Icon name="snow" size={26} color={colors.primary} />
-            </View>
             <Text style={styles.brand}>Freezely</Text>
             <Text style={styles.title}>{t('login.welcomeBack')}</Text>
             <Text style={styles.subtitle}>{t('login.signInToContinue')}</Text>
@@ -100,7 +97,7 @@ const LoginScreen = ({ navigation }) => {
             <TextInput
               style={styles.input}
               placeholder={t('login.enterEmail')}
-              placeholderTextColor={colors.textSubtle}
+              placeholderTextColor="#94A3B8"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -113,7 +110,7 @@ const LoginScreen = ({ navigation }) => {
             <TextInput
               style={styles.input}
               placeholder={t('login.enterPassword')}
-              placeholderTextColor={colors.textSubtle}
+              placeholderTextColor="#94A3B8"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -138,8 +135,8 @@ const LoginScreen = ({ navigation }) => {
                 <Switch
                   value={enableBiometricToggle}
                   onValueChange={toggleBiometricOption}
-                  trackColor={{ false: colors.borderStrong, true: colors.primary }}
-                  thumbColor={colors.surface}
+                  trackColor={{ false: 'rgba(255,255,255,0.35)', true: colors.surface }}
+                  thumbColor={enableBiometricToggle ? colors.primary : '#f4f3f4'}
                   disabled={isLoading}
                 />
               </View>
@@ -151,18 +148,11 @@ const LoginScreen = ({ navigation }) => {
               disabled={isLoading}
               activeOpacity={0.85}
             >
-              <LinearGradient
-                colors={gradients.hero}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.signInGradient}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color={colors.surface} />
-                ) : (
-                  <Text style={styles.signInText}>{t('login.loginButton')}</Text>
-                )}
-              </LinearGradient>
+              {isLoading ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <Text style={styles.signInText}>{t('login.loginButton')}</Text>
+              )}
             </TouchableOpacity>
 
             {biometricAvailable && (
@@ -172,7 +162,7 @@ const LoginScreen = ({ navigation }) => {
                 disabled={isLoading}
                 activeOpacity={0.85}
               >
-                <Icon name="finger-print-outline" size={18} color={colors.primary} />
+                <Icon name="finger-print-outline" size={18} color={colors.surface} />
                 <Text style={styles.bioBtnText}>
                   {t('login.loginWithBiometric', { type: biometricType })}
                 </Text>
@@ -188,14 +178,13 @@ const LoginScreen = ({ navigation }) => {
           </View>
         </View>
       </KeyboardAvoidingView>
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg,
   },
   keyboardView: {
     flex: 1,
@@ -206,46 +195,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xxl,
   },
   header: {
-    marginBottom: spacing.xxl,
-  },
-  brandMark: {
-    width: 52,
-    height: 52,
-    borderRadius: radii.lg,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xxxl,
   },
   brand: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '700',
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '600',
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     marginBottom: spacing.sm,
   },
   title: {
-    ...typography.largeTitle,
-    color: colors.text,
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.surface,
+    letterSpacing: -0.4,
     marginBottom: 6,
   },
   subtitle: {
     fontSize: 16,
-    color: colors.textMuted,
+    color: 'rgba(255,255,255,0.85)',
   },
   form: {
     width: '100%',
   },
   label: {
     ...typography.label,
-    color: colors.textMuted,
+    color: colors.surface,
+    opacity: 0.9,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: 'rgba(255,255,255,0.95)',
     borderRadius: radii.md,
     paddingHorizontal: 14,
     paddingVertical: 14,
@@ -258,51 +239,46 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   forgotText: {
-    color: colors.primary,
+    color: colors.surface,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '500',
+    textDecorationLine: 'underline',
   },
   bioToggleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: radii.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: spacing.lg,
   },
   bioToggleText: {
-    color: colors.text,
+    color: colors.surface,
     fontSize: 14,
     fontWeight: '600',
     flex: 1,
     marginRight: spacing.sm,
   },
   signInBtn: {
+    backgroundColor: colors.surface,
     borderRadius: radii.md,
-    overflow: 'hidden',
-    ...shadows.button,
-  },
-  signInGradient: {
     paddingVertical: 16,
     alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.md,
+    ...shadows.button,
   },
   signInText: {
-    color: colors.surface,
+    color: colors.primary,
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
   bioBtn: {
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(255,255,255,0.18)',
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.6)',
     paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
@@ -311,9 +287,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   bioBtnText: {
-    color: colors.primary,
+    color: colors.surface,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   signupRow: {
     flexDirection: 'row',
@@ -322,13 +298,14 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
   },
   signupText: {
-    color: colors.textMuted,
+    color: 'rgba(255,255,255,0.85)',
     fontSize: 14,
   },
   signupLink: {
-    color: colors.primary,
+    color: colors.surface,
     fontSize: 14,
     fontWeight: '700',
+    textDecorationLine: 'underline',
   },
 });
 

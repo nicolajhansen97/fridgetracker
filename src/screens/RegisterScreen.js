@@ -14,7 +14,6 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../i18n';
-import { Icon } from '../components/ui';
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
 
 const RegisterScreen = ({ navigation }) => {
@@ -53,7 +52,7 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -61,9 +60,6 @@ const RegisterScreen = ({ navigation }) => {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <View style={styles.content}>
             <View style={styles.header}>
-              <View style={styles.brandMark}>
-                <Icon name="snow" size={26} color={colors.primary} />
-              </View>
               <Text style={styles.brand}>Freezely</Text>
               <Text style={styles.title}>{t('register.createAccount')}</Text>
               <Text style={styles.subtitle}>{t('register.signUpToGetStarted')}</Text>
@@ -74,7 +70,7 @@ const RegisterScreen = ({ navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder={t('login.enterEmail')}
-                placeholderTextColor={colors.textSubtle}
+                placeholderTextColor="#94A3B8"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -87,7 +83,7 @@ const RegisterScreen = ({ navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder={t('register.createPassword')}
-                placeholderTextColor={colors.textSubtle}
+                placeholderTextColor="#94A3B8"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -99,7 +95,7 @@ const RegisterScreen = ({ navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder={t('register.confirmYourPassword')}
-                placeholderTextColor={colors.textSubtle}
+                placeholderTextColor="#94A3B8"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry
@@ -113,18 +109,11 @@ const RegisterScreen = ({ navigation }) => {
                 disabled={isLoading}
                 activeOpacity={0.85}
               >
-                <LinearGradient
-                  colors={gradients.hero}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.signUpGradient}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator color={colors.surface} />
-                  ) : (
-                    <Text style={styles.signUpText}>{t('register.signUpButton')}</Text>
-                  )}
-                </LinearGradient>
+                {isLoading ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : (
+                  <Text style={styles.signUpText}>{t('register.signUpButton')}</Text>
+                )}
               </TouchableOpacity>
 
               <View style={styles.loginRow}>
@@ -137,12 +126,12 @@ const RegisterScreen = ({ navigation }) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
+  container: { flex: 1 },
   keyboardView: { flex: 1 },
   scrollContent: { flexGrow: 1, justifyContent: 'center' },
   content: {
@@ -151,40 +140,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xxl,
     paddingVertical: spacing.xxxl,
   },
-  header: { marginBottom: spacing.xxl },
-  brandMark: {
-    width: 52,
-    height: 52,
-    borderRadius: radii.lg,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
+  header: { marginBottom: spacing.xxxl },
   brand: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '700',
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '600',
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     marginBottom: spacing.sm,
   },
   title: {
-    ...typography.largeTitle,
-    color: colors.text,
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.surface,
+    letterSpacing: -0.4,
     marginBottom: 6,
   },
-  subtitle: { fontSize: 16, color: colors.textMuted },
+  subtitle: { fontSize: 16, color: 'rgba(255,255,255,0.85)' },
   form: { width: '100%' },
   label: {
     ...typography.label,
-    color: colors.textMuted,
+    color: colors.surface,
+    opacity: 0.9,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: 'rgba(255,255,255,0.95)',
     borderRadius: radii.md,
     paddingHorizontal: 14,
     paddingVertical: 14,
@@ -192,19 +173,15 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   signUpBtn: {
+    backgroundColor: colors.surface,
     borderRadius: radii.md,
-    overflow: 'hidden',
+    paddingVertical: 16,
+    alignItems: 'center',
     marginTop: spacing.xl,
     ...shadows.button,
   },
-  signUpGradient: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.md,
-  },
   signUpText: {
-    color: colors.surface,
+    color: colors.primary,
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.2,
@@ -215,11 +192,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: spacing.lg,
   },
-  loginText: { color: colors.textMuted, fontSize: 14 },
+  loginText: { color: 'rgba(255,255,255,0.85)', fontSize: 14 },
   loginLink: {
-    color: colors.primary,
+    color: colors.surface,
     fontSize: 14,
     fontWeight: '700',
+    textDecorationLine: 'underline',
   },
 });
 

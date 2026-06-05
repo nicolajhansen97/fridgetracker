@@ -170,9 +170,9 @@ const AppNavigator = () => {
 
   return (
     <>
-      {/* Light status-bar icons sit over the in-app gradient headers; the
-          logged-out auth screens use a clean light background, so dark icons. */}
-      <StatusBar style={isAuthenticated ? 'light' : 'dark'} />
+      {/* Light status-bar icons: both the in-app gradient headers and the
+          gradient auth screens have dark backgrounds. */}
+      <StatusBar style="light" />
       <NavigationContainer>
         {isAuthenticated ? (
           <MainTabs />
