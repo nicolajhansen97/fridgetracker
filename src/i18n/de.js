@@ -489,6 +489,13 @@ export default {
   },
 
   changelog: {
+    // v1.0.8
+    v108_usefirst_title: 'Sehen, was zuerst verbraucht werden sollte',
+    v108_usefirst_desc: 'Suche nach etwas, das du mehrfach hast, und Freezely hebt oben das Produkt hervor, das du zuerst verbrauchen solltest — das mit dem nächsten Verbrauchsdatum —, damit du gleich das richtige greifst.',
+    v108_quickadd_title: 'Schnelleres Hinzufügen',
+    v108_quickadd_desc: 'Wenn du vom Startbildschirm hinzufügst, kehrst du danach direkt dorthin zurück, und der Gefrier-Tab zeigt immer deine Artikel.',
+    v108_activity_title: 'Aktivität in Echtzeit',
+    v108_activity_desc: 'Deine letzten Aktivitäten aktualisieren sich jetzt automatisch, wenn du einen Artikel hinzufügst, verbrauchst oder entfernst — ohne zum Aktualisieren zu ziehen.',
     // v1.0.7
     v107_calendar_title: 'Ablaufkalender',
     v107_calendar_desc: 'Sieh alles, was bald abläuft, in einem übersichtlichen Monatskalender, damit du immer weißt, was du zuerst verbrauchen solltest.',

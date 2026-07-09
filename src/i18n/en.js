@@ -417,6 +417,13 @@ export default {
     whatsNew: "What's New",
     letsGo: "Let's go!",
     current: 'Current',
+    // v1.0.8
+    v108_usefirst_title: 'Know what to use first',
+    v108_usefirst_desc: 'Search for something you have several of and Freezely pins the one to use first — the closest to its use-by date — right at the top, so you grab the correct one without hunting.',
+    v108_quickadd_title: 'Smoother quick add',
+    v108_quickadd_desc: 'Adding from the Home screen now takes you straight back home when you\'re done, and the Freezer tab always opens to your items.',
+    v108_activity_title: 'Live recent activity',
+    v108_activity_desc: 'Your recent activity updates on its own after you add, use, or remove an item — no pull-to-refresh needed.',
     // v1.0.1
     v101_shopping_title: 'Shopping List',
     v101_shopping_desc: 'Add a shared shopping list with your household. Tap items to check them off as you shop.',

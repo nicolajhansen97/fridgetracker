@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
@@ -16,6 +17,7 @@ import { useLanguage } from '../i18n';
 import {
   Screen,
   ScreenHeader,
+  Card,
   Icon,
   Pill,
   Input,
@@ -47,7 +49,7 @@ const EditItemScreen = ({ route, navigation }) => {
 
   const { updateItem } = useFridge();
   const { drawers } = useDrawers();
-  const { t, formatDate, dateFormatPattern } = useLanguage();
+  const { t, formatDate } = useLanguage();
 
   const handleFrozenDateConfirm = (date) => {
     setSelectedFrozenDate(date);
@@ -115,156 +117,183 @@ const EditItemScreen = ({ route, navigation }) => {
         style={{ flex: 1 }}
       >
         <ScrollView
+          style={{ flex: 1 }}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <Input
-            label={t('addItem.itemName')}
-            placeholder={t('addItem.itemNamePlaceholder')}
-            value={name}
-            onChangeText={setName}
-            editable={!isLoading}
-            style={styles.field}
-          />
+          {/* ── Item ───────────────────────────────────────────── */}
+          <Text style={[styles.sectionLabel, styles.sectionLabelFirst]}>{t('addItem.sectionItem')}</Text>
+          <Card style={styles.card} padded={false}>
+            <View style={styles.cardInner}>
+              <TextInput
+                style={styles.nameInput}
+                placeholder={t('addItem.itemNamePlaceholder')}
+                placeholderTextColor={colors.textSubtle}
+                value={name}
+                onChangeText={setName}
+                editable={!isLoading}
+              />
+            </View>
+          </Card>
 
-          <View style={styles.field}>
-            <View style={styles.labelRow}>
-              <Text style={styles.label}>{t('addItem.compartment')}</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('ManageDrawers')} hitSlop={8}>
-                <Text style={styles.linkText}>{t('addItem.manageCompartments')}</Text>
+          {/* ── Storage ────────────────────────────────────────── */}
+          <Text style={styles.sectionLabel}>{t('addItem.sectionStorage')}</Text>
+          <Card style={styles.card} padded={false}>
+            <View style={styles.cardInner}>
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>{t('addItem.compartment')}</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('ManageDrawers')} hitSlop={8}>
+                  <Text style={styles.linkText}>{t('addItem.manageCompartments')}</Text>
+                </TouchableOpacity>
+              </View>
+              {drawers.length === 0 ? (
+                <View style={styles.warning}>
+                  <Text style={styles.warningText}>{t('addItem.noCompartments')}</Text>
+                </View>
+              ) : (
+                <View style={styles.chipWrap}>
+                  {drawers.map((d) => (
+                    <Pill
+                      key={d.id}
+                      label={d.name}
+                      icon={d.icon}
+                      selected={drawer === d.name}
+                      onPress={() => setDrawer(d.name)}
+                      disabled={isLoading}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.cardInner}>
+              <View style={styles.qtyRow}>
+                <Text style={[styles.label, styles.labelInline]}>{t('addItem.quantity')}</Text>
+                <TextInput
+                  style={styles.qtyInput}
+                  value={quantity}
+                  onChangeText={setQuantity}
+                  keyboardType="number-pad"
+                  editable={!isLoading}
+                  placeholder="1"
+                  placeholderTextColor={colors.textSubtle}
+                  textAlign="center"
+                />
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.cardInner}>
+              <Text style={styles.label}>{t('addItem.unit')}</Text>
+              <View style={styles.chipWrap}>
+                {UNITS.map((u) => (
+                  <Pill key={u} label={u} selected={unit === u} onPress={() => setUnit(u)} disabled={isLoading} />
+                ))}
+              </View>
+            </View>
+          </Card>
+
+          {/* ── Dates ──────────────────────────────────────────── */}
+          <Text style={styles.sectionLabel}>{t('addItem.sectionDates')}</Text>
+          <Card style={styles.card} padded={false}>
+            <View style={styles.cardInner}>
+              <Text style={styles.label}>{t('addItem.frozenDate')}</Text>
+              <TouchableOpacity style={styles.datePicker} onPress={() => setFrozenDatePickerVisibility(true)} disabled={isLoading}>
+                <Text style={[styles.dateText, !frozenDate && styles.datePlaceholder]} numberOfLines={1}>
+                  {frozenDate ? formatDate(frozenDate) : t('addItem.selectDate')}
+                </Text>
+                <Icon name="snow-outline" size={18} color={colors.primary} />
               </TouchableOpacity>
             </View>
-            {drawers.length === 0 ? (
-              <View style={styles.warning}>
-                <Text style={styles.warningText}>{t('addItem.noCompartments')}</Text>
-              </View>
-            ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillRow}>
-                {drawers.map((d) => (
-                  <Pill
-                    key={d.id}
-                    label={d.name}
-                    icon={d.icon}
-                    selected={drawer === d.name}
-                    onPress={() => setDrawer(d.name)}
-                    disabled={isLoading}
-                    style={{ marginRight: 8 }}
-                  />
-                ))}
-              </ScrollView>
-            )}
-          </View>
 
-          <Input
-            label={t('addItem.quantity')}
-            placeholder="1"
-            value={quantity}
-            onChangeText={setQuantity}
-            keyboardType="number-pad"
-            editable={!isLoading}
-            style={styles.field}
-          />
+            <View style={styles.divider} />
 
-          <View style={styles.field}>
-            <Text style={styles.label}>{t('addItem.unit')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillRow}>
-              {UNITS.map((u) => (
-                <Pill
-                  key={u}
-                  label={u}
-                  selected={unit === u}
-                  onPress={() => setUnit(u)}
-                  disabled={isLoading}
-                  style={{ marginRight: 8 }}
-                />
-              ))}
-            </ScrollView>
-          </View>
-
-          <Input
-            label={t('addItem.packageNumber')}
-            placeholder={t('addItem.packageNumberPlaceholder')}
-            value={position}
-            onChangeText={setPosition}
-            keyboardType="number-pad"
-            editable={!isLoading}
-            helper={t('addItem.packageNumberHelper')}
-            style={styles.field}
-          />
-
-          <View style={styles.field}>
-            <Text style={styles.label}>{t('addItem.frozenDate')}</Text>
-            <TouchableOpacity
-              style={styles.datePicker}
-              onPress={() => setFrozenDatePickerVisibility(true)}
-              disabled={isLoading}
-            >
-              <Text style={[styles.dateText, !frozenDate && styles.datePlaceholder]}>
-                {frozenDate ? formatDate(frozenDate) : t('addItem.selectDate')}
-              </Text>
-              <Icon name="snow-outline" size={18} color={colors.textMuted} />
-            </TouchableOpacity>
-            <DateTimePickerModal
-              isVisible={isFrozenDatePickerVisible}
-              mode="date"
-              onConfirm={handleFrozenDateConfirm}
-              onCancel={() => setFrozenDatePickerVisibility(false)}
-              date={selectedFrozenDate || new Date()}
-              maximumDate={new Date()}
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              pickerContainerStyleIOS={{ backgroundColor: 'white' }}
-              textColor="#000000"
-            />
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>{t('addItem.expiryDate')}</Text>
-            <TouchableOpacity
-              style={styles.datePicker}
-              onPress={() => setDatePickerVisibility(true)}
-              disabled={isLoading}
-            >
-              <Text style={[styles.dateText, !expiryDate && styles.datePlaceholder]}>
-                {expiryDate ? formatDate(expiryDate) : t('addItem.selectDateFormat', { format: dateFormatPattern })}
-              </Text>
-              <Icon name="calendar-outline" size={18} color={colors.textMuted} />
-            </TouchableOpacity>
-            {expiryDate ? (
-              <TouchableOpacity onPress={clearDate} hitSlop={6} style={{ marginTop: 6, alignSelf: 'flex-start' }}>
-                <Text style={styles.linkText}>{t('addItem.clearDate')}</Text>
+            <View style={styles.cardInner}>
+              <Text style={styles.label}>{t('addItem.expiryDate')}</Text>
+              <TouchableOpacity style={styles.datePicker} onPress={() => setDatePickerVisibility(true)} disabled={isLoading}>
+                <Text style={[styles.dateText, !expiryDate && styles.datePlaceholder]} numberOfLines={1}>
+                  {expiryDate ? formatDate(expiryDate) : t('addItem.selectDate')}
+                </Text>
+                <Icon name="calendar-outline" size={18} color={colors.accent} />
               </TouchableOpacity>
-            ) : null}
-            <DateTimePickerModal
-              isVisible={isDatePickerVisible}
-              mode="date"
-              onConfirm={handleDateConfirm}
-              onCancel={() => setDatePickerVisibility(false)}
-              date={selectedDate || new Date()}
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              pickerContainerStyleIOS={{ backgroundColor: 'white' }}
-              textColor="#000000"
-            />
-          </View>
+              {expiryDate ? (
+                <TouchableOpacity onPress={clearDate} hitSlop={6} style={{ marginTop: 6, alignSelf: 'flex-start' }}>
+                  <Text style={styles.linkText}>{t('addItem.clearDate')}</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.helper}>{t('addItem.expiryAutoHint')}</Text>
+              )}
+            </View>
+          </Card>
 
-          <Input
-            label={t('addItem.notes')}
-            placeholder={t('addItem.notesPlaceholder')}
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            numberOfLines={3}
-            editable={!isLoading}
-            style={styles.field}
-          />
+          {/* ── Package number ─────────────────────────────────── */}
+          <Text style={styles.sectionLabel}>{t('addItem.packageNumber')}</Text>
+          <Card style={styles.card} padded={false}>
+            <View style={styles.cardInner}>
+              <Input
+                placeholder={t('addItem.packageNumberPlaceholder')}
+                value={position}
+                onChangeText={setPosition}
+                keyboardType="number-pad"
+                editable={!isLoading}
+                helper={t('addItem.packageNumberHelper')}
+              />
+            </View>
+          </Card>
 
+          {/* ── Notes ──────────────────────────────────────────── */}
+          <Text style={styles.sectionLabel}>{t('addItem.sectionNotes')}</Text>
+          <Card style={styles.card} padded={false}>
+            <View style={styles.cardInner}>
+              <View style={styles.notesRow}>
+                <Icon name="create-outline" size={16} color={colors.textSubtle} />
+                <TextInput
+                  style={styles.notesInput}
+                  placeholder={t('addItem.notesPlaceholder')}
+                  placeholderTextColor={colors.textSubtle}
+                  value={notes}
+                  onChangeText={setNotes}
+                  multiline
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
+          </Card>
+        </ScrollView>
+
+        <View style={styles.footer}>
           <PrimaryButton
             title={isLoading ? t('editItem.updating') : t('editItem.updateItem')}
             onPress={handleSubmit}
             loading={isLoading}
-            style={{ marginTop: spacing.lg }}
           />
-        </ScrollView>
+        </View>
+
+        <DateTimePickerModal
+          isVisible={isFrozenDatePickerVisible}
+          mode="date"
+          onConfirm={handleFrozenDateConfirm}
+          onCancel={() => setFrozenDatePickerVisibility(false)}
+          date={selectedFrozenDate || new Date()}
+          maximumDate={new Date()}
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          pickerContainerStyleIOS={{ backgroundColor: 'white' }}
+          textColor="#000000"
+        />
+        <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="date"
+          onConfirm={handleDateConfirm}
+          onCancel={() => setDatePickerVisibility(false)}
+          date={selectedDate || new Date()}
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          pickerContainerStyleIOS={{ backgroundColor: 'white' }}
+          textColor="#000000"
+        />
       </KeyboardAvoidingView>
     </Screen>
   );
@@ -273,30 +302,100 @@ const EditItemScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xxxl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
   },
-  field: {
-    marginBottom: spacing.lg,
+  footer: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textMuted,
+    marginLeft: 4,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  sectionLabelFirst: {
+    marginTop: spacing.xs,
+  },
+  card: {
+    marginBottom: 0,
+  },
+  cardInner: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  nameInput: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: colors.text,
+    padding: 0,
+    minHeight: 24,
+  },
+  notesRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  notesInput: {
+    flex: 1,
+    fontSize: 15,
+    color: colors.text,
+    minHeight: 24,
+    textAlignVertical: 'top',
+    padding: 0,
+    paddingTop: 1,
   },
   labelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   label: {
     ...typography.label,
     color: colors.textMuted,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   linkText: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  pillRow: {
-    paddingVertical: 4,
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  qtyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  labelInline: {
+    marginBottom: 0,
+  },
+  qtyInput: {
+    minWidth: 80,
+    height: 44,
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    paddingHorizontal: 12,
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.text,
   },
   warning: {
     backgroundColor: colors.warningSoft,
@@ -311,22 +410,29 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   datePicker: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.bg,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 6,
   },
   dateText: {
-    fontSize: 15,
+    fontSize: 14,
     color: colors.text,
+    flexShrink: 1,
   },
   datePlaceholder: {
     color: colors.textSubtle,
+  },
+  helper: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: 6,
   },
 });
 

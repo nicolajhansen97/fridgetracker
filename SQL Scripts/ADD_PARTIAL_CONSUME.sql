@@ -43,6 +43,7 @@ BEGIN
       'quantity', p_used,
       'remaining', v_remaining,
       'unit', v_item.unit,
+      'position', v_item.position,
       'partial', true
     )
   );

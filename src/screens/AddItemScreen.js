@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,9 @@ import {
   ScrollView,
   ActivityIndicator,
   Modal,
+  BackHandler,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -39,7 +41,10 @@ const USE_PACKAGE_NUMBERS_KEY = 'freezely_use_package_numbers';
 const LAST_DRAWER_KEY = 'freezely_last_drawer';
 const UNITS = ['pcs', 'kg', 'g', 'lbs', 'oz', 'portions'];
 
-const AddItemScreen = ({ navigation }) => {
+const AddItemScreen = ({ navigation, route }) => {
+  // Launched from Home's Quick Add (vs. opened from within the Freezer tab).
+  const fromHome = route?.params?.from === 'home';
+
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
@@ -159,6 +164,33 @@ const AddItemScreen = ({ navigation }) => {
     }
   };
 
+  // Leave the Add Item screen. When we were launched from Home's Quick Add we
+  // first pop ourselves off the Freezer stack (so that tab is left on the
+  // inventory, not this form) and then return the user to Home where they
+  // started. Otherwise we just step back within the Freezer tab.
+  const dismiss = useCallback(() => {
+    if (fromHome) {
+      navigation.goBack();
+      navigation.navigate('HomeTab', { screen: 'Home' });
+    } else {
+      navigation.goBack();
+    }
+  }, [fromHome, navigation]);
+
+  // Keep the Android hardware back consistent with the Cancel button: when this
+  // screen came from Home, hardware back returns to Home too. Scoped to focus so
+  // it doesn't fire while a pushed screen (e.g. ManageDrawers) is on top.
+  useFocusEffect(
+    useCallback(() => {
+      if (!fromHome || Platform.OS !== 'android') return undefined;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        dismiss();
+        return true;
+      });
+      return () => sub.remove();
+    }, [fromHome, dismiss])
+  );
+
   const handleSubmit = async () => {
     if (!name.trim()) {
       Alert.alert(t('common.error'), t('addItem.enterItemName'));
@@ -183,10 +215,10 @@ const AddItemScreen = ({ navigation }) => {
     setIsLoading(false);
 
     if (result.success) {
-      // Remember the compartment for next time, then drop straight back to the
-      // freezer — the new item is right there, so no extra confirmation tap.
+      // Remember the compartment for next time, then return the user to wherever
+      // they launched Add Item from (Home for Quick Add, else the freezer).
       try { await AsyncStorage.setItem(LAST_DRAWER_KEY, drawer); } catch {}
-      navigation.goBack();
+      dismiss();
     } else {
       if (result.error && result.error.includes('Position')) {
         Alert.alert(t('addItem.positionInUse'), result.error, [{ text: t('common.ok') }]);
@@ -202,7 +234,7 @@ const AddItemScreen = ({ navigation }) => {
     <Screen>
       <ScreenHeader
         title={t('addItem.title')}
-        onBack={() => navigation.goBack()}
+        onBack={dismiss}
         backLabel={t('common.cancel')}
       />
 
@@ -216,32 +248,8 @@ const AddItemScreen = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Autofill — the fast path (Pro feature) */}
-          <View style={styles.scanRow}>
-            <TouchableOpacity
-              style={styles.scanBtn}
-              onPress={() => (isPremium ? setScannerVisible(true) : setPaywallVisible(true))}
-              disabled={busy}
-              activeOpacity={0.85}
-            >
-              {!isPremium && <View style={styles.proBadge}><Text style={styles.proBadgeText}>PRO</Text></View>}
-              <Icon name="barcode-outline" size={18} color={colors.primary} />
-              <Text style={styles.scanBtnText}>{t('scan.button')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.scanBtn}
-              onPress={() => (isPremium ? handleAnalyzePhoto() : setPaywallVisible(true))}
-              disabled={busy}
-              activeOpacity={0.85}
-            >
-              {!isPremium && <View style={styles.proBadge}><Text style={styles.proBadgeText}>PRO</Text></View>}
-              <Icon name="camera-outline" size={18} color={colors.primary} />
-              <Text style={styles.scanBtnText}>{t('scan.photoButton')}</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.coverage}>{t('scan.coverage')}</Text>
-
-          {/* Essentials — one compact card */}
+          {/* ── Item ───────────────────────────────────────────── */}
+          <Text style={[styles.sectionLabel, styles.sectionLabelFirst]}>{t('addItem.sectionItem')}</Text>
           <Card style={styles.card} padded={false}>
             <View style={styles.cardInner}>
               <TextInput
@@ -256,6 +264,37 @@ const AddItemScreen = ({ navigation }) => {
 
             <View style={styles.divider} />
 
+            {/* Autofill — the fast path (Pro feature) */}
+            <View style={styles.cardInner}>
+              <View style={styles.autofillRow}>
+                <TouchableOpacity
+                  style={styles.autofillBtn}
+                  onPress={() => (isPremium ? setScannerVisible(true) : setPaywallVisible(true))}
+                  disabled={busy}
+                  activeOpacity={0.85}
+                >
+                  <Icon name="barcode-outline" size={16} color={colors.primaryDark} />
+                  <Text style={styles.autofillText}>{t('scan.button')}</Text>
+                  {!isPremium && <View style={styles.proTag}><Text style={styles.proTagText}>PRO</Text></View>}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.autofillBtn}
+                  onPress={() => (isPremium ? handleAnalyzePhoto() : setPaywallVisible(true))}
+                  disabled={busy}
+                  activeOpacity={0.85}
+                >
+                  <Icon name="camera-outline" size={16} color={colors.primaryDark} />
+                  <Text style={styles.autofillText}>{t('scan.photoButton')}</Text>
+                  {!isPremium && <View style={styles.proTag}><Text style={styles.proTagText}>PRO</Text></View>}
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.coverage}>{t('scan.coverage')}</Text>
+            </View>
+          </Card>
+
+          {/* ── Storage ────────────────────────────────────────── */}
+          <Text style={styles.sectionLabel}>{t('addItem.sectionStorage')}</Text>
+          <Card style={styles.card} padded={false}>
             <View style={styles.cardInner}>
               <View style={styles.labelRow}>
                 <Text style={styles.label}>{t('addItem.compartment')}</Text>
@@ -269,7 +308,7 @@ const AddItemScreen = ({ navigation }) => {
                   <Text style={styles.warningCta}>{t('addItem.manageCompartments')} ›</Text>
                 </TouchableOpacity>
               ) : (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillRow}>
+                <View style={styles.chipWrap}>
                   {drawers.map((d) => (
                     <Pill
                       key={d.id}
@@ -278,76 +317,81 @@ const AddItemScreen = ({ navigation }) => {
                       selected={drawer === d.name}
                       onPress={() => setDrawer(d.name)}
                       disabled={isLoading}
-                      style={{ marginRight: 8 }}
                     />
                   ))}
-                </ScrollView>
+                </View>
               )}
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.cardInner}>
-              <Text style={styles.label}>{t('addItem.quantity')}</Text>
               <View style={styles.qtyRow}>
+                <Text style={[styles.label, styles.labelInline]}>{t('addItem.quantity')}</Text>
                 <TextInput
                   style={styles.qtyInput}
-                  placeholder="1"
-                  placeholderTextColor={colors.textSubtle}
                   value={quantity}
                   onChangeText={setQuantity}
                   keyboardType="number-pad"
                   editable={!isLoading}
+                  placeholder="1"
+                  placeholderTextColor={colors.textSubtle}
+                  textAlign="center"
                 />
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.pillRow}
-                  style={styles.unitScroll}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  {UNITS.map((u) => (
-                    <Pill key={u} label={u} selected={unit === u} onPress={() => setUnit(u)} disabled={isLoading} style={{ marginRight: 8 }} />
-                  ))}
-                </ScrollView>
               </View>
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.cardInner}>
-              <View style={styles.dateRow}>
-                <View style={styles.dateCol}>
-                  <Text style={styles.label}>{t('addItem.frozenDate')}</Text>
-                  <TouchableOpacity style={styles.datePicker} onPress={() => setFrozenDatePickerVisibility(true)} disabled={isLoading}>
-                    <Text style={[styles.dateText, !frozenDate && styles.datePlaceholder]} numberOfLines={1}>
-                      {frozenDate ? formatDate(frozenDate) : t('addItem.selectDate')}
-                    </Text>
-                    <Icon name="snow-outline" size={18} color={colors.primary} />
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.dateCol}>
-                  <Text style={styles.label}>{t('addItem.expiryDate')}</Text>
-                  <TouchableOpacity style={styles.datePicker} onPress={() => setDatePickerVisibility(true)} disabled={isLoading}>
-                    <Text style={[styles.dateText, !expiryDate && styles.datePlaceholder]} numberOfLines={1}>
-                      {expiryDate ? formatDate(expiryDate) : t('addItem.selectDate')}
-                    </Text>
-                    <Icon name="calendar-outline" size={18} color={colors.accent} />
-                  </TouchableOpacity>
-                  {expiryDate ? (
-                    <TouchableOpacity onPress={clearDate} hitSlop={6} style={{ marginTop: 6, alignSelf: 'flex-start' }}>
-                      <Text style={styles.linkText}>{t('addItem.clearDate')}</Text>
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
+              <Text style={styles.label}>{t('addItem.unit')}</Text>
+              <View style={styles.chipWrap}>
+                {UNITS.map((u) => (
+                  <Pill key={u} label={u} selected={unit === u} onPress={() => setUnit(u)} disabled={isLoading} />
+                ))}
               </View>
             </View>
+          </Card>
 
-            {usePackageNumbers && (
-              <>
-                <View style={styles.divider} />
+          {/* ── Dates ──────────────────────────────────────────── */}
+          <Text style={styles.sectionLabel}>{t('addItem.sectionDates')}</Text>
+          <Card style={styles.card} padded={false}>
+            <View style={styles.cardInner}>
+              <Text style={styles.label}>{t('addItem.frozenDate')}</Text>
+              <TouchableOpacity style={styles.datePicker} onPress={() => setFrozenDatePickerVisibility(true)} disabled={isLoading}>
+                <Text style={[styles.dateText, !frozenDate && styles.datePlaceholder]} numberOfLines={1}>
+                  {frozenDate ? formatDate(frozenDate) : t('addItem.selectDate')}
+                </Text>
+                <Icon name="snow-outline" size={18} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.cardInner}>
+              <Text style={styles.label}>{t('addItem.expiryDate')}</Text>
+              <TouchableOpacity style={styles.datePicker} onPress={() => setDatePickerVisibility(true)} disabled={isLoading}>
+                <Text style={[styles.dateText, !expiryDate && styles.datePlaceholder]} numberOfLines={1}>
+                  {expiryDate ? formatDate(expiryDate) : t('addItem.selectDate')}
+                </Text>
+                <Icon name="calendar-outline" size={18} color={colors.accent} />
+              </TouchableOpacity>
+              {expiryDate ? (
+                <TouchableOpacity onPress={clearDate} hitSlop={6} style={{ marginTop: 6, alignSelf: 'flex-start' }}>
+                  <Text style={styles.linkText}>{t('addItem.clearDate')}</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.helper}>{t('addItem.expiryAutoHint')}</Text>
+              )}
+            </View>
+          </Card>
+
+          {/* ── Package number (optional, when enabled in settings) ── */}
+          {usePackageNumbers && (
+            <>
+              <Text style={styles.sectionLabel}>{t('addItem.packageNumber')}</Text>
+              <Card style={styles.card} padded={false}>
                 <View style={styles.cardInner}>
-                  <Text style={styles.label}>{t('addItem.packageNumber')}</Text>
                   <View style={styles.row}>
                     <Input
                       placeholder={t('addItem.packageNumberPlaceholder')}
@@ -366,10 +410,13 @@ const AddItemScreen = ({ navigation }) => {
                   </View>
                   <Text style={styles.helper}>{t('addItem.packageNumberHelper')}</Text>
                 </View>
-              </>
-            )}
+              </Card>
+            </>
+          )}
 
-            <View style={styles.divider} />
+          {/* ── Notes ──────────────────────────────────────────── */}
+          <Text style={styles.sectionLabel}>{t('addItem.sectionNotes')}</Text>
+          <Card style={styles.card} padded={false}>
             <View style={styles.cardInner}>
               <View style={styles.notesRow}>
                 <Icon name="create-outline" size={16} color={colors.textSubtle} />
@@ -444,7 +491,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.xl,
   },
   footer: {
     paddingHorizontal: spacing.lg,
@@ -454,38 +501,45 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     backgroundColor: colors.surface,
   },
-  scanRow: {
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textMuted,
+    marginLeft: 4,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  sectionLabelFirst: {
+    marginTop: spacing.xs,
+  },
+  autofillRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginBottom: spacing.md,
   },
-  scanBtn: {
-    flex: 1,
+  autofillBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 6,
     backgroundColor: colors.primarySoft,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    borderRadius: radii.md,
-    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: colors.primaryTint,
+    borderRadius: radii.pill,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
   },
-  scanBtnText: {
-    ...typography.bodyStrong,
-    fontSize: 14,
-    color: colors.primary,
+  autofillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primaryDark,
   },
-  proBadge: {
-    position: 'absolute',
-    top: -8,
-    right: -6,
+  proTag: {
     backgroundColor: colors.primary,
     borderRadius: radii.pill,
-    paddingHorizontal: 7,
+    paddingHorizontal: 6,
     paddingVertical: 1,
+    marginLeft: 2,
   },
-  proBadgeText: {
+  proTagText: {
     color: colors.surface,
     fontSize: 9,
     fontWeight: '800',
@@ -493,12 +547,12 @@ const styles = StyleSheet.create({
   },
   coverage: {
     ...typography.caption,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginBottom: spacing.md,
+    color: colors.textSubtle,
+    marginTop: spacing.sm,
+    lineHeight: 16,
   },
   card: {
-    marginBottom: spacing.md,
+    marginBottom: 0,
   },
   cardInner: {
     paddingHorizontal: spacing.lg,
@@ -509,7 +563,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
   nameInput: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
     padding: 0,
@@ -545,29 +599,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  pillRow: {
-    paddingVertical: 2,
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
   qtyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    justifyContent: 'space-between',
+  },
+  labelInline: {
+    marginBottom: 0,
   },
   qtyInput: {
-    width: 60,
+    minWidth: 80,
+    height: 44,
     backgroundColor: colors.bg,
-    borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingVertical: 10,
+    borderRadius: radii.md,
     paddingHorizontal: 12,
-    fontSize: 15,
-    color: colors.text,
-    textAlign: 'center',
+    fontSize: 17,
     fontWeight: '700',
-  },
-  unitScroll: {
-    flex: 1,
+    color: colors.text,
   },
   row: {
     flexDirection: 'row',
@@ -576,14 +631,6 @@ const styles = StyleSheet.create({
   },
   autoBtn: {
     paddingVertical: 10,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  dateCol: {
-    flex: 1,
-    minWidth: 0,
   },
   warning: {
     backgroundColor: colors.warningSoft,

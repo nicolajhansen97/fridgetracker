@@ -524,6 +524,13 @@ export default {
   },
 
   changelog: {
+    // v1.0.8
+    v108_usefirst_title: 'Se hvad du skal bruge først',
+    v108_usefirst_desc: 'Søg efter noget, du har flere af, og Freezely fremhæver øverst den, du bør bruge først — den tættest på sidste holdbarhedsdato — så du tager den rigtige uden at lede.',
+    v108_quickadd_title: 'Nemmere hurtig tilføjelse',
+    v108_quickadd_desc: 'Tilføjer du fra forsiden, kommer du nu direkte tilbage til forsiden bagefter, og fryser-fanen åbner altid dine varer.',
+    v108_activity_title: 'Live seneste aktivitet',
+    v108_activity_desc: 'Din seneste aktivitet opdateres nu automatisk, når du tilføjer, bruger eller fjerner en vare — uden at trække ned for at opdatere.',
     // v1.0.7
     v107_calendar_title: 'Udløbskalender',
     v107_calendar_desc: 'Se alt, der snart udløber, i en overskuelig månedskalender, så du altid ved, hvad du skal bruge først.',

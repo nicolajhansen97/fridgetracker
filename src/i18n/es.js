@@ -489,6 +489,13 @@ export default {
   },
 
   changelog: {
+    // v1.0.8
+    v108_usefirst_title: 'Descubre qué usar primero',
+    v108_usefirst_desc: 'Busca algo de lo que tengas varias unidades y Freezely fija arriba la que debes usar primero — la más cercana a su fecha de consumo — para que cojas la correcta sin buscar.',
+    v108_quickadd_title: 'Añadir más fluido',
+    v108_quickadd_desc: 'Si añades desde la pantalla de inicio, ahora vuelves directamente allí al terminar, y la pestaña del congelador siempre abre tus artículos.',
+    v108_activity_title: 'Actividad reciente en vivo',
+    v108_activity_desc: 'Tu actividad reciente se actualiza sola al añadir, usar o quitar un artículo, sin necesidad de deslizar para refrescar.',
     // v1.0.7
     v107_calendar_title: 'Calendario de caducidad',
     v107_calendar_desc: 'Mira todo lo que caduca pronto en un calendario mensual claro, para saber siempre qué usar primero.',

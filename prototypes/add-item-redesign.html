@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Freezely · Add Item redesign</title>
+<style>
+  :root {
+    --page-bg: #0b0e14;
+    --panel-bg: #131722;
+    --panel-border: #1f2433;
+    --txt: #e6e8ee;
+    --txt-muted: #8a93a6;
+
+    /* App design tokens (from src/theme) */
+    --primary: #14B8A6;
+    --primary-dark: #0D9488;
+    --primary-soft: #F0FDFA;
+    --primary-tint: #CCFBF1;
+    --accent: #2563EB;
+    --accent-soft: #DBEAFE;
+    --bg: #F8FAFC;
+    --surface: #FFFFFF;
+    --surface-muted: #F1F5F9;
+    --text: #0F172A;
+    --text-muted: #64748B;
+    --text-subtle: #94A3B8;
+    --border: #E2E8F0;
+    --danger: #EF4444;
+    --warn-soft: #FEF3C7;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--page-bg);
+    color: var(--txt);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  header.page { padding: 32px 40px 8px; border-bottom: 1px solid var(--panel-border); }
+  header.page h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  header.page p { margin: 6px 0 0; color: var(--txt-muted); font-size: 13px; max-width: 760px; line-height: 1.55; }
+
+  .tabs { display: flex; gap: 4px; padding: 14px 40px 0; border-bottom: 1px solid var(--panel-border); flex-wrap: wrap; }
+  .tab { background: transparent; border: none; color: var(--txt-muted); padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; }
+  .tab.active { color: var(--txt); border-bottom-color: var(--primary); }
+  .tab:hover { color: var(--txt); }
+
+  main { padding: 28px 40px 80px; }
+  .option { display: none; }
+  .option.active { display: block; }
+
+  .meta {
+    margin-bottom: 26px; padding: 18px 22px; max-width: 880px;
+    background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px;
+  }
+  .meta h2 { margin: 0 0 6px; font-size: 18px; }
+  .meta p { margin: 0; color: var(--txt-muted); font-size: 13px; line-height: 1.6; }
+  .meta ul { margin: 10px 0 0; padding-left: 18px; color: var(--txt-muted); font-size: 13px; line-height: 1.7; }
+  .meta b { color: var(--txt); }
+
+  .frames { display: flex; gap: 26px; flex-wrap: wrap; }
+  .frame-wrap { width: 330px; }
+  .frame-label { font-size: 12px; color: var(--txt-muted); text-align: center; margin-bottom: 8px; letter-spacing: 0.05em; text-transform: uppercase; }
+
+  .phone {
+    width: 330px; height: 712px; border-radius: 40px; border: 9px solid #1a1f2e;
+    background: var(--bg); overflow: hidden; position: relative;
+    box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+  }
+  .notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 24px; background: #1a1f2e; border-bottom-left-radius: 14px; border-bottom-right-radius: 14px; z-index: 20; }
+  .screen { width: 100%; height: 100%; display: flex; flex-direction: column; color: var(--text); }
+
+  /* ---- Shared brand header (teal -> blue gradient, centered title, snow) ---- */
+  .hdr {
+    background: linear-gradient(135deg, #14B8A6 0%, #3B82F6 100%);
+    padding: 40px 16px 16px; position: relative; overflow: hidden;
+    border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
+  }
+  .hdr .snow { position: absolute; color: rgba(255,255,255,0.12); }
+  .hdr .snow.big { font-size: 96px; right: -10px; top: -22px; }
+  .hdr .snow.sm { font-size: 44px; right: 70px; bottom: -16px; color: rgba(255,255,255,0.10); }
+  .hdr .row { display: flex; align-items: center; min-height: 40px; position: relative; z-index: 2; }
+  .hdr .back { display: flex; align-items: center; gap: 2px; color: #fff; font-size: 15px; font-weight: 600; width: 84px; }
+  .hdr .title { flex: 1; text-align: center; color: #fff; font-size: 19px; font-weight: 800; letter-spacing: -0.2px; }
+  .hdr .side { width: 84px; }
+
+  .body { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px; }
+  .body::-webkit-scrollbar { display: none; }
+  .body { scrollbar-width: none; }
+
+  /* ---- Shared footer ---- */
+  .foot { padding: 12px 16px 16px; border-top: 1px solid var(--border); background: var(--surface); }
+  .save-btn {
+    background: linear-gradient(135deg, #14B8A6 0%, #3B82F6 100%); color: #fff;
+    border-radius: 14px; padding: 15px; text-align: center; font-weight: 700; font-size: 16px;
+    box-shadow: 0 6px 14px rgba(13,148,136,0.30);
+  }
+
+  /* small shared atoms */
+  .pro-tag { font-size: 9px; font-weight: 800; letter-spacing: 0.4px; color: #fff; background: var(--primary); border-radius: 999px; padding: 1px 6px; }
+  .link { color: var(--accent); font-size: 13px; font-weight: 700; }
+  .muted { color: var(--text-muted); }
+  .subtle { color: var(--text-subtle); }
+
+  /* ============================================================
+     CURRENT (reference) — faithful reproduction of today's screen
+     ============================================================ */
+  .cur .scan-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .cur .scan-btn {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: var(--primary-soft); border: 1.5px solid var(--primary); border-radius: 12px;
+    padding: 12px; color: var(--primary); font-weight: 600; font-size: 14px; position: relative;
+  }
+  .cur .scan-btn .pro-badge { position: absolute; top: -8px; right: -6px; background: var(--primary); color: #fff; font-size: 9px; font-weight: 800; border-radius: 999px; padding: 1px 7px; }
+  .cur .coverage { font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 14px; line-height: 1.45; }
+  .cur .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .cur .inner { padding: 12px 16px; }
+  .cur .divider { height: 1px; background: var(--border); }
+  .cur .name-in { font-size: 16px; font-weight: 600; color: var(--text); }
+  .cur .label { font-size: 12px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; display: block; }
+  .cur .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .cur .hscroll { display: flex; gap: 8px; overflow-x: hidden; position: relative; }
+  .cur .hscroll::after { content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 28px; background: linear-gradient(90deg, rgba(255,255,255,0), #fff); }
+  .cur .pill { white-space: nowrap; padding: 9px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); }
+  .cur .pill.on { background: var(--text); color: #fff; border-color: var(--text); }
+  .cur .qty-row { display: flex; align-items: center; gap: 8px; }
+  .cur .qty-in { width: 56px; text-align: center; font-weight: 700; font-size: 15px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px; }
+  .cur .date-row { display: flex; gap: 12px; }
+  .cur .date-col { flex: 1; min-width: 0; }
+  .cur .date-box { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 11px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+  .cur .notes-row { display: flex; gap: 8px; align-items: flex-start; color: var(--text-subtle); font-size: 15px; }
+
+  /* ============================================================
+     DIRECTION A — Grouped & guided
+     ============================================================ */
+  .scrA .sec-label { font-size: 13px; font-weight: 700; color: var(--text); margin: 18px 4px 8px; }
+  .scrA .sec-label:first-child { margin-top: 2px; }
+  .scrA .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 1px 6px rgba(15,23,42,0.04); }
+  .scrA .pad { padding: 14px 16px; }
+  .scrA .divider { height: 1px; background: var(--border); }
+
+  .scrA .name-field { display: flex; align-items: center; gap: 10px; }
+  .scrA .name-in { flex: 1; font-size: 17px; font-weight: 600; color: var(--text); }
+  .scrA .name-in.ph { color: var(--text-subtle); font-weight: 500; }
+  .scrA .autofill { display: flex; gap: 8px; margin-top: 12px; }
+  .scrA .af-btn {
+    display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px;
+    background: var(--primary-soft); border: 1px solid var(--primary-tint);
+    color: var(--primary-dark); font-size: 13px; font-weight: 600;
+  }
+  .scrA .af-btn .ic { font-size: 14px; }
+
+  .scrA .field-label { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .scrA .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .scrA .chip { padding: 9px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); }
+  .scrA .chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .scrA .chip.add { color: var(--accent); border-style: dashed; border-color: var(--accent-soft); }
+
+  .scrA .qty-line { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .scrA .stepper { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+  .scrA .stepper .b { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--primary-dark); background: var(--surface); }
+  .scrA .stepper .v { width: 44px; text-align: center; font-size: 16px; font-weight: 700; }
+  .scrA .stepper .b.lo { border-right: 1px solid var(--border); }
+  .scrA .stepper .b.hi { border-left: 1px solid var(--border); }
+  .scrA .unit-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .scrA .date-line { display: flex; align-items: center; justify-content: space-between; }
+  .scrA .date-line .lab { font-size: 14px; font-weight: 600; color: var(--text); }
+  .scrA .date-line .val { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text); font-weight: 600; }
+  .scrA .date-line.optional .lab { color: var(--text-muted); font-weight: 500; }
+  .scrA .date-line .auto { font-size: 12px; color: var(--text-subtle); font-weight: 600; }
+  .scrA .hint { font-size: 12px; color: var(--text-subtle); margin-top: 8px; }
+  .scrA .more { display: flex; align-items: center; gap: 6px; justify-content: center; color: var(--text-muted); font-size: 14px; font-weight: 600; padding: 16px; margin-top: 6px; }
+
+  /* ============================================================
+     DIRECTION B — Minimal fast-add
+     ============================================================ */
+  .scrB .name-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 10px; box-shadow: 0 1px 6px rgba(15,23,42,0.04); }
+  .scrB .name-in { flex: 1; font-size: 18px; font-weight: 700; color: var(--text); }
+  .scrB .name-in.ph { color: var(--text-subtle); font-weight: 500; }
+  .scrB .icon-btn { width: 38px; height: 38px; border-radius: 11px; background: var(--primary-soft); border: 1px solid var(--primary-tint); display: flex; align-items: center; justify-content: center; font-size: 16px; position: relative; }
+  .scrB .icon-btn .dot { position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+
+  .scrB .grp { margin-top: 20px; }
+  .scrB .grp-label { font-size: 12px; font-weight: 700; color: var(--text-muted); margin: 0 4px 10px; display: flex; justify-content: space-between; }
+  .scrB .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .scrB .chip { padding: 10px 15px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); }
+  .scrB .chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .scrB .chip.add { color: var(--accent); border-style: dashed; border-color: var(--accent-soft); }
+
+  .scrB .qty-line { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .scrB .stepper { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); overflow: hidden; }
+  .scrB .stepper .b { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 21px; color: var(--primary-dark); }
+  .scrB .stepper .v { width: 46px; text-align: center; font-size: 16px; font-weight: 700; }
+  .scrB .stepper .b.lo { border-right: 1px solid var(--border); }
+  .scrB .stepper .b.hi { border-left: 1px solid var(--border); }
+
+  .scrB .frozen-line { display: flex; align-items: center; gap: 8px; margin-top: 22px; padding: 0 4px; color: var(--text-muted); font-size: 14px; }
+  .scrB .frozen-line b { color: var(--text); font-weight: 700; }
+  .scrB .frozen-line .edit { margin-left: auto; color: var(--accent); font-weight: 700; }
+  .scrB .more {
+    display: flex; align-items: center; justify-content: space-between; margin-top: 18px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px;
+    color: var(--text); font-size: 14px; font-weight: 600;
+  }
+  .scrB .more .sub { font-size: 12px; color: var(--text-subtle); font-weight: 500; margin-top: 2px; }
+  .scrB .chev { color: var(--text-subtle); font-size: 18px; }
+</style>
+</head>
+<body>
+  <header class="page">
+    <h1>Freezely · Add Item redesign</h1>
+    <p>Two clean directions for the Add Item screen, next to today's screen for comparison. Both keep the teal→blue brand header and use the real design tokens. The goal: a calm single-column flow where the common case is <b>type a name → Save</b>, and everything optional gets out of the way. HTML approximations of how React Native would render.</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab" data-tab="cur">Current (today)</button>
+    <button class="tab active" data-tab="optA">A · Grouped &amp; guided</button>
+    <button class="tab" data-tab="optB">B · Minimal fast-add</button>
+  </nav>
+
+  <main>
+
+    <!-- =================== CURRENT =================== -->
+    <section class="option" id="cur">
+      <div class="meta">
+        <h2>Current — for reference</h2>
+        <p>What ships today. The crowding comes from stacking competing weight: two big scan buttons + a long coverage sentence before the form, then one divider-packed card holding name, compartment (sideways scroll), quantity (number box) + unit (sideways scroll), two equal date pickers, and always-visible notes.</p>
+      </div>
+      <div class="frames">
+        <div class="frame-wrap">
+          <div class="frame-label">Add item (today)</div>
+          <div class="phone"><div class="notch"></div>
+            <div class="screen">
+              <div class="hdr cur-hdr">
+                <span class="snow big">❄</span><span class="snow sm">❄</span>
+                <div class="row"><div class="back">‹ Cancel</div><div class="title">Add Item</div><div class="side"></div></div>
+              </div>
+              <div class="body cur">
+                <div class="scan-row">
+                  <div class="scan-btn"><span class="pro-badge">PRO</span>▦ Scan barcode</div>
+                  <div class="scan-btn"><span class="pro-badge">PRO</span>◙ Photo</div>
+                </div>
+                <div class="coverage">Barcode works best in France, Germany, the UK, the US and most of Europe. Photo works anywhere.</div>
+                <div class="card">
+                  <div class="inner"><div class="name-in subtle">e.g., Chicken, Frozen Peas, Ice Cream</div></div>
+                  <div class="divider"></div>
+                  <div class="inner">
+                    <div class="label-row"><span class="label" style="margin:0">Compartment *</span><span class="link">Manage</span></div>
+                    <div class="hscroll">
+                      <span class="pill on">Drawer 1</span><span class="pill">Drawer 2</span><span class="pill">Drawer 3</span><span class="pill">Door</span>
+                    </div>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="inner">
+                    <span class="label">Quantity</span>
+                    <div class="qty-row">
+                      <div class="qty-in">1</div>
+                      <div class="hscroll"><span class="pill on">pcs</span><span class="pill">kg</span><span class="pill">g</span><span class="pill">lbs</span></div>
+                    </div>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="inner">
+                    <div class="date-row">
+                      <div class="date-col"><span class="label">Frozen Date</span><div class="date-box"><span>Jun 6, 2026</span><span style="color:var(--primary)">❄</span></div></div>
+                      <div class="date-col"><span class="label">Best before</span><div class="date-box subtle"><span>Select date</span><span style="color:var(--accent)">▦</span></div></div>
+                    </div>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="inner"><div class="notes-row">✎ Any additional notes...</div></div>
+                </div>
+              </div>
+              <div class="foot"><div class="save-btn">Add to Freezer</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================== DIRECTION A =================== -->
+    <section class="option active" id="optA">
+      <div class="meta">
+        <h2>Direction A · Grouped &amp; guided <span style="color:var(--primary)">· shipped</span></h2>
+        <p>Same fields, organised into calm sections with real breathing room — everything laid out directly (no collapsed "More options"). This is what shipped in AddItemScreen.js / EditItemScreen.js.</p>
+        <ul>
+          <li><b>Item</b> — name on top; scan &amp; photo shrink to two quiet pills below it; the coverage line stays as a small caption.</li>
+          <li><b>Storage</b> — compartments <b>wrap</b> (no hidden sideways scroll); quantity is a <b>− 1 +</b> stepper with unit chips beside it.</li>
+          <li><b>Dates</b> — Frozen defaults to <b>Today</b>; Best before is optional with a "leave empty to auto-calculate" hint.</li>
+          <li><b>Package # · Notes</b> — shown as their own sections, always visible.</li>
+        </ul>
+      </div>
+      <div class="frames">
+        <div class="frame-wrap">
+          <div class="frame-label">Direction A</div>
+          <div class="phone"><div class="notch"></div>
+            <div class="screen">
+              <div class="hdr">
+                <span class="snow big">❄</span><span class="snow sm">❄</span>
+                <div class="row"><div class="back">‹ Cancel</div><div class="title">Add Item</div><div class="side"></div></div>
+              </div>
+              <div class="body scrA">
+                <div class="sec-label">Item</div>
+                <div class="card pad">
+                  <div class="name-field"><div class="name-in ph">e.g., Chicken, Frozen Peas…</div></div>
+                  <div class="autofill">
+                    <span class="af-btn"><span class="ic">▦</span> Scan <span class="pro-tag">PRO</span></span>
+                    <span class="af-btn"><span class="ic">◙</span> Photo <span class="pro-tag">PRO</span></span>
+                  </div>
+                </div>
+
+                <div class="sec-label">Storage</div>
+                <div class="card">
+                  <div class="pad">
+                    <div class="field-label"><span>Compartment</span><span class="link">Manage</span></div>
+                    <div class="chips">
+                      <span class="chip on">Drawer 1</span><span class="chip">Drawer 2</span><span class="chip">Drawer 3</span><span class="chip">Door</span>
+                    </div>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="pad">
+                    <div class="field-label"><span>Quantity</span></div>
+                    <div class="qty-line">
+                      <div class="stepper"><div class="b lo">−</div><div class="v">1</div><div class="b hi">+</div></div>
+                      <div class="unit-chips"><span class="chip on">pcs</span><span class="chip">kg</span><span class="chip">g</span><span class="chip">portions</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="sec-label">Dates</div>
+                <div class="card">
+                  <div class="pad">
+                    <div class="date-line"><span class="lab">❄ Frozen</span><span class="val">Today <span class="subtle">›</span></span></div>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="pad">
+                    <div class="date-line optional"><span class="lab">Best before</span><span class="auto subtle">Select date ›</span></div>
+                    <div class="hint">Leave empty to auto-calculate.</div>
+                  </div>
+                </div>
+
+                <div class="sec-label">Notes</div>
+                <div class="card pad">
+                  <div class="name-field"><div class="name-in ph" style="font-size:15px">✎ Any additional notes…</div></div>
+                </div>
+              </div>
+              <div class="foot"><div class="save-btn">Add to Freezer</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================== DIRECTION B =================== -->
+    <section class="option" id="optB">
+      <div class="meta">
+        <h2>Direction B · Minimal fast-add</h2>
+        <p>Stripped to the bone for speed — optimised for the 2-second add. Best if most items are added quickly with defaults. Same data underneath; just far less on screen.</p>
+        <ul>
+          <li>Big name field on top with scan &amp; photo as <b>inline icons</b> in the field (Pro dot, no labels, no paragraph).</li>
+          <li>Compartment chips wrap right under it; quantity stepper + unit on one quiet line.</li>
+          <li>Frozen date collapses to a one-line <b>“Frozen today · Edit”</b>.</li>
+          <li>Everything else — best before, package #, notes — lives behind one <b>More options</b> card.</li>
+        </ul>
+      </div>
+      <div class="frames">
+        <div class="frame-wrap">
+          <div class="frame-label">Direction B</div>
+          <div class="phone"><div class="notch"></div>
+            <div class="screen">
+              <div class="hdr">
+                <span class="snow big">❄</span><span class="snow sm">❄</span>
+                <div class="row"><div class="back">‹ Cancel</div><div class="title">Add Item</div><div class="side"></div></div>
+              </div>
+              <div class="body scrB">
+                <div class="name-card">
+                  <div class="name-in ph">Add an item…</div>
+                  <div class="icon-btn"><span class="dot"></span>▦</div>
+                  <div class="icon-btn"><span class="dot"></span>◙</div>
+                </div>
+
+                <div class="grp">
+                  <div class="grp-label"><span>COMPARTMENT</span><span class="link">Manage</span></div>
+                  <div class="chips">
+                    <span class="chip on">Drawer 1</span><span class="chip">Drawer 2</span><span class="chip">Drawer 3</span><span class="chip">Door</span><span class="chip add">+ New</span>
+                  </div>
+                </div>
+
+                <div class="grp">
+                  <div class="grp-label"><span>QUANTITY</span></div>
+                  <div class="qty-line">
+                    <div class="stepper"><div class="b lo">−</div><div class="v">1</div><div class="b hi">+</div></div>
+                    <div class="chips"><span class="chip on">pcs</span><span class="chip">kg</span><span class="chip">g</span><span class="chip">portions</span></div>
+                  </div>
+                </div>
+
+                <div class="frozen-line">❄ Frozen <b>today</b><span class="edit">Edit</span></div>
+
+                <div class="more">
+                  <div>More options<div class="sub">Best before · package # · notes</div></div>
+                  <div class="chev">▸</div>
+                </div>
+              </div>
+              <div class="foot"><div class="save-btn">Add to Freezer</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab');
+    const sections = document.querySelectorAll('.option');
+    tabs.forEach(t => t.addEventListener('click', () => {
+      tabs.forEach(x => x.classList.remove('active'));
+      sections.forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById(t.dataset.tab).classList.add('active');
+    }));
+  </script>
+</body>
+</html>

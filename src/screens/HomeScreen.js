@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useFridge } from '../context/FridgeContext';
@@ -79,6 +80,16 @@ const HomeScreen = ({ navigation }) => {
     return t('home.evening');
   }, [t]);
 
+  // Re-fetch the activity log every time Home comes into focus. The log is
+  // written server-side (by DB triggers), so adding/using/removing an item
+  // elsewhere won't reflect here until we reload — this keeps the "recent
+  // activity" list current after returning from Add Item and other flows.
+  useFocusEffect(
+    useCallback(() => {
+      loadActivities();
+    }, [loadActivities])
+  );
+
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -120,7 +131,14 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const goToAdd = () => {
-    navigation.navigate('FreezerTab', { screen: 'AddItem' });
+    // initial: false renders FridgeInventory beneath AddItem so the Freezer tab
+    // isn't left stranded on the form. The `from: 'home'` param tells AddItem to
+    // return the user here to Home once they save or cancel.
+    navigation.navigate('FreezerTab', {
+      screen: 'AddItem',
+      initial: false,
+      params: { from: 'home' },
+    });
   };
 
   const goToInventory = () => {
@@ -303,7 +321,7 @@ const HomeScreen = ({ navigation }) => {
             <SectionTitle
               action={
                 <TouchableOpacity
-                  onPress={() => navigation.navigate('ProfileTab', { screen: 'ActivityHistory' })}
+                  onPress={() => navigation.navigate('ProfileTab', { screen: 'ActivityHistory', initial: false })}
                   hitSlop={6}
                   style={styles.sectionActionBtn}
                 >

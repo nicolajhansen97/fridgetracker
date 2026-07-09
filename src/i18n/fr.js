@@ -489,6 +489,13 @@ export default {
   },
 
   changelog: {
+    // v1.0.8
+    v108_usefirst_title: "Sachez quoi utiliser en premier",
+    v108_usefirst_desc: "Recherchez un article que vous avez en plusieurs exemplaires et Freezely épingle en haut celui à utiliser en premier — le plus proche de sa date de consommation — pour que vous preniez le bon sans chercher.",
+    v108_quickadd_title: "Ajout rapide simplifié",
+    v108_quickadd_desc: "En ajoutant depuis l'écran d'accueil, vous y revenez maintenant directement une fois terminé, et l'onglet Congélateur affiche toujours vos articles.",
+    v108_activity_title: "Activité récente en direct",
+    v108_activity_desc: "Votre activité récente se met à jour toute seule après l'ajout, l'utilisation ou le retrait d'un article — sans tirer pour actualiser.",
     // v1.0.7
     v107_calendar_title: "Calendrier d'expiration",
     v107_calendar_desc: "Visualisez tout ce qui expire bientot dans un calendrier mensuel clair, pour toujours savoir quoi utiliser en premier.",

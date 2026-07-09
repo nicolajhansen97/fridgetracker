@@ -64,6 +64,7 @@ export const PremiumProvider = ({ children }) => {
 
   const [ownPro, setOwnPro] = useState(null); // { productIdentifier, expirationDate } | null
   const [householdUntil, setHouseholdUntil] = useState(null); // ISO string | null
+  const [compedUntil, setCompedUntil] = useState(null); // profiles.premium_until | null
   const [offering, setOffering] = useState(null);
   const [loading, setLoading] = useState(true);
   const [devPro, setDevPro] = useState(false);
@@ -114,6 +115,28 @@ export const PremiumProvider = ({ children }) => {
     } catch (e) {
       console.warn('[premium] household read failed:', e?.message);
       setHouseholdUntil(null);
+    }
+  }, []);
+
+  // Read a manually-granted (comped) Pro from the user's profile row. This is
+  // how we grant Pro outside of store billing — set profiles.premium_until in
+  // Supabase and the user is Pro until that date, no purchase required.
+  const loadProfilePremium = useCallback(async (uid) => {
+    if (!uid) {
+      setCompedUntil(null);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('premium_until')
+        .eq('id', uid)
+        .maybeSingle();
+      if (error) throw error;
+      setCompedUntil(data?.premium_until || null);
+    } catch (e) {
+      console.warn('[premium] profile read failed:', e?.message);
+      setCompedUntil(null);
     }
   }, []);
 
@@ -214,17 +237,29 @@ export const PremiumProvider = ({ children }) => {
     }
   }, [householdId, loadHouseholdPremium, pushHouseholdPremium]);
 
+  // Load any comped (manually granted) Pro whenever the signed-in user changes.
+  // Independent of RevenueCat, so it works even where store billing is absent.
+  useEffect(() => {
+    loadProfilePremium(user?.id || null);
+  }, [user?.id, loadProfilePremium]);
+
   const ownActive = !!ownPro;
   const householdActive = useMemo(() => {
     if (!householdUntil) return false;
     return new Date(householdUntil).getTime() > Date.now();
   }, [householdUntil]);
+  const compedActive = useMemo(() => {
+    if (!compedUntil) return false;
+    return new Date(compedUntil).getTime() > Date.now();
+  }, [compedUntil]);
 
-  const isPremium = ownActive || householdActive || (__DEV__ && devPro);
+  const isPremium = ownActive || householdActive || compedActive || (__DEV__ && devPro);
   const premiumSource = ownActive
     ? 'self'
     : householdActive
     ? 'household'
+    : compedActive
+    ? 'comped'
     : __DEV__ && devPro
     ? 'dev'
     : null;

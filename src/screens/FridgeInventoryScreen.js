@@ -28,6 +28,9 @@ import {
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
 import ItemActionSheet from '../components/ItemActionSheet';
 
+// Dark amber for the "Use first" tag — high contrast on the amber fill.
+const USE_FIRST_FG = '#7C2D12';
+
 const FridgeInventoryScreen = ({ navigation }) => {
   const { items, deleteItem, consumeItem, consumePartial, loadItems } = useFridge();
   const { drawers: drawerDefs } = useDrawers();
@@ -100,6 +103,22 @@ const FridgeInventoryScreen = ({ navigation }) => {
     return true;
   });
 
+  // When a search is active and turns up more than one match, surface the single
+  // item to use first — the one whose effective expiry is soonest — pinned at the
+  // top so the user can act on it without scrolling to hunt it down.
+  const isSearching = searchQuery.trim().length > 0;
+  let useFirstItem = null;
+  if (isSearching && filteredItems.length > 1) {
+    let soonest = null;
+    for (const it of filteredItems) {
+      const exp = getEffectiveExpiry(it);
+      if (!exp) continue;
+      if (!soonest || exp < soonest.exp) soonest = { item: it, exp };
+    }
+    useFirstItem = soonest ? soonest.item : null;
+  }
+  const useFirstId = useFirstItem ? useFirstItem.id : null;
+
   const grouped = filteredItems.reduce((acc, item) => {
     const k = item.drawer || 'Other';
     (acc[k] ||= []).push(item);
@@ -148,6 +167,30 @@ const FridgeInventoryScreen = ({ navigation }) => {
         />
       </View>
 
+      {/* Pinned above the list so the item to grab first stays visible while
+          scrolling — no hunting through results. Tapping opens its actions. */}
+      {useFirstItem ? (
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setActionItem(useFirstItem)}
+          style={styles.useFirstBanner}
+        >
+          <View style={styles.useFirstBannerIcon}>
+            <Icon name="arrow-up" size={20} color={USE_FIRST_FG} />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.useFirstBannerLabel}>{t('home.useFirst')}</Text>
+            <Text style={styles.useFirstBannerName} numberOfLines={1}>{useFirstItem.name}</Text>
+            <Text style={styles.useFirstBannerMeta} numberOfLines={1}>
+              {useFirstItem.drawer}
+              {useFirstItem.position ? ` · ${t('inventory.pkg', { position: useFirstItem.position })}` : ''}
+              {` · ${t('inventory.exp', { date: formatDate(getEffectiveExpiry(useFirstItem)) })}`}
+            </Text>
+          </View>
+          <Icon name="chevron-forward" size={18} color={USE_FIRST_FG} />
+        </TouchableOpacity>
+      ) : null}
+
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
@@ -192,8 +235,13 @@ const FridgeInventoryScreen = ({ navigation }) => {
               {grouped[drawer].map((item) => {
                 const effectiveExpiry = getEffectiveExpiry(item);
                 const expiringSoon = isItemExpiringSoon(item);
+                const isUseFirst = item.id === useFirstId;
                 return (
-                  <Card key={item.id} style={styles.itemCard} padded={false}>
+                  <Card
+                    key={item.id}
+                    style={[styles.itemCard, isUseFirst && styles.itemCardUseFirst]}
+                    padded={false}
+                  >
                     <View style={styles.itemRow}>
                       <View style={styles.iconBox}>
                         <Icon name="snow-outline" size={20} color={colors.primary} />
@@ -204,6 +252,12 @@ const FridgeInventoryScreen = ({ navigation }) => {
                           <Text style={styles.itemNotes} numberOfLines={1}>{item.notes}</Text>
                         ) : null}
                         <View style={styles.badges}>
+                          {isUseFirst ? (
+                            <View style={styles.useFirstBadge}>
+                              <Icon name="arrow-up" size={12} color={USE_FIRST_FG} />
+                              <Text style={styles.useFirstBadgeText}>{t('home.useFirst')}</Text>
+                            </View>
+                          ) : null}
                           {item.quantity ? (
                             <Badge tone="primary">
                               {item.quantity}{item.unit ? ` ${item.unit}` : ''}
@@ -322,6 +376,62 @@ const styles = StyleSheet.create({
   itemCard: {
     marginBottom: spacing.sm,
     overflow: 'hidden',
+  },
+  itemCardUseFirst: {
+    borderColor: colors.warning,
+    borderWidth: 1.5,
+  },
+  useFirstBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.warningSoft,
+    borderWidth: 1,
+    borderColor: colors.warning,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  useFirstBannerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.warning,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  useFirstBannerLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    color: USE_FIRST_FG,
+    textTransform: 'uppercase',
+  },
+  useFirstBannerName: {
+    ...typography.bodyStrong,
+    color: colors.text,
+    marginTop: 1,
+  },
+  useFirstBannerMeta: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  useFirstBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: colors.warning,
+    borderRadius: radii.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  useFirstBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: USE_FIRST_FG,
   },
   itemRow: {
     flexDirection: 'row',

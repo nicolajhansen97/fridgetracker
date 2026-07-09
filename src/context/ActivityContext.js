@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { supabase } from '../config/supabase';
 import { useAuth } from './AuthContext';
 import { useHousehold } from './HouseholdContext';
@@ -17,7 +17,10 @@ export const ActivityProvider = ({ children }) => {
     }
   }, [user, currentHousehold]);
 
-  const loadActivities = async (limit = 50, offset = 0) => {
+  // Memoised so screens can safely depend on it (e.g. in a focus effect)
+  // without re-subscribing on every activities update. Identity only changes
+  // when the active household does.
+  const loadActivities = useCallback(async (limit = 50, offset = 0) => {
     try {
       setLoading(true);
 
@@ -34,7 +37,7 @@ export const ActivityProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentHousehold]);
 
   const getActivityDescription = (activity) => {
     const { action, item_name, changes } = activity;
@@ -43,6 +46,8 @@ export const ActivityProvider = ({ children }) => {
       return `Added "${item_name}" to ${activity.item_drawer || 'freezer'}`;
     } else if (action === 'deleted') {
       return `Removed "${item_name}" from ${activity.item_drawer || 'freezer'}`;
+    } else if (action === 'consumed') {
+      return `Used "${item_name}" from ${activity.item_drawer || 'freezer'}`;
     } else if (action === 'updated') {
       const changedFields = Object.keys(changes);
       if (changedFields.length === 1 && changedFields[0] === 'quantity') {

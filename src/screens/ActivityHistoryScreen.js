@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   RefreshControl,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useActivity } from '../context/ActivityContext';
 import { useLanguage } from '../i18n';
 import {
@@ -34,10 +35,26 @@ const actionColorMap = {
   deleted: '#991B1B',
 };
 
+// Soft fills paired with the foregrounds above — same pairs as the Badge tones,
+// so the colour language stays consistent with the rest of the app.
+const actionSoftMap = {
+  created: colors.successSoft,
+  updated: colors.warningSoft,
+  consumed: colors.infoSoft,
+  deleted: colors.dangerSoft,
+};
+
 const ActivityHistoryScreen = ({ navigation }) => {
   const { activities, loading, loadActivities, getActivityDescription } = useActivity();
   const { t, formatDate } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
+
+  // Reload whenever the screen is focused so newly logged actions appear.
+  useFocusEffect(
+    useCallback(() => {
+      loadActivities();
+    }, [loadActivities])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -97,13 +114,24 @@ const ActivityHistoryScreen = ({ navigation }) => {
           activities.map((activity) => {
             const ch = activity.changes || {};
             // Partial use: show a clean "used X (Y left)" line, not raw fields.
-            const isPartial = activity.action === 'consumed' && ch.partial === true;
+            const isConsumed = activity.action === 'consumed';
+            const isPartial = isConsumed && ch.partial === true;
             const partialUnit = ch.unit ? ` ${ch.unit}` : '';
 
-            // Consumed events carry an internal scalar snapshot (quantity/unit/
-            // partial) that isn't useful as a raw change list — skip it.
-            const changes = activity.action === 'consumed'
-              ? []
+            // Consumed entries surface how much was used and which package it
+            // came from — rendered through the SAME "Changes:" list as every
+            // other row, so the history reads consistently. Full consumes
+            // snapshot quantity + position; partials show the used amount on
+            // their own line above, so for those we only list the package.
+            const consumedQty = isConsumed && !isPartial ? ch.quantity : null;
+            const consumedPos = isConsumed ? ch.position : null;
+            const consumedUnit = ch.unit ? ` ${ch.unit}` : '';
+
+            const changes = isConsumed
+              ? [
+                  ...(consumedQty != null ? [['quantity', `${consumedQty}${consumedUnit}`]] : []),
+                  ...(consumedPos != null ? [['position', String(consumedPos)]] : []),
+                ]
               : (activity.changes
                   ? Object.entries(activity.changes).filter(([field, change]) => {
                       if (field === 'partial' || field === 'unit' || field === 'remaining') return false;
@@ -117,16 +145,19 @@ const ActivityHistoryScreen = ({ navigation }) => {
                     })
                   : []);
 
+            const actionColor = actionColorMap[activity.action] || colors.textMuted;
+            const actionSoft = actionSoftMap[activity.action] || colors.surfaceMuted;
+
             return (
-              <Card key={activity.id} style={styles.card}>
+              <Card key={activity.id} style={[styles.card, { borderLeftWidth: 4, borderLeftColor: actionColor }]}>
                 <View style={styles.headerRow}>
-                  <View style={styles.actionPill}>
+                  <View style={[styles.actionPill, { backgroundColor: actionSoft }]}>
                     <Icon
                       name={actionIconName(activity.action)}
                       size={14}
-                      color={actionColorMap[activity.action] || colors.textMuted}
+                      color={actionColor}
                     />
-                    <Text style={[styles.actionPillText, { color: actionColorMap[activity.action] || colors.textMuted }]}>
+                    <Text style={[styles.actionPillText, { color: actionColor }]}>
                       {t(`activity.${activity.action}`)}
                     </Text>
                   </View>

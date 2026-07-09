@@ -32,6 +32,7 @@ BEGIN
     v_item.drawer,
     jsonb_build_object(
       'quantity', v_item.quantity,
+      'unit', v_item.unit,
       'expiry_date', v_item.expiry_date,
       'position', v_item.position,
       'notes', v_item.notes

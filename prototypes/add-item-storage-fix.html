@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Freezely · Add Item — quantity/unit fix</title>
+<style>
+  :root{
+    --primary:#14B8A6; --primary-dark:#0D9488; --primary-soft:#F0FDFA; --primary-tint:#CCFBF1;
+    --accent:#2563EB; --bg:#F8FAFC; --surface:#FFFFFF; --surface-muted:#F1F5F9;
+    --text:#0F172A; --text-muted:#64748B; --text-subtle:#94A3B8; --border:#E2E8F0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:#0b0e14;color:#e6e8ee;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;-webkit-font-smoothing:antialiased;}
+  header.page{padding:28px 40px 8px;border-bottom:1px solid #1f2433;}
+  header.page h1{margin:0;font-size:21px;font-weight:700;}
+  header.page p{margin:6px 0 0;color:#8a93a6;font-size:13px;max-width:760px;line-height:1.55;}
+  main{padding:28px 40px 80px;display:flex;gap:30px;flex-wrap:wrap;align-items:flex-start;}
+  .col-label{font-size:12px;color:#8a93a6;text-transform:uppercase;letter-spacing:.05em;text-align:center;margin-bottom:8px;}
+
+  /* 390px logical-width phone */
+  .phone{width:390px;border-radius:40px;border:9px solid #1a1f2e;background:var(--bg);overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.45);}
+  .hdr{background:linear-gradient(135deg,#14B8A6 0%,#3B82F6 100%);padding:38px 16px 16px;position:relative;overflow:hidden;border-bottom-left-radius:16px;border-bottom-right-radius:16px;}
+  .hdr .snow{position:absolute;color:rgba(255,255,255,.12);font-size:92px;right:-8px;top:-20px;}
+  .hdr .row{display:flex;align-items:center;min-height:40px;position:relative;z-index:2;}
+  .hdr .back{color:#fff;font-size:15px;font-weight:600;width:84px;}
+  .hdr .title{flex:1;text-align:center;color:#fff;font-size:19px;font-weight:800;}
+  .hdr .side{width:84px;}
+  .body{padding:16px;}
+
+  .sec-label{font-size:13px;font-weight:700;color:var(--text-muted);margin:18px 4px 8px;}
+  .sec-label:first-child{margin-top:2px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 1px 6px rgba(15,23,42,.04);}
+  .inner{padding:12px 16px;}
+  .divider{height:1px;background:var(--border);}
+
+  .name-in{font-size:17px;font-weight:600;color:var(--text);}
+  .name-in.ph{color:var(--text-subtle);font-weight:500;}
+  .autofill{display:flex;gap:8px;margin-top:12px;}
+  .af-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--primary-soft);border:1px solid var(--primary-tint);color:var(--primary-dark);font-size:13px;font-weight:600;}
+  .pro{font-size:9px;font-weight:800;color:#fff;background:var(--primary);border-radius:999px;padding:1px 6px;}
+  .coverage{font-size:12px;color:var(--text-subtle);margin-top:8px;line-height:16px;}
+
+  .field-label{font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+  .link{color:var(--accent);font-size:13px;font-weight:700;text-transform:none;letter-spacing:0;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{padding:9px 14px;border-radius:999px;font-size:13px;font-weight:600;background:var(--surface);border:1px solid var(--border);color:var(--text-muted);}
+  .chip.on{background:var(--primary);border-color:var(--primary);color:#fff;}
+
+  /* the fix: quantity row + clean stepper, unit on its own row */
+  .qty-row{display:flex;align-items:center;justify-content:space-between;}
+  .qty-row .lbl{font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);}
+  .qty-input{min-width:80px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--bg);border:1px solid var(--border);border-radius:12px;font-size:17px;font-weight:700;color:var(--text);}
+
+  .date-box{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:11px 12px;display:flex;justify-content:space-between;align-items:center;font-size:14px;}
+  .foot{padding:12px 16px 16px;border-top:1px solid var(--border);background:var(--surface);}
+  .save{background:linear-gradient(135deg,#14B8A6,#3B82F6);color:#fff;border-radius:14px;padding:15px;text-align:center;font-weight:700;font-size:16px;}
+
+  /* OLD (before) stepper for comparison */
+  .old-stepper{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:999px;overflow:hidden;background:#fff;}
+  .old-stepper .b{width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--primary-dark);}
+  .old-stepper .v{width:46px;height:42px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;border-left:1px solid var(--border);border-right:1px solid var(--border);}
+  .old-line{display:flex;align-items:flex-start;gap:12px;}
+  .old-line .chips{flex:1;}
+</style>
+</head>
+<body>
+  <header class="page">
+    <h1>Freezely · Add Item — quantity / unit fix</h1>
+    <p>Left: the new layout (this is what shipped in the code). Right: the old cramped version for comparison — stepper + 6 unit chips jammed on one row, with a fussy pill-with-dividers stepper. Rendered at a true 390px phone width.</p>
+  </header>
+
+  <main>
+    <!-- NEW -->
+    <div>
+      <div class="col-label">New</div>
+      <div class="phone">
+        <div class="hdr"><span class="snow">❄</span>
+          <div class="row"><div class="back">‹ Cancel</div><div class="title">Add Item</div><div class="side"></div></div>
+        </div>
+        <div class="body">
+          <div class="sec-label">Item</div>
+          <div class="card">
+            <div class="inner"><div class="name-in ph">e.g., Chicken, Frozen Peas…</div></div>
+            <div class="divider"></div>
+            <div class="inner">
+              <div class="autofill"><span class="af-btn">▦ Scan <span class="pro">PRO</span></span><span class="af-btn">◙ Photo <span class="pro">PRO</span></span></div>
+              <div class="coverage">Barcode works best in Europe, the UK and the US. Photo works anywhere.</div>
+            </div>
+          </div>
+
+          <div class="sec-label">Storage</div>
+          <div class="card">
+            <div class="inner">
+              <div class="field-label"><span>Compartment</span><span class="link">Manage</span></div>
+              <div class="chips"><span class="chip on">Drawer 1</span><span class="chip">Drawer 2</span><span class="chip">Drawer 3</span><span class="chip">Door</span></div>
+            </div>
+            <div class="divider"></div>
+            <div class="inner">
+              <div class="qty-row">
+                <span class="lbl">Quantity</span>
+                <div class="qty-input">2</div>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div class="inner">
+              <div class="field-label"><span>Unit</span></div>
+              <div class="chips"><span class="chip on">pcs</span><span class="chip">kg</span><span class="chip">g</span><span class="chip">lbs</span><span class="chip">oz</span><span class="chip">portions</span></div>
+            </div>
+          </div>
+
+          <div class="sec-label">Dates</div>
+          <div class="card">
+            <div class="inner"><div class="field-label"><span>Frozen Date</span></div><div class="date-box"><span>06-06-2026</span><span style="color:var(--primary)">❄</span></div></div>
+            <div class="divider"></div>
+            <div class="inner"><div class="field-label"><span>Best before</span></div><div class="date-box" style="color:var(--text-subtle)"><span>Select date</span><span style="color:var(--accent)">▦</span></div></div>
+          </div>
+        </div>
+        <div class="foot"><div class="save">Add to Freezer</div></div>
+      </div>
+    </div>
+
+    <!-- OLD -->
+    <div>
+      <div class="col-label">Old (cramped)</div>
+      <div class="phone" style="opacity:.95">
+        <div class="hdr"><span class="snow">❄</span>
+          <div class="row"><div class="back">‹ Cancel</div><div class="title">Add Item</div><div class="side"></div></div>
+        </div>
+        <div class="body">
+          <div class="sec-label">Storage</div>
+          <div class="card">
+            <div class="inner">
+              <div class="field-label"><span>Compartment</span><span class="link">Manage</span></div>
+              <div class="chips"><span class="chip on">Drawer 1</span><span class="chip">Drawer 2</span><span class="chip">Drawer 3</span><span class="chip">Door</span></div>
+            </div>
+            <div class="divider"></div>
+            <div class="inner">
+              <div class="field-label"><span>Quantity</span></div>
+              <div class="old-line">
+                <div class="old-stepper"><div class="b">−</div><div class="v">2</div><div class="b">+</div></div>
+                <div class="chips"><span class="chip on">pcs</span><span class="chip">kg</span><span class="chip">g</span><span class="chip">lbs</span><span class="chip">oz</span><span class="chip">portions</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
