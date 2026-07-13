@@ -542,15 +542,15 @@ export default {
   },
 
   changelog: {
-    // v1.0.9
-    v109_restock_title: 'Reabastece sin adivinar',
-    v109_restock_desc: 'Una nueva pantalla de Reabastecer muestra cuánto tienes de cada artículo y qué se está agotando, con un toque para añadirlo a la lista de la compra. Freezely Pro añade información inteligente: qué tan rápido usas las cosas, cuánto comprar y qué sueles comprar de más.',
-    v109_add_title: 'Añadir más rápido',
-    v109_add_desc: 'Una pantalla de Añadir artículo más limpia con selector de cantidad y de unidad, sugerencias de nombres de artículos añadidos antes y atajos de Hoy / Ayer para la fecha de congelación.',
-    v109_home_title: 'Inicio más ordenado',
-    v109_home_desc: 'Calendario, Estadísticas y Reabastecer ahora son fichas compactas, para que el inicio quede limpio y todo esté a un toque.',
-    v109_polish_title: 'Mejoras y correcciones',
-    v109_polish_desc: 'Varios ajustes visuales y pequeñas correcciones en toda la app, incluida la unidad junto a las cantidades en la pantalla Usar pronto.',
+    // v1.1.0
+    v110_restock_title: 'Reabastece sin adivinar',
+    v110_restock_desc: 'Una nueva pantalla de Reabastecer muestra cuánto tienes de cada artículo y qué se está agotando, con un toque para añadirlo a la lista de la compra. Freezely Pro añade información inteligente: qué tan rápido usas las cosas, cuánto comprar y qué sueles comprar de más.',
+    v110_add_title: 'Añadir más rápido',
+    v110_add_desc: 'Una pantalla de Añadir artículo más limpia con selector de cantidad y de unidad, sugerencias de nombres de artículos añadidos antes y atajos de Hoy / Ayer para la fecha de congelación.',
+    v110_home_title: 'Inicio más ordenado',
+    v110_home_desc: 'Calendario, Estadísticas y Reabastecer ahora son fichas compactas, para que el inicio quede limpio y todo esté a un toque.',
+    v110_polish_title: 'Mejoras y correcciones',
+    v110_polish_desc: 'Varios ajustes visuales y pequeñas correcciones en toda la app, incluida la unidad junto a las cantidades en la pantalla Usar pronto.',
     // v1.0.8
     v108_usefirst_title: 'Descubre qué usar primero',
     v108_usefirst_desc: 'Busca algo de lo que tengas varias unidades y Freezely fija arriba la que debes usar primero — la más cercana a su fecha de consumo — para que cojas la correcta sin buscar.',

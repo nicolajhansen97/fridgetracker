@@ -5,19 +5,19 @@
 // The app shows the "What's New" popup once per version.
 // ─────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.0.9';
+export const CURRENT_VERSION = '1.1.0';
 
 // Features use translation keys — add the matching keys to each language file.
 // The i18n system falls back to English automatically if a language is missing a key.
 export const CHANGELOG = [
   {
-    version: '1.0.9',
+    version: '1.1.0',
     date: '2026-07-13',
     features: [
-      { icon: '🔄', titleKey: 'changelog.v109_restock_title', descKey: 'changelog.v109_restock_desc' },
-      { icon: '➕', titleKey: 'changelog.v109_add_title',      descKey: 'changelog.v109_add_desc' },
-      { icon: '🏠', titleKey: 'changelog.v109_home_title',     descKey: 'changelog.v109_home_desc' },
-      { icon: '🧹', titleKey: 'changelog.v109_polish_title',   descKey: 'changelog.v109_polish_desc' },
+      { icon: '🔄', titleKey: 'changelog.v110_restock_title', descKey: 'changelog.v110_restock_desc' },
+      { icon: '➕', titleKey: 'changelog.v110_add_title',      descKey: 'changelog.v110_add_desc' },
+      { icon: '🏠', titleKey: 'changelog.v110_home_title',     descKey: 'changelog.v110_home_desc' },
+      { icon: '🧹', titleKey: 'changelog.v110_polish_title',   descKey: 'changelog.v110_polish_desc' },
     ],
   },
   {

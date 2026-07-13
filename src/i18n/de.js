@@ -542,15 +542,15 @@ export default {
   },
 
   changelog: {
-    // v1.0.9
-    v109_restock_title: 'Nachkaufen ohne Rätselraten',
-    v109_restock_desc: 'Ein neuer Nachkaufen-Bildschirm zeigt, wie viel du von jedem Artikel hast und was zur Neige geht — mit einem Tipp zum Hinzufügen zur Einkaufsliste. Freezely Pro ergänzt smarte Einblicke: wie schnell du Dinge verbrauchst, wie viel du kaufen solltest und was du meist zu viel kaufst.',
-    v109_add_title: 'Schnelleres Hinzufügen',
-    v109_add_desc: 'Ein übersichtlicher Artikel-hinzufügen-Bildschirm mit Mengen-Stepper und Einheitenauswahl, Namensvorschlägen aus zuvor hinzugefügten Artikeln und Heute / Gestern-Kürzeln für das Einfrierdatum.',
-    v109_home_title: 'Aufgeräumter Startbildschirm',
-    v109_home_desc: 'Kalender, Statistik und Nachkaufen sind jetzt kompakte Kacheln, damit der Start sauber bleibt und alles einen Tipp entfernt ist.',
-    v109_polish_title: 'Feinschliff und Fehlerbehebungen',
-    v109_polish_desc: 'Diverse optische Verbesserungen und kleine Fehlerbehebungen in der ganzen App, darunter die Anzeige der Einheit neben der Menge im Bald-verbrauchen-Bildschirm.',
+    // v1.1.0
+    v110_restock_title: 'Nachkaufen ohne Rätselraten',
+    v110_restock_desc: 'Ein neuer Nachkaufen-Bildschirm zeigt, wie viel du von jedem Artikel hast und was zur Neige geht — mit einem Tipp zum Hinzufügen zur Einkaufsliste. Freezely Pro ergänzt smarte Einblicke: wie schnell du Dinge verbrauchst, wie viel du kaufen solltest und was du meist zu viel kaufst.',
+    v110_add_title: 'Schnelleres Hinzufügen',
+    v110_add_desc: 'Ein übersichtlicher Artikel-hinzufügen-Bildschirm mit Mengen-Stepper und Einheitenauswahl, Namensvorschlägen aus zuvor hinzugefügten Artikeln und Heute / Gestern-Kürzeln für das Einfrierdatum.',
+    v110_home_title: 'Aufgeräumter Startbildschirm',
+    v110_home_desc: 'Kalender, Statistik und Nachkaufen sind jetzt kompakte Kacheln, damit der Start sauber bleibt und alles einen Tipp entfernt ist.',
+    v110_polish_title: 'Feinschliff und Fehlerbehebungen',
+    v110_polish_desc: 'Diverse optische Verbesserungen und kleine Fehlerbehebungen in der ganzen App, darunter die Anzeige der Einheit neben der Menge im Bald-verbrauchen-Bildschirm.',
     // v1.0.8
     v108_usefirst_title: 'Sehen, was zuerst verbraucht werden sollte',
     v108_usefirst_desc: 'Suche nach etwas, das du mehrfach hast, und Freezely hebt oben das Produkt hervor, das du zuerst verbrauchen solltest — das mit dem nächsten Verbrauchsdatum —, damit du gleich das richtige greifst.',

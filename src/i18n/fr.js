@@ -542,15 +542,15 @@ export default {
   },
 
   changelog: {
-    // v1.0.9
-    v109_restock_title: 'Réapprovisionner sans deviner',
-    v109_restock_desc: "Un nouvel écran Réapprovisionner montre combien vous avez de chaque article et ce qui va bientôt manquer, avec un appui pour l'ajouter à la liste de courses. Freezely Pro ajoute des analyses intelligentes : la vitesse à laquelle vous consommez, combien acheter et ce que vous achetez souvent en trop.",
-    v109_add_title: 'Ajout plus rapide',
-    v109_add_desc: "Un écran Ajouter un article plus épuré avec sélecteur de quantité et d'unité, des suggestions de noms d'articles déjà ajoutés, et des raccourcis Aujourd'hui / Hier pour la date de congélation.",
-    v109_home_title: "Accueil plus net",
-    v109_home_desc: 'Calendrier, Statistiques et Réapprovisionner sont désormais des tuiles compactes, pour un accueil épuré où tout est à portée de main.',
-    v109_polish_title: 'Peaufinage et corrections',
-    v109_polish_desc: "Divers ajustements visuels et petites corrections dans toute l'app, dont l'affichage de l'unité à côté des quantités sur l'écran À utiliser bientôt.",
+    // v1.1.0
+    v110_restock_title: 'Réapprovisionner sans deviner',
+    v110_restock_desc: "Un nouvel écran Réapprovisionner montre combien vous avez de chaque article et ce qui va bientôt manquer, avec un appui pour l'ajouter à la liste de courses. Freezely Pro ajoute des analyses intelligentes : la vitesse à laquelle vous consommez, combien acheter et ce que vous achetez souvent en trop.",
+    v110_add_title: 'Ajout plus rapide',
+    v110_add_desc: "Un écran Ajouter un article plus épuré avec sélecteur de quantité et d'unité, des suggestions de noms d'articles déjà ajoutés, et des raccourcis Aujourd'hui / Hier pour la date de congélation.",
+    v110_home_title: "Accueil plus net",
+    v110_home_desc: 'Calendrier, Statistiques et Réapprovisionner sont désormais des tuiles compactes, pour un accueil épuré où tout est à portée de main.',
+    v110_polish_title: 'Peaufinage et corrections',
+    v110_polish_desc: "Divers ajustements visuels et petites corrections dans toute l'app, dont l'affichage de l'unité à côté des quantités sur l'écran À utiliser bientôt.",
     // v1.0.8
     v108_usefirst_title: "Sachez quoi utiliser en premier",
     v108_usefirst_desc: "Recherchez un article que vous avez en plusieurs exemplaires et Freezely épingle en haut celui à utiliser en premier — le plus proche de sa date de consommation — pour que vous preniez le bon sans chercher.",

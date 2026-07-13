@@ -577,15 +577,15 @@ export default {
   },
 
   changelog: {
-    // v1.0.9
-    v109_restock_title: 'Genopfyld uden gætteri',
-    v109_restock_desc: 'En ny Genopfyld-skærm viser, hvor meget du har af hver vare, og hvad du er ved at løbe tør for — med ét tryk til at føje den til indkøbslisten. Freezely Pro tilføjer smarte indsigter: hvor hurtigt du bruger tingene, hvor meget du skal købe, og hvad du typisk køber for meget af.',
-    v109_add_title: 'Hurtigere tilføjelse',
-    v109_add_desc: 'En renere Tilføj vare-skærm med antals-stepper og enhedsvælger, navneforslag fra varer, du har tilføjet før, og genveje til I dag / I går for frysedatoen.',
-    v109_home_title: 'Ryddeligere forside',
-    v109_home_desc: 'Kalender, Statistik og Genopfyld er nu kompakte felter, så forsiden forbliver ren og alt er ét tryk væk.',
-    v109_polish_title: 'Finpudsning og rettelser',
-    v109_polish_desc: 'Diverse visuelle justeringer og små fejlrettelser i hele appen, herunder visning af enheden ved siden af antal på Brug snart-skærmen.',
+    // v1.1.0
+    v110_restock_title: 'Genopfyld uden gætteri',
+    v110_restock_desc: 'En ny Genopfyld-skærm viser, hvor meget du har af hver vare, og hvad du er ved at løbe tør for — med ét tryk til at føje den til indkøbslisten. Freezely Pro tilføjer smarte indsigter: hvor hurtigt du bruger tingene, hvor meget du skal købe, og hvad du typisk køber for meget af.',
+    v110_add_title: 'Hurtigere tilføjelse',
+    v110_add_desc: 'En renere Tilføj vare-skærm med antals-stepper og enhedsvælger, navneforslag fra varer, du har tilføjet før, og genveje til I dag / I går for frysedatoen.',
+    v110_home_title: 'Ryddeligere forside',
+    v110_home_desc: 'Kalender, Statistik og Genopfyld er nu kompakte felter, så forsiden forbliver ren og alt er ét tryk væk.',
+    v110_polish_title: 'Finpudsning og rettelser',
+    v110_polish_desc: 'Diverse visuelle justeringer og små fejlrettelser i hele appen, herunder visning af enheden ved siden af antal på Brug snart-skærmen.',
     // v1.0.8
     v108_usefirst_title: 'Se hvad du skal bruge først',
     v108_usefirst_desc: 'Søg efter noget, du har flere af, og Freezely fremhæver øverst den, du bør bruge først — den tættest på sidste holdbarhedsdato — så du tager den rigtige uden at lede.',
