@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -27,6 +27,7 @@ import {
   Card,
   Icon,
   Pill,
+  AmountField,
   Input,
   PrimaryButton,
   SecondaryButton,
@@ -39,16 +40,21 @@ import { lookupBarcode, analyzeProductImage } from '../utils/productLookup';
 
 const USE_PACKAGE_NUMBERS_KEY = 'freezely_use_package_numbers';
 const LAST_DRAWER_KEY = 'freezely_last_drawer';
-const UNITS = ['pcs', 'kg', 'g', 'lbs', 'oz', 'portions'];
 
 const AddItemScreen = ({ navigation, route }) => {
   // Launched from Home's Quick Add (vs. opened from within the Freezer tab).
   const fromHome = route?.params?.from === 'home';
 
+  const ymd = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayStr = ymd(today);
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const yesterdayStr = ymd(yesterday);
 
   const [name, setName] = useState('');
+  const [showSuggest, setShowSuggest] = useState(false);
   const [drawer, setDrawer] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [frozenDate, setFrozenDate] = useState(todayStr);
@@ -67,7 +73,7 @@ const AddItemScreen = ({ navigation, route }) => {
   const [analyzing, setAnalyzing] = useState(false);
   const [paywallVisible, setPaywallVisible] = useState(false);
 
-  const { addItem, getNextAvailablePosition } = useFridge();
+  const { addItem, getNextAvailablePosition, items } = useFridge();
   const { drawers } = useDrawers();
   const { t, formatDate, locale } = useLanguage();
   const { isPremium } = usePremium();
@@ -96,9 +102,37 @@ const AddItemScreen = ({ navigation, route }) => {
     return () => { cancelled = true; };
   }, [drawers]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Item-name suggestions drawn from everything already in the freezer, so the
+  // user can re-add a recurring item without retyping (and keeps the name
+  // spelled consistently, which helps use-by matching and recipe search).
+  const nameSuggestions = useMemo(() => {
+    const q = name.trim().toLowerCase();
+    if (!q) return [];
+    const seen = new Set();
+    const out = [];
+    for (const it of items) {
+      const n = (it.name || '').trim();
+      const key = n.toLowerCase();
+      if (!n || key === q || seen.has(key)) continue;
+      if (key.includes(q)) {
+        seen.add(key);
+        out.push(n);
+        if (out.length >= 5) break;
+      }
+    }
+    return out;
+  }, [name, items]);
+
+  // Frozen date is almost always today; quick-pick chips make that one tap.
+  const isCustomFrozen = frozenDate && frozenDate !== todayStr && frozenDate !== yesterdayStr;
+  const pickFrozen = (dateObj) => {
+    setSelectedFrozenDate(dateObj);
+    setFrozenDate(ymd(dateObj));
+  };
+
   const handleFrozenDateConfirm = (date) => {
     setSelectedFrozenDate(date);
-    setFrozenDate(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`);
+    setFrozenDate(ymd(date));
     setFrozenDatePickerVisibility(false);
   };
 
@@ -257,10 +291,35 @@ const AddItemScreen = ({ navigation, route }) => {
                 placeholder={t('addItem.itemNamePlaceholder')}
                 placeholderTextColor={colors.textSubtle}
                 value={name}
-                onChangeText={setName}
+                onChangeText={(v) => {
+                  setName(v);
+                  setShowSuggest(true);
+                }}
                 editable={!isLoading}
               />
             </View>
+
+            {showSuggest && nameSuggestions.length > 0 && (
+              <>
+                <View style={styles.divider} />
+                <View style={styles.suggestWrap}>
+                  {nameSuggestions.map((s) => (
+                    <TouchableOpacity
+                      key={s}
+                      style={styles.suggestRow}
+                      onPress={() => {
+                        setName(s);
+                        setShowSuggest(false);
+                      }}
+                      activeOpacity={0.6}
+                    >
+                      <Icon name="time-outline" size={15} color={colors.textSubtle} />
+                      <Text style={styles.suggestText} numberOfLines={1}>{s}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
 
             <View style={styles.divider} />
 
@@ -326,30 +385,13 @@ const AddItemScreen = ({ navigation, route }) => {
             <View style={styles.divider} />
 
             <View style={styles.cardInner}>
-              <View style={styles.qtyRow}>
-                <Text style={[styles.label, styles.labelInline]}>{t('addItem.quantity')}</Text>
-                <TextInput
-                  style={styles.qtyInput}
-                  value={quantity}
-                  onChangeText={setQuantity}
-                  keyboardType="number-pad"
-                  editable={!isLoading}
-                  placeholder="1"
-                  placeholderTextColor={colors.textSubtle}
-                  textAlign="center"
-                />
-              </View>
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.cardInner}>
-              <Text style={styles.label}>{t('addItem.unit')}</Text>
-              <View style={styles.chipWrap}>
-                {UNITS.map((u) => (
-                  <Pill key={u} label={u} selected={unit === u} onPress={() => setUnit(u)} disabled={isLoading} />
-                ))}
-              </View>
+              <AmountField
+                quantity={quantity}
+                setQuantity={setQuantity}
+                unit={unit}
+                setUnit={setUnit}
+                disabled={isLoading}
+              />
             </View>
           </Card>
 
@@ -358,12 +400,27 @@ const AddItemScreen = ({ navigation, route }) => {
           <Card style={styles.card} padded={false}>
             <View style={styles.cardInner}>
               <Text style={styles.label}>{t('addItem.frozenDate')}</Text>
-              <TouchableOpacity style={styles.datePicker} onPress={() => setFrozenDatePickerVisibility(true)} disabled={isLoading}>
-                <Text style={[styles.dateText, !frozenDate && styles.datePlaceholder]} numberOfLines={1}>
-                  {frozenDate ? formatDate(frozenDate) : t('addItem.selectDate')}
-                </Text>
-                <Icon name="snow-outline" size={18} color={colors.primary} />
-              </TouchableOpacity>
+              <View style={styles.chipWrap}>
+                <Pill
+                  label={t('addItem.today')}
+                  selected={frozenDate === todayStr}
+                  onPress={() => pickFrozen(today)}
+                  disabled={isLoading}
+                />
+                <Pill
+                  label={t('addItem.yesterday')}
+                  selected={frozenDate === yesterdayStr}
+                  onPress={() => pickFrozen(yesterday)}
+                  disabled={isLoading}
+                />
+                <Pill
+                  label={isCustomFrozen ? formatDate(frozenDate) : t('addItem.pickDate')}
+                  icon={<Icon name="calendar-outline" size={14} color={isCustomFrozen ? colors.surface : colors.textMuted} />}
+                  selected={!!isCustomFrozen}
+                  onPress={() => setFrozenDatePickerVisibility(true)}
+                  disabled={isLoading}
+                />
+              </View>
             </View>
 
             <View style={styles.divider} />
@@ -569,6 +626,21 @@ const styles = StyleSheet.create({
     padding: 0,
     minHeight: 24,
   },
+  suggestWrap: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+  },
+  suggestRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: 10,
+  },
+  suggestText: {
+    flex: 1,
+    fontSize: 15,
+    color: colors.text,
+  },
   notesRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -603,26 +675,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-  },
-  qtyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  labelInline: {
-    marginBottom: 0,
-  },
-  qtyInput: {
-    minWidth: 80,
-    height: 44,
-    backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingHorizontal: 12,
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.text,
   },
   row: {
     flexDirection: 'row',

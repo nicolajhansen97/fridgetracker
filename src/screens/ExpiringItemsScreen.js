@@ -21,6 +21,7 @@ import {
   EmptyState,
 } from '../components/ui';
 import { colors, spacing, typography } from '../theme';
+import ItemActionSheet from '../components/ItemActionSheet';
 
 const statusTone = (status) => {
   switch (status) {
@@ -38,11 +39,12 @@ const statusTone = (status) => {
 };
 
 const ExpiringItemsScreen = ({ navigation }) => {
-  const { items, loading, deleteItem, loadItems } = useFridge();
+  const { items, loading, deleteItem, consumeItem, consumePartial, loadItems } = useFridge();
   const { getEffectiveExpiry, getDaysUntilExpiry, getFreezerInfo } = useFridgeExpiry();
   const { t, formatDate } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
   const [expiringItems, setExpiringItems] = useState([]);
+  const [actionItem, setActionItem] = useState(null);
 
   useEffect(() => {
     if (!items || items.length === 0) {
@@ -79,18 +81,41 @@ const ExpiringItemsScreen = ({ navigation }) => {
     finally { setRefreshing(false); }
   };
 
-  const handleDelete = (item) => {
-    Alert.alert(t('inventory.deleteItem'), t('inventory.confirmDelete', { name: item.name }), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('common.delete'),
-        style: 'destructive',
-        onPress: async () => {
-          const result = await deleteItem(item.id);
-          if (!result.success) Alert.alert(t('common.error'), result.error);
-        },
-      },
-    ]);
+  const closeActions = () => setActionItem(null);
+
+  const onUse = async () => {
+    const item = actionItem;
+    closeActions();
+    if (!item) return;
+    const result = await consumeItem(item.id);
+    if (!result.success) Alert.alert(t('common.error'), result.error);
+  };
+
+  const onThrow = async () => {
+    const item = actionItem;
+    closeActions();
+    if (!item) return;
+    const result = await deleteItem(item.id);
+    if (!result.success) Alert.alert(t('common.error'), result.error);
+  };
+
+  // remaining <= 0 → used all of it (full consume); otherwise log the used
+  // portion as consumed and reduce the quantity.
+  const onPartial = async (remaining) => {
+    const item = actionItem;
+    closeActions();
+    if (!item) return;
+    const current = Number(item.quantity) || 0;
+    const used = current - remaining;
+    let result;
+    if (remaining <= 0) {
+      result = await consumeItem(item.id);
+    } else if (used > 0) {
+      result = await consumePartial(item.id, used);
+    } else {
+      return; // nothing actually used
+    }
+    if (!result.success) Alert.alert(t('common.error'), result.error);
   };
 
   return (
@@ -123,7 +148,12 @@ const ExpiringItemsScreen = ({ navigation }) => {
             </Card>
 
             {expiringItems.map((item) => (
-              <Card key={item.id} style={styles.itemCard}>
+              <TouchableOpacity
+                key={item.id}
+                activeOpacity={0.85}
+                onPress={() => setActionItem(item)}
+              >
+              <Card style={styles.itemCard}>
                 <View style={styles.itemHeader}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.itemName}>{item.name}</Text>
@@ -132,7 +162,20 @@ const ExpiringItemsScreen = ({ navigation }) => {
                       <Text style={styles.itemDrawer}>{item.drawer}</Text>
                     </View>
                   </View>
-                  <IconButton name="trash-outline" variant="surface" size={32} onPress={() => handleDelete(item)} />
+                  <IconButton
+                    name="pencil-outline"
+                    variant="surface"
+                    size={32}
+                    onPress={() => navigation.navigate('EditItem', { item })}
+                    accessibilityLabel={t('common.edit')}
+                  />
+                  <IconButton
+                    name="checkmark-circle-outline"
+                    variant="surface"
+                    size={32}
+                    onPress={() => setActionItem(item)}
+                    accessibilityLabel={item.name}
+                  />
                 </View>
 
                 <View style={styles.details}>
@@ -152,7 +195,7 @@ const ExpiringItemsScreen = ({ navigation }) => {
                     <DetailRow label={t('expiring.frozenOn')} value={formatDate(item.frozen_date)} />
                   ) : null}
                   {item.quantity && item.quantity > 1 ? (
-                    <DetailRow label={t('expiring.quantity')} value={item.quantity} />
+                    <DetailRow label={t('expiring.quantity')} value={`${item.quantity}${item.unit ? ` ${item.unit}` : ''}`} />
                   ) : null}
                   {item.notes ? <DetailRow label={t('expiring.notes')} value={item.notes} /> : null}
                 </View>
@@ -161,11 +204,21 @@ const ExpiringItemsScreen = ({ navigation }) => {
                   {item.statusText}
                 </Badge>
               </Card>
+              </TouchableOpacity>
             ))}
           </>
         )}
         <View style={{ height: spacing.xxl }} />
       </ScrollView>
+
+      <ItemActionSheet
+        visible={!!actionItem}
+        item={actionItem}
+        onClose={closeActions}
+        onUse={onUse}
+        onThrow={onThrow}
+        onPartial={onPartial}
+      />
     </Screen>
   );
 };

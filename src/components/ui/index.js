@@ -6,6 +6,7 @@ export { default as PrimaryButton } from './PrimaryButton';
 export { default as SecondaryButton } from './SecondaryButton';
 export { default as IconButton } from './IconButton';
 export { default as Pill } from './Pill';
+export { default as AmountField } from './AmountField';
 export { default as Input } from './Input';
 export { default as Badge } from './Badge';
 export { default as SectionTitle } from './SectionTitle';

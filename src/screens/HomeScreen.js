@@ -16,6 +16,8 @@ import { useHousehold } from '../context/HouseholdContext';
 import { useActivity } from '../context/ActivityContext';
 import { useLanguage } from '../i18n';
 import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
+import { useStockInsights } from '../hooks/useStockInsights';
+import { usePremium } from '../context/PremiumContext';
 import WhatsNewModal from '../components/WhatsNewModal';
 import {
   Screen,
@@ -31,6 +33,10 @@ const HomeScreen = ({ navigation }) => {
   const { currentHousehold, loadHouseholds } = useHousehold();
   const { activities, loadActivities } = useActivity();
   const { getEffectiveExpiry, getDaysUntilExpiry, isPastFreezerWindow } = useFridgeExpiry();
+  const { restock, lowBasic } = useStockInsights();
+  const { isPremium } = usePremium();
+  // Badge reflects whichever "running low" list this user actually sees.
+  const lowCount = isPremium ? restock.length : lowBasic.length;
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
@@ -153,6 +159,10 @@ const HomeScreen = ({ navigation }) => {
     navigation.navigate('Calendar');
   };
 
+  const goToRestock = () => {
+    navigation.navigate('StockInsights');
+  };
+
   const actionIconName = (action) => {
     switch (action) {
       case 'created': return 'add-circle-outline';
@@ -238,41 +248,45 @@ const HomeScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Expiry calendar entry point */}
-        <TouchableOpacity activeOpacity={0.85} onPress={goToCalendar} style={{ marginTop: spacing.md }}>
-          <Card style={styles.entryCard}>
-            <View style={styles.entryCardIcon}>
-              <Icon name="calendar-outline" size={20} color={colors.accent} />
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.entryCardTitle}>{t('calendar.homeCardTitle')}</Text>
-              <Text style={styles.entryCardSub} numberOfLines={1}>
-                {t('calendar.homeCardSubtitle')}
-              </Text>
-            </View>
-            <Icon name="chevron-forward" size={18} color={colors.textMuted} />
-          </Card>
-        </TouchableOpacity>
-
-        {/* Stats entry point */}
-        {summary.totalItems > 0 && (
-          <TouchableOpacity activeOpacity={0.85} onPress={goToStats} style={{ marginTop: spacing.md }}>
-            <Card style={styles.entryCard}>
-              <View style={styles.entryCardIcon}>
-                <Icon name="bar-chart-outline" size={20} color={colors.accent} />
+        {/* Quick access — three compact tiles instead of stacked cards */}
+        <View style={styles.quickRow}>
+          <TouchableOpacity activeOpacity={0.85} onPress={goToCalendar} style={styles.quickTileWrap}>
+            <Card style={styles.quickTile}>
+              <View style={styles.quickIcon}>
+                <Icon name="calendar-outline" size={20} color={colors.accent} />
               </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={styles.entryCardTitle}>{t('home.yourFreezerStats')}</Text>
-                <Text style={styles.entryCardSub} numberOfLines={2}>
-                  {summary.pastWindowCount > 0
-                    ? t('stats.pastWindowSummary', { count: summary.pastWindowCount })
-                    : t('stats.cardSubtitle')}
-                </Text>
-              </View>
-              <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+              <Text style={styles.quickLabel} numberOfLines={1}>{t('home.calendarShort')}</Text>
             </Card>
           </TouchableOpacity>
-        )}
+
+          <TouchableOpacity activeOpacity={0.85} onPress={goToStats} style={styles.quickTileWrap}>
+            <Card style={styles.quickTile}>
+              <View style={styles.quickIcon}>
+                <Icon name="bar-chart-outline" size={20} color={colors.accent} />
+                {summary.pastWindowCount > 0 && (
+                  <View style={styles.quickBadge}>
+                    <Text style={styles.quickBadgeText}>{summary.pastWindowCount}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.quickLabel} numberOfLines={1}>{t('home.statsShort')}</Text>
+            </Card>
+          </TouchableOpacity>
+
+          <TouchableOpacity activeOpacity={0.85} onPress={goToRestock} style={styles.quickTileWrap}>
+            <Card style={styles.quickTile}>
+              <View style={styles.quickIcon}>
+                <Icon name="repeat-outline" size={20} color={colors.accent} />
+                {lowCount > 0 && (
+                  <View style={[styles.quickBadge, styles.quickBadgeWarn]}>
+                    <Text style={styles.quickBadgeText}>{lowCount}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.quickLabel} numberOfLines={1}>{t('restock.title')}</Text>
+            </Card>
+          </TouchableOpacity>
+        </View>
 
         {/* Expiring soon list — "use first" */}
         {summary.expiringList.length > 0 && (
@@ -482,6 +496,55 @@ const styles = StyleSheet.create({
   sectionActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+
+  quickRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  quickTileWrap: {
+    flex: 1,
+  },
+  quickTile: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    gap: 8,
+  },
+  quickIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.md,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -7,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 4,
+    backgroundColor: colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.surface,
+  },
+  quickBadgeWarn: {
+    backgroundColor: colors.warning,
+  },
+  quickBadgeText: {
+    color: colors.surface,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  quickLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text,
   },
 
   entryCard: {

@@ -23,6 +23,7 @@ import { useShoppingList } from '../context/ShoppingListContext';
 import { useFridge } from '../context/FridgeContext';
 import { useHousehold } from '../context/HouseholdContext';
 import { useLanguage } from '../i18n';
+import { useStockInsights } from '../hooks/useStockInsights';
 import { getCategory, CATEGORY_ORDER } from '../utils/foodCategories';
 import {
   Screen,
@@ -56,6 +57,7 @@ const ShoppingListScreen = () => {
   } = useShoppingList();
   const { addItem: addToFridge, getNextAvailablePosition } = useFridge();
   const { currentHousehold } = useHousehold();
+  const { restock } = useStockInsights();
   const { t } = useLanguage();
 
   const [draft, setDraft] = useState('');
@@ -68,6 +70,18 @@ const ShoppingListScreen = () => {
   const unchecked = items.filter((i) => !i.checked);
   const checked = items.filter((i) => i.checked);
   const total = items.length;
+
+  // Restock suggestions the user hasn't already got on this list.
+  const suggestions = useMemo(() => {
+    const onList = new Set(unchecked.map((i) => (i.name || '').trim().toLowerCase()));
+    return restock.filter((s) => !onList.has(s.key)).slice(0, 6);
+  }, [restock, unchecked]);
+
+  const addSuggestion = (s) => {
+    const qty = s.suggestedQty > 0 ? `${s.suggestedQty}${s.unit ? ` ${s.unit}` : ''}` : '';
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    addItem(s.name, qty);
+  };
 
   // Group unchecked items by category, in CATEGORY_ORDER
   const grouped = useMemo(() => {
@@ -250,6 +264,25 @@ const ShoppingListScreen = () => {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
           }
         >
+          {suggestions.length > 0 && (
+            <View style={styles.suggestBlock}>
+              <Text style={styles.suggestLabel}>{t('restock.suggestedToBuy').toUpperCase()}</Text>
+              <View style={styles.suggestChips}>
+                {suggestions.map((s) => (
+                  <TouchableOpacity
+                    key={s.key}
+                    style={styles.suggestChip}
+                    onPress={() => addSuggestion(s)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.suggestChipText} numberOfLines={1}>{s.name}</Text>
+                    <Icon name="add" size={15} color={colors.primary} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
           {total === 0 ? (
             <View style={styles.empty}>
               <View style={styles.emptyIconWrap}>
@@ -603,6 +636,46 @@ const styles = StyleSheet.create({
   group: {},
   groupSpacing: {
     marginTop: spacing.lg,
+  },
+
+  // "Suggested to buy" strip
+  suggestBlock: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    marginBottom: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  suggestLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textMuted,
+    letterSpacing: 1.0,
+    marginBottom: spacing.sm,
+  },
+  suggestChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  suggestChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    maxWidth: '100%',
+    backgroundColor: colors.primarySoft,
+    borderWidth: 1,
+    borderColor: colors.primaryTint,
+    borderRadius: radii.pill,
+    paddingVertical: 7,
+    paddingLeft: 12,
+    paddingRight: 8,
+  },
+  suggestChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primaryDark,
+    flexShrink: 1,
   },
   categoryLabel: {
     fontSize: 11,

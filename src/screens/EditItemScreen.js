@@ -20,12 +20,11 @@ import {
   Card,
   Icon,
   Pill,
+  AmountField,
   Input,
   PrimaryButton,
 } from '../components/ui';
 import { colors, radii, spacing, typography } from '../theme';
-
-const UNITS = ['pcs', 'kg', 'g', 'lbs', 'oz', 'portions'];
 
 const EditItemScreen = ({ route, navigation }) => {
   const { item } = route.params;
@@ -170,30 +169,13 @@ const EditItemScreen = ({ route, navigation }) => {
             <View style={styles.divider} />
 
             <View style={styles.cardInner}>
-              <View style={styles.qtyRow}>
-                <Text style={[styles.label, styles.labelInline]}>{t('addItem.quantity')}</Text>
-                <TextInput
-                  style={styles.qtyInput}
-                  value={quantity}
-                  onChangeText={setQuantity}
-                  keyboardType="number-pad"
-                  editable={!isLoading}
-                  placeholder="1"
-                  placeholderTextColor={colors.textSubtle}
-                  textAlign="center"
-                />
-              </View>
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.cardInner}>
-              <Text style={styles.label}>{t('addItem.unit')}</Text>
-              <View style={styles.chipWrap}>
-                {UNITS.map((u) => (
-                  <Pill key={u} label={u} selected={unit === u} onPress={() => setUnit(u)} disabled={isLoading} />
-                ))}
-              </View>
+              <AmountField
+                quantity={quantity}
+                setQuantity={setQuantity}
+                unit={unit}
+                setUnit={setUnit}
+                disabled={isLoading}
+              />
             </View>
           </Card>
 
@@ -376,26 +358,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-  },
-  qtyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  labelInline: {
-    marginBottom: 0,
-  },
-  qtyInput: {
-    minWidth: 80,
-    height: 44,
-    backgroundColor: colors.bg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingHorizontal: 12,
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.text,
   },
   warning: {
     backgroundColor: colors.warningSoft,
