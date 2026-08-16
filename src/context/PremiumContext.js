@@ -59,7 +59,7 @@ const getActivePro = (info) => {
 };
 
 export const PremiumProvider = ({ children }) => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { currentHousehold } = useHousehold();
 
   const [ownPro, setOwnPro] = useState(null); // { productIdentifier, expirationDate } | null
@@ -69,6 +69,7 @@ export const PremiumProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [devPro, setDevPro] = useState(false);
   const configuredRef = useRef(false);
+  const identifiedRef = useRef(null); // app user id RevenueCat currently knows
 
   const householdId = currentHousehold?.id || null;
   const householdIdRef = useRef(householdId);
@@ -140,56 +141,119 @@ export const PremiumProvider = ({ children }) => {
     }
   }, []);
 
-  // Apply a fresh customerInfo: record the buyer's entitlement and, if it's the
-  // household product, share it with the current household. Reads householdId
-  // from a ref so the RevenueCat listener always sees the latest value.
+  // Mirror the store entitlement into Supabase so subscription state is visible
+  // server-side. RevenueCat stays the source of truth for gating — this is a
+  // read-only shadow copy for support and analytics, written to the `pro_*`
+  // columns so it can never collide with a manual comp in premium_until.
+  //
+  // We sync the *absence* of an entitlement too: a user whose purchase never
+  // attached shows up as pro_until NULL with a recent pro_synced_at, which is
+  // the only way to spot that case from the database.
+  const lastSyncRef = useRef(null);
+  const syncSubscriptionState = useCallback(
+    async (info) => {
+      if (!user?.id) return;
+      const ent = info?.entitlements?.active?.[PRO_ENTITLEMENT] || null;
+      const payload = {
+        p_pro_until: ent?.expirationDate || null,
+        p_product_id: ent?.productIdentifier || null,
+        p_store: ent?.store || null,
+        p_period_type: ent?.periodType || null,
+        p_will_renew: typeof ent?.willRenew === 'boolean' ? ent.willRenew : null,
+        p_rc_app_user_id: info?.originalAppUserId || null,
+      };
+      const key = `${user.id}|${JSON.stringify(payload)}`;
+      if (key === lastSyncRef.current) return; // unchanged since the last write
+      try {
+        const { error } = await supabase.rpc('sync_subscription_state', payload);
+        if (error) throw error;
+        lastSyncRef.current = key;
+      } catch (e) {
+        // Best-effort: no-ops until ADD_SUBSCRIPTION_SYNC.sql has been run.
+        console.warn('[premium] subscription sync failed:', e?.message);
+      }
+    },
+    [user?.id]
+  );
+
+  // Apply a fresh customerInfo: record the buyer's entitlement, mirror it to
+  // Supabase, and if it's the household product share it with the current
+  // household. Reads householdId from a ref so the RevenueCat listener always
+  // sees the latest value.
   const lastInfoRef = useRef(null);
   const applyInfo = useCallback(
     (info) => {
       lastInfoRef.current = info;
       const active = getActivePro(info);
       setOwnPro(active);
+      syncSubscriptionState(info);
       const hid = householdIdRef.current;
       if (active && isHouseholdProduct(active.productIdentifier) && hid) {
         pushHouseholdPremium(hid, active.expirationDate);
         setHouseholdUntil(active.expirationDate); // optimistic
       }
     },
-    [pushHouseholdPremium]
+    [pushHouseholdPremium, syncSubscriptionState]
   );
   const applyInfoRef = useRef(applyInfo);
   useEffect(() => {
     applyInfoRef.current = applyInfo;
   }, [applyInfo]);
 
-  // Configure the SDK once, identify the user, read status + offerings, and
-  // subscribe to live updates so purchases/renewals/expiries flip state.
+  // Dev-only Pro override. Independent of auth and of the store, so it loads
+  // on its own rather than waiting for the session to resolve.
   useEffect(() => {
+    if (!__DEV__) return undefined;
+    let cancelled = false;
+    AsyncStorage.getItem(DEV_PRO_KEY)
+      .then((v) => {
+        if (!cancelled && v === 'true') setDevPro(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Configure the SDK, keep the RevenueCat app user id in step with the signed-in
+  // user, read status + offerings, and subscribe to live updates so purchases /
+  // renewals / expiries flip state.
+  //
+  // We wait for the auth session to resolve before configuring. Configuring
+  // anonymously and identifying afterwards leaves a window where a purchase can
+  // attach to a throwaway `$RCAnonymousID:` customer that the signed-in user
+  // never sees again — and reinstalling just mints another one, so it never
+  // self-heals. Passing appUserID up front closes that window.
+  useEffect(() => {
+    if (authLoading) return undefined;
+
     let cancelled = false;
     const Purchases = getPurchases();
 
     const init = async () => {
-      if (__DEV__) {
-        try {
-          const v = await AsyncStorage.getItem(DEV_PRO_KEY);
-          if (!cancelled && v === 'true') setDevPro(true);
-        } catch {}
-      }
-
       if (!isPurchasesAvailable() || !Purchases) {
         if (!cancelled) setLoading(false);
         return;
       }
 
+      const appUserId = user?.id || null;
       try {
-        if (!configuredRef.current) {
-          Purchases.configure({ apiKey: revenueCatApiKey });
-          configuredRef.current = true;
-        }
         let info;
-        if (user?.id) {
-          const r = await Purchases.logIn(user.id);
-          info = r.customerInfo;
+        if (!configuredRef.current) {
+          Purchases.configure({ apiKey: revenueCatApiKey, appUserID: appUserId });
+          configuredRef.current = true;
+          identifiedRef.current = appUserId;
+          info = await Purchases.getCustomerInfo();
+        } else if (appUserId !== identifiedRef.current) {
+          if (appUserId) {
+            const r = await Purchases.logIn(appUserId);
+            info = r.customerInfo;
+          } else {
+            // Signed out — drop back to an anonymous customer so the next
+            // account on this device doesn't inherit these entitlements.
+            info = await Purchases.logOut();
+          }
+          identifiedRef.current = appUserId;
         } else {
           info = await Purchases.getCustomerInfo();
         }
@@ -223,7 +287,7 @@ export const PremiumProvider = ({ children }) => {
         } catch {}
       }
     };
-  }, [user?.id]);
+  }, [user?.id, authLoading]);
 
   // When the active household changes, read its shared premium and (if the
   // buyer holds a household subscription) make sure this household has it too.
@@ -289,7 +353,17 @@ export const PremiumProvider = ({ children }) => {
       try {
         const { customerInfo } = await Purchases.purchasePackage(pkg);
         applyInfo(customerInfo);
-        return { success: !!getActivePro(customerInfo) };
+        if (getActivePro(customerInfo)) return { success: true };
+        // The store took the payment but RevenueCat reports no `pro`
+        // entitlement. That's a configuration problem on our side — the product
+        // isn't attached to the entitlement, or receipt validation is failing —
+        // never something the buyer can fix. Reporting a plain failure here
+        // would tell a charged customer to try again, and the store would then
+        // refuse with "you already own this".
+        console.warn('[premium] purchase completed without entitlement', {
+          product: pkg?.product?.identifier,
+        });
+        return { success: false, error: 'entitlement_missing', charged: true };
       } catch (e) {
         if (e?.userCancelled) return { success: false, cancelled: true };
         console.warn('[premium] purchase failed:', e?.message);

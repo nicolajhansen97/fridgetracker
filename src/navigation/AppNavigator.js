@@ -24,6 +24,7 @@ import ExpiryCalendarScreen from '../screens/ExpiryCalendarScreen';
 import FreezerStatsScreen from '../screens/FreezerStatsScreen';
 import StockInsightsScreen from '../screens/StockInsightsScreen';
 import FreezerStorageSettingsScreen from '../screens/FreezerStorageSettingsScreen';
+import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 import ActivityHistoryScreen from '../screens/ActivityHistoryScreen';
 import ManageHouseholdScreen from '../screens/ManageHouseholdScreen';
 import RecipeSuggestionsScreen from '../screens/RecipeSuggestionsScreen';
@@ -69,6 +70,7 @@ const ProfileStackNavigator = () => (
     <ProfileStack.Screen name="Changelog" component={ChangelogScreen} />
     <ProfileStack.Screen name="Feedback" component={FeedbackScreen} />
     <ProfileStack.Screen name="FreezerStorageSettings" component={FreezerStorageSettingsScreen} />
+    <ProfileStack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
   </ProfileStack.Navigator>
 );
 

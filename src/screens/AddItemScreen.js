@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,7 @@ import {
   Icon,
   Pill,
   AmountField,
+  CategoryPickerSheet,
   Input,
   PrimaryButton,
   SecondaryButton,
@@ -36,6 +37,7 @@ import { colors, radii, spacing, typography } from '../theme';
 import BarcodeScannerModal from '../components/BarcodeScannerModal';
 import PaywallModal from '../components/PaywallModal';
 import { usePremium } from '../context/PremiumContext';
+import { useCategory } from '../hooks/useCategory';
 import { lookupBarcode, analyzeProductImage } from '../utils/productLookup';
 
 const USE_PACKAGE_NUMBERS_KEY = 'freezely_use_package_numbers';
@@ -72,11 +74,25 @@ const AddItemScreen = ({ navigation, route }) => {
   const [scanning, setScanning] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [paywallVisible, setPaywallVisible] = useState(false);
+  const [catPickerVisible, setCatPickerVisible] = useState(false);
+  // Batch entry: how many items were added without leaving the form, plus the
+  // most recent name — shown as a running confirmation while stocking up.
+  const [addedCount, setAddedCount] = useState(0);
+  const [lastAdded, setLastAdded] = useState('');
+  const nameRef = useRef(null);
 
   const { addItem, getNextAvailablePosition, items } = useFridge();
   const { drawers } = useDrawers();
   const { t, formatDate, locale } = useLanguage();
   const { isPremium } = usePremium();
+  const {
+    getCategory: catOf, isOverridden, setCategory, labelFor,
+    customCategories, addCustomCategory, removeCustomCategory,
+  } = useCategory();
+
+  // Effective category for the current name (override-aware); null until named.
+  const currentCategory = name.trim() ? catOf(name) : null;
+  const categoryIsAuto = !isOverridden(name);
 
   useEffect(() => {
     AsyncStorage.getItem(USE_PACKAGE_NUMBERS_KEY).then((val) => {
@@ -225,7 +241,11 @@ const AddItemScreen = ({ navigation, route }) => {
     }, [fromHome, dismiss])
   );
 
-  const handleSubmit = async () => {
+  // Shared add path. When `addAnother` is true we stay on the form for rapid
+  // batch entry: the item-specific fields reset but the compartment, frozen
+  // date and unit (constant across a grocery haul) are kept, and the name field
+  // refocuses. Otherwise we save and leave as before.
+  const doAdd = async (addAnother) => {
     if (!name.trim()) {
       Alert.alert(t('common.error'), t('addItem.enterItemName'));
       return;
@@ -235,9 +255,10 @@ const AddItemScreen = ({ navigation, route }) => {
       return;
     }
 
+    const addedName = name.trim();
     setIsLoading(true);
     const result = await addItem({
-      name: name.trim(),
+      name: addedName,
       drawer,
       quantity: parseInt(quantity) || 1,
       unit,
@@ -248,19 +269,39 @@ const AddItemScreen = ({ navigation, route }) => {
     });
     setIsLoading(false);
 
-    if (result.success) {
-      // Remember the compartment for next time, then return the user to wherever
-      // they launched Add Item from (Home for Quick Add, else the freezer).
-      try { await AsyncStorage.setItem(LAST_DRAWER_KEY, drawer); } catch {}
-      dismiss();
-    } else {
+    if (!result.success) {
       if (result.error && result.error.includes('Position')) {
         Alert.alert(t('addItem.positionInUse'), result.error, [{ text: t('common.ok') }]);
       } else {
         Alert.alert(t('common.error'), result.error);
       }
+      return;
     }
+
+    // Remember the compartment for next time either way.
+    try { await AsyncStorage.setItem(LAST_DRAWER_KEY, drawer); } catch {}
+
+    if (!addAnother) {
+      // Return the user to wherever they launched Add Item from.
+      dismiss();
+      return;
+    }
+
+    // Keep drawer / frozen date / unit; clear the item-specific fields.
+    setName('');
+    setQuantity('1');
+    setNotes('');
+    setPosition('');
+    setExpiryDate('');
+    setSelectedDate(null);
+    setShowSuggest(false);
+    setLastAdded(addedName);
+    setAddedCount((c) => c + 1);
+    requestAnimationFrame(() => nameRef.current?.focus());
   };
+
+  const handleSubmit = () => doAdd(false);
+  const handleSaveAndAdd = () => doAdd(true);
 
   const busy = isLoading || analyzing;
 
@@ -282,11 +323,22 @@ const AddItemScreen = ({ navigation, route }) => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Running confirmation while batch-adding (Save & add another). */}
+          {addedCount > 0 ? (
+            <View style={styles.addedBanner}>
+              <Icon name="checkmark-circle" size={18} color={colors.success} />
+              <Text style={styles.addedBannerText} numberOfLines={2}>
+                {t('addItem.addedAnother', { name: lastAdded, count: addedCount })}
+              </Text>
+            </View>
+          ) : null}
+
           {/* ── Item ───────────────────────────────────────────── */}
           <Text style={[styles.sectionLabel, styles.sectionLabelFirst]}>{t('addItem.sectionItem')}</Text>
           <Card style={styles.card} padded={false}>
             <View style={styles.cardInner}>
               <TextInput
+                ref={nameRef}
                 style={styles.nameInput}
                 placeholder={t('addItem.itemNamePlaceholder')}
                 placeholderTextColor={colors.textSubtle}
@@ -393,6 +445,25 @@ const AddItemScreen = ({ navigation, route }) => {
                 disabled={isLoading}
               />
             </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.cardInner}>
+              <Text style={styles.label}>{t('addItem.category')}</Text>
+              <TouchableOpacity
+                style={[styles.datePicker, !name.trim() && styles.categoryDisabled]}
+                onPress={() => name.trim() && setCatPickerVisible(true)}
+                disabled={isLoading || !name.trim()}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.dateText, !name.trim() && styles.datePlaceholder]} numberOfLines={1}>
+                  {!name.trim()
+                    ? t('addItem.categoryNeedsName')
+                    : `${labelFor(currentCategory)}${categoryIsAuto ? ` · ${t('addItem.categoryAuto')}` : ''}`}
+                </Text>
+                <Icon name="chevron-down" size={18} color={colors.textSubtle} />
+              </TouchableOpacity>
+            </View>
           </Card>
 
           {/* ── Dates ──────────────────────────────────────────── */}
@@ -493,6 +564,12 @@ const AddItemScreen = ({ navigation, route }) => {
         </ScrollView>
 
         <View style={styles.footer}>
+          <SecondaryButton
+            title={t('addItem.saveAndAddAnother')}
+            onPress={handleSaveAndAdd}
+            disabled={busy}
+            style={styles.addAnotherBtn}
+          />
           <PrimaryButton
             title={isLoading ? t('addItem.adding') : t('addItem.addToFreezer')}
             onPress={handleSubmit}
@@ -531,6 +608,25 @@ const AddItemScreen = ({ navigation, route }) => {
 
         <PaywallModal visible={paywallVisible} onClose={() => setPaywallVisible(false)} />
 
+        <CategoryPickerSheet
+          visible={catPickerVisible}
+          value={currentCategory}
+          isAuto={categoryIsAuto}
+          title={name.trim() || undefined}
+          customCategories={customCategories}
+          onSelect={(cat) => {
+            setCategory(name, cat);
+            setCatPickerVisible(false);
+          }}
+          onCreate={(catName) => {
+            const key = addCustomCategory(catName);
+            if (key) setCategory(name, key);
+            setCatPickerVisible(false);
+          }}
+          onDelete={(key) => removeCustomCategory(key)}
+          onClose={() => setCatPickerVisible(false)}
+        />
+
         <Modal visible={analyzing} transparent animationType="fade" statusBarTranslucent>
           <View style={styles.analyzeOverlay}>
             <View style={styles.analyzeCard}>
@@ -568,6 +664,26 @@ const styles = StyleSheet.create({
   },
   sectionLabelFirst: {
     marginTop: spacing.xs,
+  },
+  addedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.successSoft,
+    borderRadius: radii.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  addedBannerText: {
+    ...typography.bodySmall,
+    color: '#065F46',
+    flex: 1,
+    fontWeight: '600',
+  },
+  addAnotherBtn: {
+    marginBottom: spacing.sm,
   },
   autofillRow: {
     flexDirection: 'row',
@@ -722,6 +838,9 @@ const styles = StyleSheet.create({
   },
   datePlaceholder: {
     color: colors.textSubtle,
+  },
+  categoryDisabled: {
+    opacity: 0.6,
   },
   helper: {
     ...typography.caption,

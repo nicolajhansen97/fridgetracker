@@ -23,7 +23,7 @@ import {
 } from '../components/ui';
 import { colors, gradients, radii, spacing, typography } from '../theme';
 import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
-import { getCategory } from '../utils/foodCategories';
+import { useCategory } from '../hooks/useCategory';
 
 const MS_PER_DAY = 86400000;
 const WINDOW_DAYS = 90;
@@ -71,6 +71,7 @@ const FreezerStatsScreen = ({ navigation }) => {
   const { currentHousehold } = useHousehold();
   const { savedRecipes } = useSavedRecipes();
   const { isPastFreezerWindow, getExpiryStatus } = useFridgeExpiry();
+  const { getCategory, labelFor } = useCategory();
   const { t, formatDate } = useLanguage();
 
   const [activities, setActivities] = useState([]);
@@ -264,7 +265,7 @@ const FreezerStatsScreen = ({ navigation }) => {
       pairCount,
       hasAnyActivity: inWindow.length > 0,
     };
-  }, [activities, items, isPastFreezerWindow, getExpiryStatus]);
+  }, [activities, items, isPastFreezerWindow, getExpiryStatus, getCategory]);
 
   const goToInventory = () => {
     navigation.navigate('FreezerTab', { screen: 'FridgeInventory' });
@@ -416,7 +417,7 @@ const FreezerStatsScreen = ({ navigation }) => {
                     <View key={c.key} style={[styles.compItem, idx > 0 && { marginTop: spacing.md }]}>
                       <View style={styles.compHeader}>
                         <Text style={styles.compLabel} numberOfLines={1}>
-                          {t(`shopping.cat_${c.key}`)}
+                          {labelFor(c.key)}
                         </Text>
                         <Text style={styles.compCount}>{c.count}</Text>
                       </View>

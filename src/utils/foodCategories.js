@@ -180,12 +180,20 @@ Object.entries(categoryMap).forEach(([category, words]) => {
   words.forEach((word) => wordToCategory.set(word.toLowerCase(), category));
 });
 
+// Normalised lookup key for a product name (used for manual category overrides).
+export const categoryNameKey = (name) => (name || '').toLowerCase().trim();
+
 /**
  * Returns a category key for a food item name.
- * Tries exact match, then checks if any keyword is contained in the name.
+ * A manual override (from `overrides`, keyed by the lowercased name) wins;
+ * otherwise tries exact match, then checks if any keyword is in the name.
  */
-export const getCategory = (name) => {
-  const lower = name.toLowerCase().trim();
+export const getCategory = (name, overrides) => {
+  const lower = categoryNameKey(name);
+  if (!lower) return 'other';
+
+  // Manual override wins over auto-detection.
+  if (overrides && overrides[lower]) return overrides[lower];
 
   // Exact match
   if (wordToCategory.has(lower)) return wordToCategory.get(lower);
@@ -207,3 +215,30 @@ export const getCategory = (name) => {
 export const CATEGORY_ORDER = [
   'fruit', 'vegetables', 'meat', 'fish', 'dairy', 'bread', 'frozen', 'pantry', 'drinks', 'other',
 ];
+
+// A user-defined category's key is namespaced so it never collides with a
+// built-in (meat, dairy, …).
+export const isCustomCategory = (key) => typeof key === 'string' && key.startsWith('custom:');
+
+// Full ordering for grouping/pickers: built-ins first, then the user's custom
+// categories (in creation order), with "other" always last.
+export const buildCategoryOrder = (customCategories = []) => [
+  ...CATEGORY_ORDER.filter((k) => k !== 'other'),
+  ...customCategories.map((c) => c.key),
+  'other',
+];
+
+// Category → MaterialCommunityIcons glyph (shared by the shopping list and the
+// manual category picker so they stay visually consistent).
+export const CATEGORY_ICON_MCI = {
+  fruit: 'food-apple-outline',
+  vegetables: 'carrot',
+  meat: 'food-drumstick-outline',
+  fish: 'fish',
+  dairy: 'cheese',
+  bread: 'bread-slice-outline',
+  frozen: 'snowflake-variant',
+  pantry: 'package-variant',
+  drinks: 'bottle-soda-outline',
+  other: 'tag-outline',
+};

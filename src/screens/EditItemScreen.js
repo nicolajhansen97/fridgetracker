@@ -21,10 +21,12 @@ import {
   Icon,
   Pill,
   AmountField,
+  CategoryPickerSheet,
   Input,
   PrimaryButton,
 } from '../components/ui';
 import { colors, radii, spacing, typography } from '../theme';
+import { useCategory } from '../hooks/useCategory';
 
 const EditItemScreen = ({ route, navigation }) => {
   const { item } = route.params;
@@ -45,10 +47,18 @@ const EditItemScreen = ({ route, navigation }) => {
   const [position, setPosition] = useState(item.position ? String(item.position) : '');
   const [unit, setUnit] = useState(item.unit || 'pcs');
   const [isLoading, setIsLoading] = useState(false);
+  const [catPickerVisible, setCatPickerVisible] = useState(false);
 
   const { updateItem } = useFridge();
   const { drawers } = useDrawers();
   const { t, formatDate } = useLanguage();
+  const {
+    getCategory: catOf, isOverridden, setCategory, labelFor,
+    customCategories, addCustomCategory, removeCustomCategory,
+  } = useCategory();
+
+  const currentCategory = catOf(item.name);
+  const categoryIsAuto = !isOverridden(item.name);
 
   const handleFrozenDateConfirm = (date) => {
     setSelectedFrozenDate(date);
@@ -177,6 +187,23 @@ const EditItemScreen = ({ route, navigation }) => {
                 disabled={isLoading}
               />
             </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.cardInner}>
+              <Text style={styles.label}>{t('addItem.category')}</Text>
+              <TouchableOpacity
+                style={styles.datePicker}
+                onPress={() => setCatPickerVisible(true)}
+                disabled={isLoading}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.dateText} numberOfLines={1}>
+                  {`${labelFor(currentCategory)}${categoryIsAuto ? ` · ${t('addItem.categoryAuto')}` : ''}`}
+                </Text>
+                <Icon name="chevron-down" size={18} color={colors.textSubtle} />
+              </TouchableOpacity>
+            </View>
           </Card>
 
           {/* ── Dates ──────────────────────────────────────────── */}
@@ -275,6 +302,25 @@ const EditItemScreen = ({ route, navigation }) => {
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           pickerContainerStyleIOS={{ backgroundColor: 'white' }}
           textColor="#000000"
+        />
+
+        <CategoryPickerSheet
+          visible={catPickerVisible}
+          value={currentCategory}
+          isAuto={categoryIsAuto}
+          title={item.name}
+          customCategories={customCategories}
+          onSelect={(cat) => {
+            setCategory(item.name, cat);
+            setCatPickerVisible(false);
+          }}
+          onCreate={(catName) => {
+            const key = addCustomCategory(catName);
+            if (key) setCategory(item.name, key);
+            setCatPickerVisible(false);
+          }}
+          onDelete={(key) => removeCustomCategory(key)}
+          onClose={() => setCatPickerVisible(false)}
         />
       </KeyboardAvoidingView>
     </Screen>

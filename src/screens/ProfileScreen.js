@@ -229,24 +229,30 @@ const ProfileScreen = ({ navigation }) => {
               </Text>
             </View>
           </View>
-          {premiumSource !== 'household' && (
+          {/* Only a store subscriber can manage billing; only a non-Pro user
+              should be offered an upgrade. Household and comped users are Pro
+              through neither route, so they get no row at all — showing them
+              "Upgrade to Pro" under a PRO badge reads as though it never
+              applied, and sends them to a paywall the store would reject. */}
+          {premiumSource === 'self' ? (
             <>
               <Divider />
-              {premiumSource === 'self' ? (
-                <NavRow
-                  iconName="card-outline"
-                  title={t('premium.manage')}
-                  onPress={manageSubscription}
-                />
-              ) : (
-                <NavRow
-                  iconName="arrow-up-circle-outline"
-                  title={t('premium.upgrade')}
-                  onPress={() => setPaywallVisible(true)}
-                />
-              )}
+              <NavRow
+                iconName="card-outline"
+                title={t('premium.manage')}
+                onPress={manageSubscription}
+              />
             </>
-          )}
+          ) : !isPremium ? (
+            <>
+              <Divider />
+              <NavRow
+                iconName="arrow-up-circle-outline"
+                title={t('premium.upgrade')}
+                onPress={() => setPaywallVisible(true)}
+              />
+            </>
+          ) : null}
           {__DEV__ ? (
             <>
               <Divider />
@@ -284,6 +290,12 @@ const ProfileScreen = ({ navigation }) => {
             iconName="snow-outline"
             title={t('freezerSettings.profileRow')}
             onPress={() => navigation.navigate('FreezerStorageSettings')}
+          />
+          <Divider />
+          <NavRow
+            iconName="notifications-outline"
+            title={t('notif.profileRow')}
+            onPress={() => navigation.navigate('NotificationSettings')}
           />
         </Card>
 

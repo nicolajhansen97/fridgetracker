@@ -51,17 +51,29 @@ export const getPurchases = () => {
 export const isPurchasesAvailable = () => !!revenueCatApiKey && !!getPurchases();
 
 // Find a specific package in an offering by its store product identifier.
+//
+// iOS reports the bare product id (e.g. `freezely_pro_monthly`). Google Play
+// reports it as `subscriptionId:basePlanId` (e.g.
+// `freezely_pro_monthly:monthly-autorenewing`), so an exact match fails on
+// Android. We match the bare id OR the `<productId>:` prefix — safe because the
+// two subscription ids don't prefix each other.
 export const getPackageByProduct = (offering, productId) => {
-  if (!offering) return null;
+  if (!offering || !productId) return null;
   return (
-    (offering.availablePackages || []).find((p) => p?.product?.identifier === productId) || null
+    (offering.availablePackages || []).find((p) => {
+      const id = p?.product?.identifier;
+      return id === productId || (typeof id === 'string' && id.startsWith(`${productId}:`));
+    }) || null
   );
 };
 
 // True when an entitlement was unlocked by the household product (so the
-// buyer's purchase should be shared with the rest of their household).
+// buyer's purchase should be shared with the rest of their household). Tolerates
+// Google Play's `subscriptionId:basePlanId` form as well as the bare id.
 export const isHouseholdProduct = (productIdentifier) =>
-  productIdentifier === HOUSEHOLD_PRODUCT_ID;
+  typeof productIdentifier === 'string' &&
+  (productIdentifier === HOUSEHOLD_PRODUCT_ID ||
+    productIdentifier.startsWith(`${HOUSEHOLD_PRODUCT_ID}:`));
 
 // Read the free-trial length (in days) from a package's store introductory
 // offer, or null when the store offers no free trial. The trial is configured

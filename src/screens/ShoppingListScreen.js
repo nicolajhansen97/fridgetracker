@@ -24,31 +24,19 @@ import { useFridge } from '../context/FridgeContext';
 import { useHousehold } from '../context/HouseholdContext';
 import { useLanguage } from '../i18n';
 import { useStockInsights } from '../hooks/useStockInsights';
-import { getCategory, CATEGORY_ORDER } from '../utils/foodCategories';
+import { useCategory } from '../hooks/useCategory';
+import { buildCategoryOrder, CATEGORY_ICON_MCI } from '../utils/foodCategories';
 import {
   Screen,
   ScreenHeader,
   Icon,
+  CategoryPickerSheet,
 } from '../components/ui';
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
-
-// Category → MCI icon (small leading glyph on each row, à la Bring/Listonic)
-const CATEGORY_MCI = {
-  fruit: 'food-apple-outline',
-  vegetables: 'carrot',
-  meat: 'food-drumstick-outline',
-  fish: 'fish',
-  dairy: 'cheese',
-  bread: 'bread-slice-outline',
-  frozen: 'snowflake-variant',
-  pantry: 'package-variant',
-  drinks: 'bottle-soda-outline',
-  other: 'tag-outline',
-};
 
 const ShoppingListScreen = () => {
   const {
@@ -58,6 +46,10 @@ const ShoppingListScreen = () => {
   const { addItem: addToFridge, getNextAvailablePosition } = useFridge();
   const { currentHousehold } = useHousehold();
   const { restock } = useStockInsights();
+  const {
+    getCategory: catOf, isOverridden, setCategory, labelFor,
+    customCategories, addCustomCategory, removeCustomCategory,
+  } = useCategory();
   const { t } = useLanguage();
 
   const [draft, setDraft] = useState('');
@@ -65,6 +57,7 @@ const ShoppingListScreen = () => {
   const [boughtCollapsed, setBoughtCollapsed] = useState(false);
   const [showLists, setShowLists] = useState(false);
   const [newListName, setNewListName] = useState('');
+  const [catItem, setCatItem] = useState(null); // item whose category is being set
   const inputRef = useRef(null);
 
   const unchecked = items.filter((i) => !i.checked);
@@ -85,15 +78,18 @@ const ShoppingListScreen = () => {
 
   // Group unchecked items by category, in CATEGORY_ORDER
   const grouped = useMemo(() => {
+    const order = buildCategoryOrder(customCategories);
+    const known = new Set(order);
     const map = {};
     unchecked.forEach((item) => {
-      const cat = getCategory(item.name);
+      const raw = catOf(item.name);
+      const cat = known.has(raw) ? raw : 'other'; // guard against orphaned keys
       (map[cat] ||= []).push(item);
     });
-    return CATEGORY_ORDER
+    return order
       .filter((c) => map[c])
       .map((c) => ({ category: c, items: map[c] }));
-  }, [unchecked]);
+  }, [unchecked, catOf, customCategories]);
 
   const subtitle = useMemo(() => {
     if (total === 0) return currentHousehold?.name;
@@ -142,6 +138,10 @@ const ShoppingListScreen = () => {
         onPress: () => moveToFreezer(item),
       });
     }
+    opts.push({
+      text: t('shopping.setCategory'),
+      onPress: () => setCatItem(item),
+    });
     opts.push({
       text: t('shopping.deleteItem'),
       style: 'destructive',
@@ -296,15 +296,17 @@ const ShoppingListScreen = () => {
               {grouped.map((group, gIdx) => (
                 <View key={group.category} style={[styles.group, gIdx > 0 && styles.groupSpacing]}>
                   <Text style={styles.categoryLabel}>
-                    {t('shopping.cat_' + group.category).toUpperCase()}
+                    {labelFor(group.category).toUpperCase()}
                   </Text>
                   {group.items.map((item, idx) => (
                     <View key={item.id}>
                       <SwipeableRow
                         item={item}
                         showAddedBy={!!currentHousehold}
+                        category={group.category}
                         onToggle={handleToggle}
                         onLongPress={handleItemLongPress}
+                        onCategoryPress={setCatItem}
                         onDelete={(i) => deleteItem(i.id)}
                       />
                       {idx < group.items.length - 1 && <View style={styles.divider} />}
@@ -350,8 +352,10 @@ const ShoppingListScreen = () => {
                           <SwipeableRow
                             item={item}
                             showAddedBy={!!currentHousehold}
+                            category={catOf(item.name)}
                             onToggle={handleToggle}
                             onLongPress={handleItemLongPress}
+                            onCategoryPress={setCatItem}
                             onDelete={(i) => deleteItem(i.id)}
                           />
                           {idx < checked.length - 1 && <View style={styles.divider} />}
@@ -456,28 +460,53 @@ const ShoppingListScreen = () => {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      <CategoryPickerSheet
+        visible={!!catItem}
+        value={catItem ? catOf(catItem.name) : null}
+        isAuto={catItem ? !isOverridden(catItem.name) : true}
+        title={catItem ? catItem.name : undefined}
+        customCategories={customCategories}
+        onSelect={(cat) => {
+          if (catItem) setCategory(catItem.name, cat);
+          setCatItem(null);
+        }}
+        onCreate={(name) => {
+          const key = addCustomCategory(name);
+          if (key && catItem) setCategory(catItem.name, key);
+          setCatItem(null);
+        }}
+        onDelete={(key) => removeCustomCategory(key)}
+        onClose={() => setCatItem(null)}
+      />
     </Screen>
   );
 };
 
 // Pure visual row content — no touch handling. The wrapping SwipeableRow
 // handles all interaction (tap, long-press, swipe).
-const RowContent = ({ item, showAddedBy }) => {
+const RowContent = ({ item, showAddedBy, category, onCategoryPress }) => {
+  const { t } = useLanguage();
   const isChecked = item.checked;
-  const cat = getCategory(item.name);
-  const catIcon = CATEGORY_MCI[cat];
+  const catIcon = CATEGORY_ICON_MCI[category] || CATEGORY_ICON_MCI.other;
   return (
     <View style={styles.row}>
       <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
         {isChecked && <Icon name="checkmark" size={13} color={colors.surface} />}
       </View>
-      <Icon
-        name={catIcon}
-        set="mci"
-        size={18}
-        color={isChecked ? colors.textSubtle : colors.textMuted}
+      <TouchableOpacity
+        onPress={() => onCategoryPress?.(item)}
+        hitSlop={10}
         style={styles.rowCatIcon}
-      />
+        accessibilityLabel={t('shopping.setCategory')}
+      >
+        <Icon
+          name={catIcon}
+          set="mci"
+          size={18}
+          color={isChecked ? colors.textSubtle : colors.textMuted}
+        />
+      </TouchableOpacity>
       <View style={styles.rowContentText}>
         <Text
           style={[styles.itemName, isChecked && styles.itemNameChecked]}
@@ -509,7 +538,7 @@ const SWIPE_VELOCITY_THRESHOLD = 0.5;
 //   - Tap the trash to delete (animates the row off-screen first).
 //   - Pan past 50% of screen (or fast flick) auto-deletes.
 //   - Tap on the row body when open snaps it closed; otherwise toggles checked.
-const SwipeableRow = ({ item, onToggle, onLongPress, onDelete, showAddedBy }) => {
+const SwipeableRow = ({ item, onToggle, onLongPress, onDelete, showAddedBy, category, onCategoryPress }) => {
   const translateX = useRef(new Animated.Value(0)).current;
   const isOpenRef = useRef(false);
 
@@ -611,7 +640,7 @@ const SwipeableRow = ({ item, onToggle, onLongPress, onDelete, showAddedBy }) =>
           delayLongPress={350}
           activeOpacity={0.55}
         >
-          <RowContent item={item} showAddedBy={showAddedBy} />
+          <RowContent item={item} showAddedBy={showAddedBy} category={category} onCategoryPress={onCategoryPress} />
         </TouchableOpacity>
       </Animated.View>
     </View>

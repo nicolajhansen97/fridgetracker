@@ -5,11 +5,28 @@
 // The app shows the "What's New" popup once per version.
 // ─────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.1.0';
+export const CURRENT_VERSION = '1.1.2';
 
 // Features use translation keys — add the matching keys to each language file.
 // The i18n system falls back to English automatically if a language is missing a key.
 export const CHANGELOG = [
+  {
+    version: '1.1.2',
+    date: '2026-08-16',
+    features: [
+      { icon: '🔔', titleKey: 'changelog.v112_reminders_title', descKey: 'changelog.v112_reminders_desc' },
+      { icon: '✨', titleKey: 'changelog.v112_pro_title',       descKey: 'changelog.v112_pro_desc' },
+    ],
+  },
+  {
+    version: '1.1.1',
+    date: '2026-07-15',
+    features: [
+      { icon: '✅', titleKey: 'changelog.v111_usesoon_title', descKey: 'changelog.v111_usesoon_desc' },
+      { icon: '➕', titleKey: 'changelog.v111_batch_title',   descKey: 'changelog.v111_batch_desc' },
+      { icon: '🔧', titleKey: 'changelog.v111_androidpro_title', descKey: 'changelog.v111_androidpro_desc' },
+    ],
+  },
   {
     version: '1.1.0',
     date: '2026-07-13',

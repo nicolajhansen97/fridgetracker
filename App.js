@@ -11,6 +11,7 @@ import { ActivityProvider } from './src/context/ActivityContext';
 import { ShoppingListProvider } from './src/context/ShoppingListContext';
 import { SavedRecipesProvider } from './src/context/SavedRecipesContext';
 import { FreezerSettingsProvider } from './src/context/FreezerSettingsContext';
+import { NotificationProvider } from './src/context/NotificationContext';
 import { OTAUpdateProvider } from './src/context/OTAUpdateContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import OTAUpdateModal from './src/components/OTAUpdateModal';
@@ -35,11 +36,13 @@ export default function App() {
                   <ShoppingListProvider>
                     <SavedRecipesProvider>
                     <FreezerSettingsProvider>
+                    <NotificationProvider>
                     <OTAUpdateProvider>
                       <AppNavigator />
                       <OTAUpdateModal />
                       <SessionTracker />
                     </OTAUpdateProvider>
+                    </NotificationProvider>
                     </FreezerSettingsProvider>
                     </SavedRecipesProvider>
                   </ShoppingListProvider>

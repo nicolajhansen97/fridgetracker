@@ -91,6 +91,12 @@ const PaywallModal = ({ visible, onClose }) => {
       return;
     }
     if (res.cancelled) return; // user dismissed the native sheet
+    if (res.charged) {
+      // Paid, but the entitlement didn't come back. Don't send them round the
+      // loop again — the store will just say they already own it.
+      Alert.alert(t('premium.purchaseIncompleteTitle'), t('premium.purchaseIncomplete'));
+      return;
+    }
     Alert.alert(t('common.error'), t('premium.purchaseFailed'));
   };
 
