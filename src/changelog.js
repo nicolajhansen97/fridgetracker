@@ -12,7 +12,7 @@ export const CURRENT_VERSION = '1.1.2';
 export const CHANGELOG = [
   {
     version: '1.1.2',
-    date: '2026-08-16',
+    date: '2026-08-18',
     features: [
       { icon: '🔔', titleKey: 'changelog.v112_reminders_title', descKey: 'changelog.v112_reminders_desc' },
       { icon: '✨', titleKey: 'changelog.v112_pro_title',       descKey: 'changelog.v112_pro_desc' },
