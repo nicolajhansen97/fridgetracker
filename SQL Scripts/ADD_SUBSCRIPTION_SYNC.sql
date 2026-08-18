@@ -149,7 +149,13 @@ select
   app_version,
   platform,
   rc_app_user_id,
-  id                                  as user_id
+  id                                  as user_id,
+  -- Red flag. The entitlement was read under a throwaway anonymous customer
+  -- instead of the signed-in user, which is how a real purchase goes missing.
+  -- NOTE: only meaningful from app v1.1.2+; earlier builds recorded
+  -- originalAppUserId, which reads anonymous for every pre-existing install
+  -- regardless of whether identification actually works.
+  coalesce(rc_app_user_id like '$RCAnonymousID:%', false) as rc_anonymous
 from resolved
 order by is_pro desc, expires_at desc nulls last;
 

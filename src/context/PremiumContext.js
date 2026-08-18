@@ -154,13 +154,25 @@ export const PremiumProvider = ({ children }) => {
     async (info) => {
       if (!user?.id) return;
       const ent = info?.entitlements?.active?.[PRO_ENTITLEMENT] || null;
+      // Ask the SDK which app user id it is using RIGHT NOW. Do not use
+      // `info.originalAppUserId` — that is the FIRST id ever recorded for the
+      // customer, so for anyone whose app configured RevenueCat before they
+      // signed in it reads `$RCAnonymousID:…` forever, even once identification
+      // is working. It cannot be pasted into the dashboard to find anyone.
+      let appUserId = null;
+      try {
+        const Purchases = getPurchases();
+        if (Purchases) appUserId = await Purchases.getAppUserID();
+      } catch (e) {
+        console.warn('[premium] appUserID read failed:', e?.message);
+      }
       const payload = {
         p_pro_until: ent?.expirationDate || null,
         p_product_id: ent?.productIdentifier || null,
         p_store: ent?.store || null,
         p_period_type: ent?.periodType || null,
         p_will_renew: typeof ent?.willRenew === 'boolean' ? ent.willRenew : null,
-        p_rc_app_user_id: info?.originalAppUserId || null,
+        p_rc_app_user_id: appUserId || null,
       };
       const key = `${user.id}|${JSON.stringify(payload)}`;
       if (key === lastSyncRef.current) return; // unchanged since the last write
