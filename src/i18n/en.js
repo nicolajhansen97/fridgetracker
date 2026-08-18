@@ -198,6 +198,7 @@ export default {
     action_created: 'Added',
     action_updated: 'Updated',
     action_consumed: 'Used',
+    action_thrown: 'Thrown out',
     action_deleted: 'Removed',
   },
 
@@ -459,6 +460,7 @@ export default {
     updated: 'UPDATED',
     consumed: 'USED',
     partialUsed: 'Used {used} ({left} left)',
+    thrown: 'THROWN OUT',
     deleted: 'DELETED',
     by: 'By:',
     changes: 'Changes:',

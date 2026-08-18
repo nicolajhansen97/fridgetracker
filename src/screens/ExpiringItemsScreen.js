@@ -39,7 +39,7 @@ const statusTone = (status) => {
 };
 
 const ExpiringItemsScreen = ({ navigation }) => {
-  const { items, loading, deleteItem, consumeItem, consumePartial, loadItems } = useFridge();
+  const { items, loading, deleteItem, consumeItem, consumePartial, throwItem, loadItems } = useFridge();
   const { getEffectiveExpiry, getDaysUntilExpiry, getFreezerInfo } = useFridgeExpiry();
   const { t, formatDate } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
@@ -95,7 +95,7 @@ const ExpiringItemsScreen = ({ navigation }) => {
     const item = actionItem;
     closeActions();
     if (!item) return;
-    const result = await deleteItem(item.id);
+    const result = await throwItem(item.id);
     if (!result.success) Alert.alert(t('common.error'), result.error);
   };
 

@@ -32,7 +32,7 @@ import ItemActionSheet from '../components/ItemActionSheet';
 const USE_FIRST_FG = '#7C2D12';
 
 const FridgeInventoryScreen = ({ navigation }) => {
-  const { items, deleteItem, consumeItem, consumePartial, loadItems } = useFridge();
+  const { items, deleteItem, consumeItem, consumePartial, throwItem, loadItems } = useFridge();
   const { drawers: drawerDefs } = useDrawers();
   const { getEffectiveExpiry, isExpiringSoon: isItemExpiringSoon } = useFridgeExpiry();
   const { t, formatDate } = useLanguage();
@@ -69,7 +69,7 @@ const FridgeInventoryScreen = ({ navigation }) => {
     const item = actionItem;
     closeActions();
     if (!item) return;
-    const result = await deleteItem(item.id);
+    const result = await throwItem(item.id);
     if (!result.success) Alert.alert(t('common.error'), result.error);
   };
 

@@ -198,6 +198,7 @@ export default {
     action_created: 'Tilføjet',
     action_updated: 'Opdateret',
     action_consumed: 'Brugt',
+    action_thrown: 'Smidt ud',
     action_deleted: 'Fjernet',
   },
 
@@ -455,6 +456,7 @@ export default {
     updated: 'OPDATERET',
     consumed: 'BRUGT',
     partialUsed: 'Brugt {used} ({left} tilbage)',
+    thrown: 'SMIDT UD',
     deleted: 'SLETTET',
     by: 'Af:',
     changes: 'Ændringer:',

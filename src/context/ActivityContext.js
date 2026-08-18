@@ -46,6 +46,8 @@ export const ActivityProvider = ({ children }) => {
       return `Added "${item_name}" to ${activity.item_drawer || 'freezer'}`;
     } else if (action === 'deleted') {
       return `Removed "${item_name}" from ${activity.item_drawer || 'freezer'}`;
+    } else if (action === 'thrown') {
+      return `Threw away "${item_name}" from ${activity.item_drawer || 'freezer'}`;
     } else if (action === 'consumed') {
       return `Used "${item_name}" from ${activity.item_drawer || 'freezer'}`;
     } else if (action === 'updated') {

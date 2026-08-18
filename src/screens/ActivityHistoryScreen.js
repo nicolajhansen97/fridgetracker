@@ -23,6 +23,7 @@ const actionIconName = (action) => {
     case 'created': return 'add-circle-outline';
     case 'updated': return 'create-outline';
     case 'consumed': return 'restaurant-outline';
+    case 'thrown': return 'trash-bin-outline';
     case 'deleted': return 'trash-outline';
     default: return 'document-text-outline';
   }
@@ -32,6 +33,7 @@ const actionColorMap = {
   created: '#065F46',
   updated: '#92400E',
   consumed: '#075985',
+  thrown: '#9A3412',
   deleted: '#991B1B',
 };
 
@@ -41,6 +43,7 @@ const actionSoftMap = {
   created: colors.successSoft,
   updated: colors.warningSoft,
   consumed: colors.infoSoft,
+  thrown: colors.warningSoft,
   deleted: colors.dangerSoft,
 };
 

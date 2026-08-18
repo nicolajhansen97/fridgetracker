@@ -175,6 +175,21 @@ export const FridgeProvider = ({ children }) => {
     }
   };
 
+  // Throw away: log a 'thrown' event and remove the item. Deliberately NOT
+  // deleteItem — a plain delete logs 'deleted', which is also what tidying up a
+  // mistyped row produces, so waste would be unmeasurable. Backed by the
+  // throw_fridge_item RPC (see SQL Scripts/ADD_THROWN_ACTION.sql).
+  const throwItem = async (id) => {
+    try {
+      const { error } = await supabase.rpc('throw_fridge_item', { p_item_id: id });
+      if (error) throw error;
+      setItems(items.filter((item) => item.id !== id));
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+
   // Partial use: log the used amount as a 'consumed' event and reduce the
   // item's quantity (removing it if nothing is left). Backed by the
   // consume_fridge_item_partial RPC (see SQL Scripts/ADD_PARTIAL_CONSUME.sql).
@@ -222,6 +237,7 @@ export const FridgeProvider = ({ children }) => {
         updateItem,
         deleteItem,
         consumeItem,
+        throwItem,
         consumePartial,
         loadItems,
         getNextAvailablePosition,

@@ -183,6 +183,7 @@ export default {
     action_created: 'Hinzugefügt',
     action_updated: 'Aktualisiert',
     action_consumed: 'Verwendet',
+    action_thrown: 'Weggeworfen',
     action_deleted: 'Entfernt',
   },
   inventory: {
@@ -424,6 +425,7 @@ export default {
     updated: 'AKTUALISIERT',
     consumed: 'VERBRAUCHT',
     partialUsed: 'Verbraucht {used} ({left} übrig)',
+    thrown: 'WEGGEWORFEN',
     deleted: 'GELÖSCHT',
     by: 'Von:',
     changes: 'Änderungen:',

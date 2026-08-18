@@ -183,6 +183,7 @@ export default {
     action_created: 'Ajoute',
     action_updated: 'Mis a jour',
     action_consumed: 'Utilise',
+    action_thrown: 'Jeté',
     action_deleted: 'Retire',
   },
   inventory: {
@@ -424,6 +425,7 @@ export default {
     consumed: 'CONSOMMÉ',
     partialUsed: 'Utilisé {used} ({left} restant)',
     updated: 'MIS A JOUR',
+    thrown: 'JETÉ',
     deleted: 'SUPPRIME',
     by: 'Par :',
     changes: 'Modifications :',
