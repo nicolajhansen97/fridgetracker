@@ -52,3 +52,12 @@ local.properties
 
 # database backups (contain customer emails - never commit)
 backups/
+
+# local DB password file for backups (never commit)
+.pgpass
+
+# Supabase personal access token for CLI deploys (never commit)
+.supabase-token
+
+# RevenueCat webhook shared secret (never commit)
+.rc-webhook-secret
