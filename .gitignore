@@ -49,3 +49,6 @@ local.properties
 
 # Local design-review screenshots (not part of the app)
 .design-shots/
+
+# database backups (contain customer emails - never commit)
+backups/
