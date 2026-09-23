@@ -25,6 +25,7 @@ import { useHousehold } from '../context/HouseholdContext';
 import { useLanguage } from '../i18n';
 import { useStockInsights } from '../hooks/useStockInsights';
 import { useCategory } from '../hooks/useCategory';
+import { useItemPrices } from '../hooks/useItemPrices';
 import { buildCategoryOrder, CATEGORY_ICON_MCI } from '../utils/foodCategories';
 import {
   Screen,
@@ -50,7 +51,8 @@ const ShoppingListScreen = () => {
     getCategory: catOf, isOverridden, setCategory, labelFor,
     customCategories, addCustomCategory, removeCustomCategory,
   } = useCategory();
-  const { t } = useLanguage();
+  const { t, formatMoney } = useLanguage();
+  const { priceFor } = useItemPrices();
 
   const [draft, setDraft] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -90,6 +92,21 @@ const ShoppingListScreen = () => {
       .filter((c) => map[c])
       .map((c) => ({ category: c, items: map[c] }));
   }, [unchecked, catOf, customCategories]);
+
+  // Rough basket total from remembered prices. The shopping list's quantity is
+  // free text ("2 kg", "a bunch"), so there is nothing reliable to multiply by —
+  // this counts one remembered price per line and says plainly how many lines it
+  // could price. An honest "about this much, for 4 of 7 items" is more useful
+  // than a precise-looking number built on guessed quantities.
+  const estimate = useMemo(() => {
+    let sum = 0;
+    let priced = 0;
+    for (const item of unchecked) {
+      const p = priceFor(item.name);
+      if (p !== null && p > 0) { sum += p; priced += 1; }
+    }
+    return { sum, priced, total: unchecked.length };
+  }, [unchecked, priceFor]);
 
   const subtitle = useMemo(() => {
     if (total === 0) return currentHousehold?.name;
@@ -293,6 +310,23 @@ const ShoppingListScreen = () => {
             </View>
           ) : (
             <>
+              {estimate.priced > 0 && (
+                <View style={styles.estimateBar}>
+                  <Icon name="pricetag-outline" size={15} color={colors.textMuted} />
+                  <Text style={styles.estimateText}>
+                    {t('shopping.estimate', { value: formatMoney(estimate.sum) })}
+                  </Text>
+                  {estimate.priced < estimate.total ? (
+                    <Text style={styles.estimateNote}>
+                      {t('shopping.estimateNote', {
+                        priced: estimate.priced,
+                        total: estimate.total,
+                      })}
+                    </Text>
+                  ) : null}
+                </View>
+              )}
+
               {grouped.map((group, gIdx) => (
                 <View key={group.category} style={[styles.group, gIdx > 0 && styles.groupSpacing]}>
                   <Text style={styles.categoryLabel}>
@@ -705,6 +739,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.primaryDark,
     flexShrink: 1,
+  },
+  estimateBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.sm,
+    flexWrap: 'wrap',
+  },
+  estimateText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  estimateNote: {
+    fontSize: 12,
+    color: colors.textSubtle,
   },
   categoryLabel: {
     fontSize: 11,

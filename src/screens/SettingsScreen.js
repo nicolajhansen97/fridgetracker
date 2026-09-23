@@ -12,11 +12,15 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../i18n';
+import { formatMoneyWith } from '../utils/currency';
+import { useFreezerSettings } from '../context/FreezerSettingsContext';
+import { useNotifications } from '../context/NotificationContext';
 import {
   Screen,
   ScreenHeader,
   Card,
-  Pill,
+  Icon,
+  OptionSheet,
   SectionTitle,
 } from '../components/ui';
 import { colors, radii, spacing, typography } from '../theme';
@@ -24,6 +28,14 @@ import { colors, radii, spacing, typography } from '../theme';
 const FAMILY_SIZE_KEY = 'freezely_family_size';
 const USE_PACKAGE_NUMBERS_KEY = 'freezely_use_package_numbers';
 
+// Every app preference in one place, as one row per setting with its current
+// value on the right — so the whole configuration reads down the right edge
+// without opening anything. Choices with more than two options open a sheet
+// rather than spreading chips across the screen; switches stay inline.
+//
+// Profile keeps what is about *you* (account, household, subscription) and
+// links here. Storage times and reminders are big enough to keep their own
+// screens, but appear here as ordinary rows showing their current state.
 const SettingsScreen = ({ navigation }) => {
   const {
     user,
@@ -33,13 +45,21 @@ const SettingsScreen = ({ navigation }) => {
     disableBiometric,
     checkBiometricEnabled,
   } = useAuth();
-  const { t, locale, setLocale, languages } = useLanguage();
+  const {
+    t, locale, setLocale, languages,
+    dateFormat, setDateFormat, dateFormats,
+    currency, setCurrency, currencies, formatMoney,
+  } = useLanguage();
+  const { dateSource, setDateSource, overrides } = useFreezerSettings();
+  const { resolved: notifPrefs } = useNotifications();
 
   const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [bioLoading, setBioLoading] = useState(false);
   const [familySize, setFamilySize] = useState(4);
   const [usePackageNumbers, setUsePackageNumbers] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  // Which picker sheet is open, if any: 'dateSource' | 'language' | 'dateFormat' | 'currency'.
+  const [sheet, setSheet] = useState(null);
 
   useEffect(() => {
     checkBiometricStatus();
@@ -51,9 +71,24 @@ const SettingsScreen = ({ navigation }) => {
     });
   }, []);
 
-  const handleTogglePackageNumbers = (value) => {
-    setUsePackageNumbers(value);
-    AsyncStorage.setItem(USE_PACKAGE_NUMBERS_KEY, String(value));
+  const checkBiometricStatus = async () => {
+    const enabled = await checkBiometricEnabled();
+    setBiometricEnabled(enabled);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await checkBiometricStatus();
+      const v = await AsyncStorage.getItem(FAMILY_SIZE_KEY);
+      if (v) setFamilySize(parseInt(v));
+      const p = await AsyncStorage.getItem(USE_PACKAGE_NUMBERS_KEY);
+      if (p !== null) setUsePackageNumbers(p === 'true');
+    } catch (e) {
+      console.error('Refresh error:', e);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const changeFamilySize = (delta) => {
@@ -62,24 +97,9 @@ const SettingsScreen = ({ navigation }) => {
     AsyncStorage.setItem(FAMILY_SIZE_KEY, String(n));
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await checkBiometricStatus();
-      const val = await AsyncStorage.getItem(FAMILY_SIZE_KEY);
-      if (val) setFamilySize(parseInt(val));
-      const pkgVal = await AsyncStorage.getItem(USE_PACKAGE_NUMBERS_KEY);
-      if (pkgVal !== null) setUsePackageNumbers(pkgVal === 'true');
-    } catch (e) {
-      console.error('Refresh error:', e);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  const checkBiometricStatus = async () => {
-    const enabled = await checkBiometricEnabled();
-    setBiometricEnabled(enabled);
+  const handleTogglePackageNumbers = (value) => {
+    setUsePackageNumbers(value);
+    AsyncStorage.setItem(USE_PACKAGE_NUMBERS_KEY, String(value));
   };
 
   const handleToggleBiometric = async () => {
@@ -87,7 +107,7 @@ const SettingsScreen = ({ navigation }) => {
       Alert.alert(t('login.notAvailable'), t('login.biometricNotAvailable', { type: biometricType }));
       return;
     }
-    setIsLoading(true);
+    setBioLoading(true);
     if (biometricEnabled) {
       const result = await disableBiometric();
       if (result.success) {
@@ -105,8 +125,39 @@ const SettingsScreen = ({ navigation }) => {
         Alert.alert(t('common.error'), result.error || t('settings.failedEnable'));
       }
     }
-    setIsLoading(false);
+    setBioLoading(false);
   };
+
+  // Right-hand summaries for the rows that open another screen. Both say what
+  // the user would otherwise have to open the screen to find out.
+  const storageSummary = Object.keys(overrides || {}).length > 0
+    ? t('settings.storageCustom')
+    : t('settings.storageDefault');
+  const reminderSummary = notifPrefs?.enabled
+    ? t('settings.remindersLead', { count: notifPrefs.leadDays })
+    : t('settings.remindersOff');
+
+  const languageOptions = languages.map((l) => ({ value: l.code, label: l.label, icon: l.flag }));
+  const dateFormatOptions = dateFormats.map((f) => ({
+    value: f.code,
+    label: t(`settings.dateFormat_${f.code}`),
+    hint: f.pattern,
+  }));
+  const dateSourceOptions = [
+    { value: 'estimate', label: t('expiring.filterEstimate'), hint: t('settings.dateSourceEstimateHint') },
+    { value: 'mine', label: t('expiring.filterMine'), hint: t('settings.dateSourceMineHint') },
+  ];
+
+  // Each option previews itself, so the difference between kr, € and £ is
+  // visible in the list rather than something you pick and then go check.
+  const currencyOptions = currencies.map((c) => ({
+    value: c.code,
+    label: c.code,
+    hint: formatMoneyWith(24.5, c.code),
+  }));
+
+  const currentLanguage = languages.find((l) => l.code === locale)?.label || locale;
+  const currentDateFormat = dateFormats.find((f) => f.code === dateFormat)?.pattern || '';
 
   return (
     <Screen>
@@ -120,16 +171,41 @@ const SettingsScreen = ({ navigation }) => {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        <SectionTitle>{t('settings.account')}</SectionTitle>
-        <Card>
-          <Row label={t('common.email')} value={user?.email} />
-        </Card>
-
-        <SectionTitle>{t('settings.household')}</SectionTitle>
-        <Card>
-          <Row
+        <SectionTitle>{t('settings.groupFreezer')}</SectionTitle>
+        <Card padded={false}>
+          <ValueRow
+            label={t('settings.dateSource')}
+            value={dateSource === 'mine' ? t('expiring.filterMine') : t('expiring.filterEstimate')}
+            onPress={() => setSheet('dateSource')}
+          />
+          <Divider />
+          <ValueRow
+            label={t('freezerSettings.profileRow')}
+            value={storageSummary}
+            onPress={() => navigation.navigate('FreezerStorageSettings')}
+          />
+          <Divider />
+          <ValueRow
+            label={t('notif.profileRow')}
+            value={reminderSummary}
+            onPress={() => navigation.navigate('NotificationSettings')}
+          />
+          <Divider />
+          <SettingRow
+            label={t('settings.usePackageNumbers')}
+            description={t('settings.usePackageNumbersDesc')}
+            right={
+              <Switch
+                value={usePackageNumbers}
+                onValueChange={handleTogglePackageNumbers}
+                trackColor={{ false: colors.borderStrong, true: colors.primary }}
+                thumbColor={colors.surface}
+              />
+            }
+          />
+          <Divider />
+          <SettingRow
             label={t('settings.familySize')}
-            description={t('settings.familySizeDesc')}
             right={
               <View style={styles.stepper}>
                 <TouchableOpacity style={styles.stepBtn} onPress={() => changeFamilySize(-1)}>
@@ -142,40 +218,29 @@ const SettingsScreen = ({ navigation }) => {
               </View>
             }
           />
-          <Divider />
-          <Row
-            label={t('settings.usePackageNumbers')}
-            description={t('settings.usePackageNumbersDesc')}
-            right={
-              <Switch
-                value={usePackageNumbers}
-                onValueChange={handleTogglePackageNumbers}
-                trackColor={{ false: colors.borderStrong, true: colors.primary }}
-                thumbColor={colors.surface}
-              />
-            }
+        </Card>
+
+        <SectionTitle>{t('settings.groupApp')}</SectionTitle>
+        <Card padded={false}>
+          <ValueRow
+            label={t('settings.language')}
+            value={currentLanguage}
+            onPress={() => setSheet('language')}
           />
-        </Card>
-
-        <SectionTitle>{t('settings.language')}</SectionTitle>
-        <Card>
-          <View style={styles.langGrid}>
-            {languages.map((lang) => (
-              <Pill
-                key={lang.code}
-                label={lang.label}
-                icon={lang.flag}
-                selected={locale === lang.code}
-                onPress={() => setLocale(lang.code)}
-                style={{ marginBottom: 8, marginRight: 8 }}
-              />
-            ))}
-          </View>
-        </Card>
-
-        <SectionTitle>{t('settings.security')}</SectionTitle>
-        <Card>
-          <Row
+          <Divider />
+          <ValueRow
+            label={t('settings.dateFormat')}
+            value={currentDateFormat}
+            onPress={() => setSheet('dateFormat')}
+          />
+          <Divider />
+          <ValueRow
+            label={t('settings.currency')}
+            value={formatMoney(24.5)}
+            onPress={() => setSheet('currency')}
+          />
+          <Divider />
+          <SettingRow
             label={t('settings.biometricLogin', { type: biometricType })}
             description={
               biometricAvailable
@@ -188,45 +253,71 @@ const SettingsScreen = ({ navigation }) => {
                 onValueChange={handleToggleBiometric}
                 trackColor={{ false: colors.borderStrong, true: colors.primary }}
                 thumbColor={colors.surface}
-                disabled={!biometricAvailable || isLoading}
+                disabled={!biometricAvailable || bioLoading}
               />
             }
           />
         </Card>
-
-        <SectionTitle>{t('settings.about')}</SectionTitle>
-        <Card>
-          <Row label={t('settings.appName')} value="Freezely" />
-          <Divider />
-          <Row label={t('settings.version')} value="1.0.2" />
-          <Divider />
-          <TouchableOpacity onPress={() => navigation.navigate('Changelog')} activeOpacity={0.7}>
-            <Row label={t('settings.whatsNew')} chevron />
-          </TouchableOpacity>
-        </Card>
-
-        {biometricAvailable && (
-          <Card style={styles.infoCard}>
-            <Text style={styles.infoTitle}>{t('settings.secureConvenient')}</Text>
-            <Text style={styles.infoText}>{t('settings.biometricInfo', { type: biometricType })}</Text>
-          </Card>
-        )}
-
-        <View style={{ height: spacing.xxl }} />
       </ScrollView>
+
+      <OptionSheet
+        visible={sheet === 'dateSource'}
+        title={t('settings.dateSource')}
+        help={t('settings.dateSourceDesc')}
+        options={dateSourceOptions}
+        value={dateSource}
+        onSelect={(v) => { setDateSource(v); setSheet(null); }}
+        onClose={() => setSheet(null)}
+      />
+      <OptionSheet
+        visible={sheet === 'language'}
+        title={t('settings.language')}
+        help={t('settings.languageHelp')}
+        options={languageOptions}
+        value={locale}
+        onSelect={(v) => { setLocale(v); setSheet(null); }}
+        onClose={() => setSheet(null)}
+      />
+      <OptionSheet
+        visible={sheet === 'currency'}
+        title={t('settings.currency')}
+        help={t('settings.currencyDesc')}
+        options={currencyOptions}
+        value={currency}
+        onSelect={(v) => { setCurrency(v); setSheet(null); }}
+        onClose={() => setSheet(null)}
+      />
+      <OptionSheet
+        visible={sheet === 'dateFormat'}
+        title={t('settings.dateFormat')}
+        help={t('settings.dateFormatDesc')}
+        options={dateFormatOptions}
+        value={dateFormat}
+        onSelect={(v) => { setDateFormat(v); setSheet(null); }}
+        onClose={() => setSheet(null)}
+      />
     </Screen>
   );
 };
 
-const Row = ({ label, description, value, right, chevron }) => (
+// The workhorse row: label on the left, current value plus chevron on the
+// right. A value here always means "tapping opens something".
+const ValueRow = ({ label, value, onPress }) => (
+  <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
+    <Text style={styles.rowLabel}>{label}</Text>
+    <Text style={styles.rowValue} numberOfLines={1}>{value}</Text>
+    <Icon name="chevron-forward" size={18} color={colors.textSubtle} />
+  </TouchableOpacity>
+);
+
+// Rows that change in place: a switch or a stepper, no chevron.
+const SettingRow = ({ label, description, right }) => (
   <View style={styles.row}>
     <View style={{ flex: 1, marginRight: spacing.md }}>
       <Text style={styles.rowLabel}>{label}</Text>
       {description ? <Text style={styles.rowDescription}>{description}</Text> : null}
     </View>
-    {value ? <Text style={styles.rowValue} numberOfLines={1}>{value}</Text> : null}
     {right}
-    {chevron ? <Text style={styles.chevron}>›</Text> : null}
   </View>
 );
 
@@ -236,22 +327,21 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+    minHeight: 52,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.lg,
   },
   rowLabel: {
-    ...typography.bodyStrong,
+    ...typography.body,
     color: colors.text,
-  },
-  rowDescription: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: 2,
-    lineHeight: 17,
+    fontWeight: '500',
+    flex: 1,
   },
   rowValue: {
     ...typography.body,
@@ -259,20 +349,16 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     textAlign: 'right',
   },
-  chevron: {
-    fontSize: 22,
-    color: colors.textSubtle,
-    marginLeft: spacing.sm,
+  rowDescription: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: 2,
+    lineHeight: 17,
   },
   divider: {
     height: 1,
     backgroundColor: colors.border,
-    marginHorizontal: -spacing.lg,
-  },
-  langGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingTop: 4,
+    marginHorizontal: spacing.lg,
   },
   stepper: {
     flexDirection: 'row',
@@ -295,22 +381,8 @@ const styles = StyleSheet.create({
   stepValue: {
     ...typography.h3,
     color: colors.text,
-    minWidth: 28,
+    minWidth: 26,
     textAlign: 'center',
-  },
-  infoCard: {
-    marginTop: spacing.lg,
-    backgroundColor: '#ECFEFF',
-  },
-  infoTitle: {
-    ...typography.h3,
-    color: colors.primaryDark,
-    marginBottom: 6,
-  },
-  infoText: {
-    ...typography.body,
-    color: colors.textMuted,
-    lineHeight: 20,
   },
 });
 

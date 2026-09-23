@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SUPPORTED_CURRENCIES, localeDefaultCurrency, formatMoneyWith } from '../utils/currency';
 import en from './en';
 import da from './da';
 import de from './de';
@@ -8,6 +9,7 @@ import es from './es';
 
 const LANGUAGE_KEY = 'freezely_language';
 const DATE_FORMAT_KEY = 'freezely_date_format';
+const CURRENCY_KEY = 'freezely_currency';
 
 const dictionaries = { en, da, de, fr, es };
 
@@ -98,18 +100,24 @@ export const LanguageProvider = ({ children }) => {
   const [locale, setLocaleState] = useState('en');
   // null = no explicit choice yet, so the date format follows the language.
   const [dateFormatPref, setDateFormatPref] = useState(null);
+  // null = no explicit choice yet, so the currency follows the language.
+  const [currencyPref, setCurrencyPref] = useState(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     Promise.all([
       AsyncStorage.getItem(LANGUAGE_KEY),
       AsyncStorage.getItem(DATE_FORMAT_KEY),
-    ]).then(([savedLocale, savedDateFormat]) => {
+      AsyncStorage.getItem(CURRENCY_KEY),
+    ]).then(([savedLocale, savedDateFormat, savedCurrency]) => {
       if (savedLocale && dictionaries[savedLocale]) {
         setLocaleState(savedLocale);
       }
       if (savedDateFormat === 'european' || savedDateFormat === 'american') {
         setDateFormatPref(savedDateFormat);
+      }
+      if (savedCurrency && SUPPORTED_CURRENCIES.some((c) => c.code === savedCurrency)) {
+        setCurrencyPref(savedCurrency);
       }
       setReady(true);
     });
@@ -129,12 +137,21 @@ export const LanguageProvider = ({ children }) => {
     }
   };
 
+  const setCurrency = async (code) => {
+    if (SUPPORTED_CURRENCIES.some((c) => c.code === code)) {
+      setCurrencyPref(code);
+      await AsyncStorage.setItem(CURRENCY_KEY, code);
+    }
+  };
+
   // Effective format: the user's explicit choice if they made one, otherwise
   // the default implied by their language.
   const dateFormat = dateFormatPref || localeDefaultDateFormat(locale);
+  const currency = currencyPref || localeDefaultCurrency(locale);
 
   const t = (key, params) => translate(locale, key, params);
   const formatDate = (dateString) => formatDateWith(dateString, dateFormat);
+  const formatMoney = (amount, opts) => formatMoneyWith(amount, currency, opts);
   const dateFormatPattern =
     SUPPORTED_DATE_FORMATS.find((f) => f.code === dateFormat)?.pattern || 'DD-MM-YYYY';
 
@@ -151,6 +168,10 @@ export const LanguageProvider = ({ children }) => {
         dateFormats: SUPPORTED_DATE_FORMATS,
         formatDate,
         dateFormatPattern,
+        currency,
+        setCurrency,
+        currencies: SUPPORTED_CURRENCIES,
+        formatMoney,
       }}
     >
       {children}

@@ -80,6 +80,9 @@ export const FridgeProvider = ({ children }) => {
             frozen_date: itemData.frozen_date || null,
             notes: itemData.notes,
             position: itemData.position || null,
+            // Optional: null means "no price recorded", which every money
+            // total downstream simply skips.
+            price: itemData.price ?? null,
           },
         ])
         .select();
@@ -205,7 +208,17 @@ export const FridgeProvider = ({ children }) => {
           .map((item) => {
             if (item.id !== id) return item;
             const remaining = (Number(item.quantity) || 0) - used;
-            return remaining > 0 ? { ...item, quantity: remaining } : null;
+            if (remaining <= 0) return null;
+            // The RPC pro-rates the price down with the quantity; mirror that
+            // locally so the list doesn't show the full price for a part-used
+            // item until the next refresh.
+            const price = Number(item.price);
+            const qty = Number(item.quantity);
+            const nextPrice =
+              isFinite(price) && item.price != null && qty > 0
+                ? Math.max(Math.round((price - price * (used / qty)) * 100) / 100, 0)
+                : item.price;
+            return { ...item, quantity: remaining, price: nextPrice };
           })
           .filter(Boolean)
       );

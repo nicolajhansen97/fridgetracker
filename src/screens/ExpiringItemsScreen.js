@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Modal,
+  Pressable,
   Alert,
   RefreshControl,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFridge } from '../context/FridgeContext';
 import { useLanguage } from '../i18n';
 import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
@@ -20,8 +24,12 @@ import {
   IconButton,
   EmptyState,
 } from '../components/ui';
-import { colors, spacing, typography } from '../theme';
+import { colors, radii, shadows, spacing, typography } from '../theme';
 import ItemActionSheet from '../components/ItemActionSheet';
+
+// The two ways the list can be read: each item's own date, or the freezer
+// estimate applied to everything.
+const LENS_ICON = { mine: 'calendar-outline', estimate: 'snow-outline' };
 
 const statusTone = (status) => {
   switch (status) {
@@ -40,11 +48,26 @@ const statusTone = (status) => {
 
 const ExpiringItemsScreen = ({ navigation }) => {
   const { items, loading, deleteItem, consumeItem, consumePartial, throwItem, loadItems } = useFridge();
-  const { getEffectiveExpiry, getDaysUntilExpiry, getFreezerInfo } = useFridgeExpiry();
+  const { getEffectiveExpiry, getFreezerInfo, usesManualExpiry, dateSource } = useFridgeExpiry();
   const { t, formatDate } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
   const [expiringItems, setExpiringItems] = useState([]);
   const [actionItem, setActionItem] = useState(null);
+  // A temporary look at the other date, on this screen only. Starts from the
+  // app-wide setting and returns to it when the screen is left, so the header
+  // dropdown answers "what would this list say the other way?" without
+  // quietly changing what Home and the notifications use.
+  const [lens, setLens] = useState(dateSource);
+  const [lensMenuOpen, setLensMenuOpen] = useState(false);
+  const insets = useSafeAreaInsets();
+  const lensLabel = (key) =>
+    t(key === 'mine' ? 'expiring.filterMine' : 'expiring.filterEstimate');
+
+  useFocusEffect(
+    useCallback(() => {
+      setLens(dateSource);
+    }, [dateSource])
+  );
 
   useEffect(() => {
     if (!items || items.length === 0) {
@@ -52,11 +75,15 @@ const ExpiringItemsScreen = ({ navigation }) => {
       return;
     }
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const list = items
       .map((item) => {
-        const effectiveExpiry = getEffectiveExpiry(item);
+        const effectiveExpiry = getEffectiveExpiry(item, lens);
         if (!effectiveExpiry) return null;
-        const diffDays = getDaysUntilExpiry(item);
+        const diffDays = Math.ceil((effectiveExpiry - today) / 86400000);
+        const showingEstimate = !usesManualExpiry(item, lens);
 
         let status = 'good';
         let statusText = '';
@@ -67,13 +94,17 @@ const ExpiringItemsScreen = ({ navigation }) => {
         else if (diffDays <= 7)  { status = 'warning';  statusText = t('expiring.daysLeft', { count: diffDays }); }
         else return null;
 
-        return { ...item, effectiveExpiry, daysLeft: diffDays, status, statusText };
+        return { ...item, effectiveExpiry, daysLeft: diffDays, status, statusText, showingEstimate };
       })
       .filter(Boolean)
       .sort((a, b) => a.daysLeft - b.daysLeft);
 
     setExpiringItems(list);
-  }, [items]);
+  }, [items, lens]);
+
+  // Both views only differ for items that carry a picked date AND a frozen
+  // date; with none of those the filter would do nothing visible.
+  const hasBothDates = (items || []).some((it) => it.expiry_date && it.frozen_date);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -122,9 +153,57 @@ const ExpiringItemsScreen = ({ navigation }) => {
     <Screen>
       <ScreenHeader
         title={t('expiring.title')}
+        subtitle={hasBothDates ? lensLabel(lens) : undefined}
         onBack={() => navigation.goBack()}
         backLabel={t('common.back')}
+        right={hasBothDates ? (
+          <TouchableOpacity
+            onPress={() => setLensMenuOpen(true)}
+            style={styles.lensButton}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('addItem.expirySourceLabel')}
+          >
+            <Icon name={LENS_ICON[lens]} size={15} color={colors.surface} />
+            <Icon name="chevron-down" size={13} color={colors.surface} />
+          </TouchableOpacity>
+        ) : null}
       />
+
+      {/* Which date the list is judged by. Anchored under the header button
+          that opens it, so it reads as that control's menu rather than a
+          general-purpose sheet. */}
+      <Modal
+        visible={lensMenuOpen}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setLensMenuOpen(false)}
+      >
+        <Pressable style={styles.menuBackdrop} onPress={() => setLensMenuOpen(false)}>
+          <Pressable style={[styles.menu, { top: insets.top + 56 }]}>
+            <Text style={styles.menuTitle}>{t('addItem.expirySourceLabel')}</Text>
+            {['mine', 'estimate'].map((key) => (
+              <TouchableOpacity
+                key={key}
+                style={styles.menuRow}
+                activeOpacity={0.7}
+                onPress={() => { setLens(key); setLensMenuOpen(false); }}
+              >
+                <Icon
+                  name={LENS_ICON[key]}
+                  size={18}
+                  color={lens === key ? colors.primary : colors.textMuted}
+                />
+                <Text style={[styles.menuLabel, lens === key && styles.menuLabelOn]} numberOfLines={1}>
+                  {lensLabel(key)}
+                </Text>
+                {lens === key ? <Icon name="checkmark" size={18} color={colors.primary} /> : null}
+              </TouchableOpacity>
+            ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -180,7 +259,7 @@ const ExpiringItemsScreen = ({ navigation }) => {
 
                 <View style={styles.details}>
                   <DetailRow label={t('expiring.expires')} value={formatDate(item.effectiveExpiry)} />
-                  {item.frozen_date ? (() => {
+                  {item.frozen_date && item.showingEstimate ? (() => {
                     const info = getFreezerInfo(item.name);
                     const label = info.isCategory
                       ? t(`shopping.cat_${info.labelKey}`)
@@ -281,7 +360,7 @@ const styles = StyleSheet.create({
   detailLabel: {
     ...typography.bodySmall,
     color: colors.textMuted,
-    width: 84,
+    width: 110,
   },
   detailValue: {
     ...typography.bodySmall,
@@ -292,9 +371,56 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textMuted,
     fontStyle: 'italic',
-    marginLeft: 84,
+    marginLeft: 110,
     marginTop: 2,
     marginBottom: 4,
+  },
+  lensButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radii.pill,
+    backgroundColor: colors.whiteAlpha20,
+  },
+  menuBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15,23,42,0.30)',
+  },
+  menu: {
+    position: 'absolute',
+    right: spacing.lg,
+    minWidth: 210,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    ...shadows.cardRaised,
+  },
+  menuTitle: {
+    ...typography.label,
+    color: colors.textSubtle,
+    paddingHorizontal: spacing.sm,
+    paddingTop: 2,
+    paddingBottom: 6,
+  },
+  menuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 10,
+    borderRadius: radii.md,
+  },
+  menuLabel: {
+    ...typography.body,
+    color: colors.text,
+    flex: 1,
+  },
+  menuLabelOn: {
+    fontWeight: '700',
+    color: colors.primary,
   },
   badgeWide: {
     alignSelf: 'stretch',

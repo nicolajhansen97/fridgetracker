@@ -60,7 +60,7 @@ const HomeScreen = ({ navigation }) => {
       .sort((a, b) => a._exp - b._exp);
 
     const drawersUsed = new Set(items.map((i) => i.drawer)).size;
-    const pastWindowCount = items.filter(isPastFreezerWindow).length;
+    const pastWindowCount = items.filter((i) => isPastFreezerWindow(i)).length;
 
     return {
       totalItems: items.length,

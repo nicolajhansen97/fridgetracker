@@ -49,10 +49,10 @@ const SectionHeader = ({ icon, tint, bg, title, subtitle, count, open, onToggle 
 const StockInsightsScreen = ({ navigation }) => {
   const { loadItems } = useFridge();
   const { addItem, items: shoppingItems } = useShoppingList();
-  const { t } = useLanguage();
+  const { t, formatMoney } = useLanguage();
   const { isPremium } = usePremium();
   const {
-    restock, lowBasic, ignoredItems, overbought, mostStocked, mostUsed,
+    restock, lowBasic, ignoredItems, overbought, mostStocked, mostUsed, wastedPerMonth,
     loading, error, reload, ignore, unignore,
   } = useStockInsights();
   const [refreshing, setRefreshing] = useState(false);
@@ -119,6 +119,14 @@ const StockInsightsScreen = ({ navigation }) => {
     return parts.join(' · ');
   };
 
+  // "This habit costs you ~40 kr a month." Only shown where we actually have
+  // prices for what was thrown out, and only above a rounding-noise floor —
+  // "costs you ~0 kr" is worse than saying nothing.
+  const wasteCostLabel = (e) =>
+    e.wastedPerMonth >= 1
+      ? t('restock.wasteCost', { value: formatMoney(e.wastedPerMonth) })
+      : null;
+
   // Stock view cares about how much you hold, not usage rate.
   const stockLine = (e) => {
     const parts = [onHandLabel(e)];
@@ -126,7 +134,7 @@ const StockInsightsScreen = ({ navigation }) => {
     return parts.join(' · ');
   };
 
-  const Row = ({ e, showAdd, showBadge, stock }) => (
+  const Row = ({ e, showAdd, showBadge, stock, cost }) => (
     <View style={styles.row}>
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={styles.rowHead}>
@@ -136,6 +144,7 @@ const StockInsightsScreen = ({ navigation }) => {
           ) : null}
         </View>
         <Text style={styles.meta} numberOfLines={2}>{stock ? stockLine(e) : metaLine(e)}</Text>
+        {cost ? <Text style={styles.wasteCost}>{cost}</Text> : null}
       </View>
       {showAdd ? (
         added[e.key] ? (
@@ -280,7 +289,13 @@ const StockInsightsScreen = ({ navigation }) => {
                         tint={colors.accent}
                         bg={colors.accentSoft}
                         title={t('restock.buyingTooOften')}
-                        subtitle={t('restock.buyingTooOftenSub')}
+                        subtitle={
+                          wastedPerMonth >= 1
+                            ? t('restock.buyingTooOftenCost', {
+                                value: formatMoney(wastedPerMonth),
+                              })
+                            : t('restock.buyingTooOftenSub')
+                        }
                         count={overbought.length}
                         open={open.over}
                         onToggle={() => toggle('over')}
@@ -290,7 +305,7 @@ const StockInsightsScreen = ({ navigation }) => {
                           {overbought.map((e, i) => (
                             <View key={e.key}>
                               {i > 0 && <View style={styles.divider} />}
-                              <Row e={e} />
+                              <Row e={e} cost={wasteCostLabel(e)} />
                             </View>
                           ))}
                         </Card>
@@ -497,6 +512,12 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: 13,
     color: colors.textMuted,
+  },
+  wasteCost: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.danger,
+    marginTop: 3,
   },
   lowActions: {
     flexDirection: 'row',

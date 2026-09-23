@@ -183,33 +183,65 @@ export const getFreezerInfo = (name, overrides) => {
 // name. Use getFreezerInfo() when you also need the label for the user.
 export const getFreezerMonths = (name, overrides) =>
   getFreezerInfo(name, overrides).months;
+// Which date the app judges an item by. This is a user preference (see
+// FreezerSettingsContext) rather than a property of the food:
+//   'estimate' — the freezer window wins wherever one can be computed
+//   'mine'     — an item's own best-before wins when it has one
+export const DATE_SOURCE = { MINE: 'mine', ESTIMATE: 'estimate' };
 
-// Computes the effective expiry date for a frozen item:
-//   1. If the item has a frozen_date, expiry = frozen_date + freezer months
-//      for that category. The printed expiry_date is ignored — it was a
-//      fridge-only date and freezing extends safe storage far beyond it.
-//   2. If there's no frozen_date but there is an expiry_date, fall back to
-//      that (treat the item as a normal fridge item).
-//   3. If neither is set, returns null (no expiry tracking).
+// The category estimate on its own: frozen_date + the freezer months for the
+// item's category. null when the item has no frozen_date to count from.
 //
 // Returns a Date at midnight, or null.
-export const getEffectiveExpiry = (item, overrides) => {
+export const getFreezerEstimate = (item, overrides) => {
+  if (!item?.frozen_date) return null;
+  const expiry = startOfDay(item.frozen_date);
+  expiry.setMonth(expiry.getMonth() + getFreezerMonths(item.name, overrides));
+  return expiry;
+};
+
+// True when the item's own best-before date is the one in force, rather than
+// the category estimate.
+//
+// Nothing auto-fills expiry_date (the barcode and photo lookups set
+// name/quantity/unit only), so a value there was always chosen deliberately —
+// but a hand-picked date is often the package's fridge date, typed in before
+// freezing extended it by months. Hence the preference, and the per-item
+// use_manual_expiry === false opt-out for exceptions to it.
+//
+// Either way, an item with no frozen_date keeps its own date: there is no
+// estimate to fall back to, and ignoring it would leave the item dateless.
+export const usesManualExpiry = (item, source = DATE_SOURCE.MINE) => {
+  if (!item?.expiry_date) return false;
+  if (!item.frozen_date) return true;
+  if (item.use_manual_expiry === false) return false;
+  return source !== DATE_SOURCE.ESTIMATE;
+};
+
+// Both candidate dates for an item, for UI that lets the user choose between
+// them. Either side may be null. `active` says which one getEffectiveExpiry
+// currently returns.
+export const getExpiryChoices = (item, overrides, source) => {
+  const manual = item?.expiry_date ? startOfDay(item.expiry_date) : null;
+  const estimate = getFreezerEstimate(item, overrides);
+  return { manual, estimate, active: usesManualExpiry(item, source) ? 'manual' : 'estimate' };
+};
+
+// The expiry date actually in force for an item: the manual best-before when
+// it governs (see usesManualExpiry), otherwise the category estimate. null when
+// the item has neither date, i.e. no expiry tracking at all.
+//
+// Returns a Date at midnight, or null.
+export const getEffectiveExpiry = (item, overrides, source) => {
   if (!item) return null;
-  if (item.frozen_date) {
-    const frozen = startOfDay(item.frozen_date);
-    const months = getFreezerMonths(item.name, overrides);
-    const expiry = new Date(frozen);
-    expiry.setMonth(expiry.getMonth() + months);
-    return expiry;
-  }
-  if (item.expiry_date) return startOfDay(item.expiry_date);
-  return null;
+  if (usesManualExpiry(item, source)) return startOfDay(item.expiry_date);
+  return getFreezerEstimate(item, overrides);
 };
 
 // Days from today to the item's effective expiry. Negative = past. null when
 // the item has no expiry tracking at all (caller decides what that means).
-export const getDaysUntilExpiry = (item, overrides) => {
-  const expiry = getEffectiveExpiry(item, overrides);
+export const getDaysUntilExpiry = (item, overrides, source) => {
+  const expiry = getEffectiveExpiry(item, overrides, source);
   if (!expiry) return null;
   const today = startOfDay(new Date());
   return Math.ceil((expiry - today) / MS_PER_DAY);
@@ -217,8 +249,8 @@ export const getDaysUntilExpiry = (item, overrides) => {
 
 // Coarse status bucket used for badge color and "expiring soon" filters.
 // Anything within 7 days is "soon"; the rest is "ok"; null when no expiry.
-export const getExpiryStatus = (item, overrides) => {
-  const days = getDaysUntilExpiry(item, overrides);
+export const getExpiryStatus = (item, overrides, source) => {
+  const days = getDaysUntilExpiry(item, overrides, source);
   if (days === null) return null;
   if (days < 0) return 'expired';
   if (days <= 1) return 'critical';
@@ -227,13 +259,13 @@ export const getExpiryStatus = (item, overrides) => {
 };
 
 // True when an item is past its effective expiry — used by the stats screen
-// to count items "past their freezer-safe window".
-export const isPastFreezerWindow = (item, overrides) =>
-  getExpiryStatus(item, overrides) === 'expired';
+// to count items past their best-before date.
+export const isPastFreezerWindow = (item, overrides, source) =>
+  getExpiryStatus(item, overrides, source) === 'expired';
 
 // True when an item should appear in the "expiring soon" list (within 7 days
 // of its effective expiry, including already-expired).
-export const isExpiringSoon = (item, overrides) => {
-  const s = getExpiryStatus(item, overrides);
+export const isExpiringSoon = (item, overrides, source) => {
+  const s = getExpiryStatus(item, overrides, source);
   return s === 'expired' || s === 'critical' || s === 'soon';
 };

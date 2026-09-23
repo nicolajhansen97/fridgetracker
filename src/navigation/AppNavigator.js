@@ -23,11 +23,13 @@ import ExpiringItemsScreen from '../screens/ExpiringItemsScreen';
 import ExpiryCalendarScreen from '../screens/ExpiryCalendarScreen';
 import FreezerStatsScreen from '../screens/FreezerStatsScreen';
 import StockInsightsScreen from '../screens/StockInsightsScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import FreezerStorageSettingsScreen from '../screens/FreezerStorageSettingsScreen';
 import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 import ActivityHistoryScreen from '../screens/ActivityHistoryScreen';
 import ManageHouseholdScreen from '../screens/ManageHouseholdScreen';
 import RecipeSuggestionsScreen from '../screens/RecipeSuggestionsScreen';
+import MealPlanScreen from '../screens/MealPlanScreen';
 import ShoppingListScreen from '../screens/ShoppingListScreen';
 import ChangelogScreen from '../screens/ChangelogScreen';
 import FeedbackScreen from '../screens/FeedbackScreen';
@@ -36,6 +38,7 @@ const AuthStack = createNativeStackNavigator();
 const HomeStack = createNativeStackNavigator();
 const FreezerStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
+const RecipesStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const stackScreenOptions = { headerShown: false };
@@ -61,6 +64,16 @@ const FreezerStackNavigator = () => (
   </FreezerStack.Navigator>
 );
 
+// Recipes became a stack when the meal planner landed: the planner is where
+// a suggestion turns into a decision, so it belongs one push away from the
+// suggestions rather than in a tab of its own.
+const RecipesStackNavigator = () => (
+  <RecipesStack.Navigator screenOptions={stackScreenOptions}>
+    <RecipesStack.Screen name="RecipeSuggestions" component={RecipeSuggestionsScreen} />
+    <RecipesStack.Screen name="MealPlan" component={MealPlanScreen} />
+  </RecipesStack.Navigator>
+);
+
 const ProfileStackNavigator = () => (
   <ProfileStack.Navigator screenOptions={stackScreenOptions}>
     <ProfileStack.Screen name="Profile" component={ProfileScreen} />
@@ -69,6 +82,7 @@ const ProfileStackNavigator = () => (
     <ProfileStack.Screen name="ActivityHistory" component={ActivityHistoryScreen} />
     <ProfileStack.Screen name="Changelog" component={ChangelogScreen} />
     <ProfileStack.Screen name="Feedback" component={FeedbackScreen} />
+    <ProfileStack.Screen name="Settings" component={SettingsScreen} />
     <ProfileStack.Screen name="FreezerStorageSettings" component={FreezerStorageSettingsScreen} />
     <ProfileStack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
   </ProfileStack.Navigator>
@@ -152,7 +166,7 @@ const MainTabs = () => {
       />
       <Tab.Screen
         name="RecipesTab"
-        component={RecipeSuggestionsScreen}
+        component={RecipesStackNavigator}
         options={{
           title: t('tabs.recipes'),
           tabBarIcon: tabIconWithBeta('restaurant', 'restaurant-outline'),

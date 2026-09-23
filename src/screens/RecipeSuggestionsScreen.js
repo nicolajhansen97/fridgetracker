@@ -22,6 +22,7 @@ import { useLanguage } from '../i18n';
 import {
   Screen,
   ScreenHeader,
+  IconButton,
   Card,
   Icon,
   Pill,
@@ -348,6 +349,15 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
     <Screen>
       <ScreenHeader
         title={t('recipes.title')}
+        right={
+          <IconButton
+            name="calendar-outline"
+            variant="onHero"
+            size={40}
+            onPress={() => navigation.navigate('MealPlan')}
+            accessibilityLabel={t('mealPlan.title')}
+          />
+        }
       />
 
       <View style={styles.tabRow}>

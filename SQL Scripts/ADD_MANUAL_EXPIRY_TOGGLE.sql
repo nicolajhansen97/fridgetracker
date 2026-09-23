@@ -1,0 +1,32 @@
+-- Let each item pick which date governs it: the best-before the user chose, or
+-- the freezer estimate (frozen_date + the category's storage months).
+--
+-- Background: getEffectiveExpiry() used to ignore expiry_date entirely whenever
+-- frozen_date was set, on the theory that a printed fridge date stops meaning
+-- anything once the food is frozen. But nothing auto-fills expiry_date — the
+-- barcode and photo lookups only set name/quantity/unit — so every value in
+-- that column was picked by hand in the date picker, and the app was throwing
+-- the user's own choice away. The read logic now lets the manual date win.
+--
+-- The two dates genuinely disagree for a real case, though: someone types the
+-- package use-by ("use by Thursday"), then freezes the food, which extends it
+-- by months. This column lets that single item fall back to the estimate
+-- WITHOUT discarding the date it already has (clearing expiry_date would also
+-- work, but then the printed date is gone for good).
+--
+--   true  (default) = the item's expiry_date wins when it has one
+--   false           = ignore expiry_date, use the freezer estimate instead
+--
+-- When false and the item has no frozen_date, the app still falls back to
+-- expiry_date — otherwise the item would have no date at all.
+--
+-- Existing rows default to true, matching the fixed read logic. Heads-up on the
+-- data as of the 2026-08-22 backup: 183 of 1289 items carry a manual date, and
+-- 53 of those are already in the past, so they will read as past their best
+-- before as soon as this ships. Flipping an item to false is the fix for the
+-- ones that were printed fridge dates.
+--
+-- Re-runnable.
+
+ALTER TABLE public.fridge_items
+  ADD COLUMN IF NOT EXISTS use_manual_expiry BOOLEAN NOT NULL DEFAULT true;

@@ -10,6 +10,7 @@ import { DrawerProvider } from './src/context/DrawerContext';
 import { ActivityProvider } from './src/context/ActivityContext';
 import { ShoppingListProvider } from './src/context/ShoppingListContext';
 import { SavedRecipesProvider } from './src/context/SavedRecipesContext';
+import { MealPlanProvider } from './src/context/MealPlanContext';
 import { FreezerSettingsProvider } from './src/context/FreezerSettingsContext';
 import { NotificationProvider } from './src/context/NotificationContext';
 import { OTAUpdateProvider } from './src/context/OTAUpdateContext';
@@ -35,6 +36,7 @@ export default function App() {
                 <ActivityProvider>
                   <ShoppingListProvider>
                     <SavedRecipesProvider>
+                    <MealPlanProvider>
                     <FreezerSettingsProvider>
                     <NotificationProvider>
                     <OTAUpdateProvider>
@@ -44,6 +46,7 @@ export default function App() {
                     </OTAUpdateProvider>
                     </NotificationProvider>
                     </FreezerSettingsProvider>
+                    </MealPlanProvider>
                     </SavedRecipesProvider>
                   </ShoppingListProvider>
                 </ActivityProvider>

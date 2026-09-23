@@ -1,5 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../config/supabase';
+import { DATE_SOURCE } from '../utils/freezerStorage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 
 // Per-user overrides for freezer-storage durations. Defaults live in code
@@ -8,6 +10,18 @@ import { useAuth } from './AuthContext';
 //
 // Shape of `overrides`: { [categoryOrSubBucketKey]: months }.
 // Keys are the same ones the util uses internally (e.g. "meat", "groundMeat").
+
+// Which date the app judges items by ('estimate' | 'mine' — see DATE_SOURCE in
+// utils/freezerStorage). Unlike the overrides above this one is device-local
+// rather than synced: it is a way of reading the same data, not data itself,
+// so a phone and a tablet can reasonably differ.
+const DATE_SOURCE_KEY = 'freezely_date_source';
+
+// PostgREST rejects a token whose issued-at is in the future relative to its
+// own clock. It surfaces as an auth error but is really clock skew between the
+// device, the auth server and the API, and it clears itself.
+const isClockSkew = (error) =>
+  error?.code === 'PGRST303' || /issued at future/i.test(error?.message || '');
 
 const FreezerSettingsContext = createContext(null);
 
@@ -18,6 +32,9 @@ export const FreezerSettingsProvider = ({ children }) => {
   const [categoryOverrides, setCategoryOverrides] = useState({});
   // User-defined categories: [{ key: 'custom:<id>', name }].
   const [customCategories, setCustomCategories] = useState([]);
+  // Defaults to the freezer estimate, which is how the app has always judged
+  // frozen food; 'mine' hands that back to the dates the user picked.
+  const [dateSource, setDateSourceState] = useState(DATE_SOURCE.ESTIMATE);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
@@ -27,22 +44,36 @@ export const FreezerSettingsProvider = ({ children }) => {
       setCustomCategories([]);
       return;
     }
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
+    const fetchRow = () =>
+      supabase
         .from('user_freezer_settings')
         .select('overrides, category_overrides, custom_categories')
         .eq('user_id', user.id)
         .maybeSingle();
+
+    try {
+      setLoading(true);
+      let { data, error } = await fetchRow();
+
+      // PGRST303 ("JWT issued at future") means the token's issued-at is ahead
+      // of the API's clock, i.e. the two disagree about the time — not that the
+      // session is invalid. A fresh token usually lands on the right side of
+      // the skew, so try once more before giving up.
+      if (error && isClockSkew(error)) {
+        await supabase.auth.refreshSession();
+        ({ data, error } = await fetchRow());
+      }
       if (error) throw error;
+
       setOverrides(data?.overrides || {});
       setCategoryOverrides(data?.category_overrides || {});
       setCustomCategories(Array.isArray(data?.custom_categories) ? data.custom_categories : []);
     } catch (e) {
+      // Deliberately keep whatever we already had. Blanking these on a failed
+      // read would silently drop the user's storage-time overrides and custom
+      // categories, and every expiry date in the app would quietly shift to the
+      // built-in defaults until the next successful load.
       console.error('Error loading freezer settings:', e);
-      setOverrides({});
-      setCategoryOverrides({});
-      setCustomCategories([]);
     } finally {
       setLoading(false);
     }
@@ -51,6 +82,23 @@ export const FreezerSettingsProvider = ({ children }) => {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Device-local, so it loads once and does not depend on the signed-in user.
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(DATE_SOURCE_KEY).then((val) => {
+      if (!cancelled && (val === DATE_SOURCE.MINE || val === DATE_SOURCE.ESTIMATE)) {
+        setDateSourceState(val);
+      }
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const setDateSource = useCallback(async (value) => {
+    const next = value === DATE_SOURCE.MINE ? DATE_SOURCE.MINE : DATE_SOURCE.ESTIMATE;
+    setDateSourceState(next);
+    try { await AsyncStorage.setItem(DATE_SOURCE_KEY, next); } catch {}
+  }, []);
 
   // Persist a single override (or remove it if months === null). Optimistic
   // local update so the UI stays snappy even if the network is slow.
@@ -198,15 +246,17 @@ export const FreezerSettingsProvider = ({ children }) => {
       overrides,
       categoryOverrides,
       customCategories,
+      dateSource,
       loading,
       setOverride,
+      setDateSource,
       setCategoryOverride,
       addCustomCategory,
       removeCustomCategory,
       resetAll,
       reload: load,
     }),
-    [overrides, categoryOverrides, customCategories, loading, setOverride, setCategoryOverride, addCustomCategory, removeCustomCategory, resetAll, load]
+    [overrides, categoryOverrides, customCategories, dateSource, loading, setDateSource, setOverride, setCategoryOverride, addCustomCategory, removeCustomCategory, resetAll, load]
   );
 
   return (

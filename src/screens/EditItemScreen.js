@@ -21,12 +21,16 @@ import {
   Icon,
   Pill,
   AmountField,
+  PriceField,
   CategoryPickerSheet,
   Input,
   PrimaryButton,
 } from '../components/ui';
 import { colors, radii, spacing, typography } from '../theme';
 import { useCategory } from '../hooks/useCategory';
+import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
+import { useItemPrices } from '../hooks/useItemPrices';
+import { parseMoney } from '../utils/currency';
 
 const EditItemScreen = ({ route, navigation }) => {
   const { item } = route.params;
@@ -43,13 +47,19 @@ const EditItemScreen = ({ route, navigation }) => {
     item.expiry_date ? new Date(item.expiry_date) : null
   );
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  // Which of the two dates governs this item — see usesManualExpiry(). Only
+  // meaningful when the item has both a picked date and a frozen date.
+  const [useManualExpiry, setUseManualExpiry] = useState(item.use_manual_expiry !== false);
   const [notes, setNotes] = useState(item.notes || '');
   const [position, setPosition] = useState(item.position ? String(item.position) : '');
   const [unit, setUnit] = useState(item.unit || 'pcs');
+  const [price, setPrice] = useState(item.price != null ? String(item.price) : '');
   const [isLoading, setIsLoading] = useState(false);
   const [catPickerVisible, setCatPickerVisible] = useState(false);
 
   const { updateItem } = useFridge();
+  const { priceFor, remember: rememberPrice } = useItemPrices();
+  const { getFreezerEstimate } = useFridgeExpiry();
   const { drawers } = useDrawers();
   const { t, formatDate } = useLanguage();
   const {
@@ -60,21 +70,32 @@ const EditItemScreen = ({ route, navigation }) => {
   const currentCategory = catOf(item.name);
   const categoryIsAuto = !isOverridden(item.name);
 
+  // Estimate built from the form's live values rather than the saved row, so
+  // the choice reflects edits to the name or frozen date before they are saved.
+  const freezerEstimate = getFreezerEstimate({
+    name: name.trim() || item.name,
+    frozen_date: frozenDate || null,
+  });
+
   const handleFrozenDateConfirm = (date) => {
     setSelectedFrozenDate(date);
     setFrozenDate(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`);
     setFrozenDatePickerVisibility(false);
   };
 
+  // Picking a date is a statement that it should count, so re-select it — the
+  // user would otherwise pick a date and see nothing change.
   const handleDateConfirm = (date) => {
     setSelectedDate(date);
     setExpiryDate(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`);
+    setUseManualExpiry(true);
     setDatePickerVisibility(false);
   };
 
   const clearDate = () => {
     setExpiryDate('');
     setSelectedDate(null);
+    setUseManualExpiry(true);
   };
 
   const handleSubmit = async () => {
@@ -87,6 +108,7 @@ const EditItemScreen = ({ route, navigation }) => {
       return;
     }
 
+    const parsedPrice = parseMoney(price);
     setIsLoading(true);
     const result = await updateItem(item.id, {
       name: name.trim(),
@@ -95,12 +117,19 @@ const EditItemScreen = ({ route, navigation }) => {
       unit,
       frozen_date: frozenDate || null,
       expiry_date: expiryDate || null,
+      use_manual_expiry: useManualExpiry,
       notes: notes.trim(),
       position: position ? parseInt(position) : null,
+      price: parsedPrice,
     });
     setIsLoading(false);
 
     if (result.success) {
+      // Correcting a price here is the most reliable signal we get about what
+      // something actually costs, so it updates the remembered value too.
+      if (parsedPrice !== null) {
+        rememberPrice(name.trim(), parsedPrice, parseInt(quantity) || 1, unit);
+      }
       Alert.alert(t('common.success'), t('editItem.itemUpdated'), [
         { text: t('common.ok'), onPress: () => navigation.goBack() },
       ]);
@@ -191,6 +220,19 @@ const EditItemScreen = ({ route, navigation }) => {
             <View style={styles.divider} />
 
             <View style={styles.cardInner}>
+              <PriceField
+                value={price}
+                onChangeText={setPrice}
+                remembered={priceFor(name, quantity)}
+                onUseRemembered={(p) => setPrice(String(p))}
+                quantity={quantity}
+                disabled={isLoading}
+              />
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.cardInner}>
               <Text style={styles.label}>{t('addItem.category')}</Text>
               <TouchableOpacity
                 style={styles.datePicker}
@@ -236,6 +278,32 @@ const EditItemScreen = ({ route, navigation }) => {
               ) : (
                 <Text style={styles.helper}>{t('addItem.expiryAutoHint')}</Text>
               )}
+
+              {/* Both dates exist and disagree about when this item is due —
+                  let the user say which one is real. Hidden when there is only
+                  one candidate, since then there is nothing to choose. */}
+              {expiryDate && frozenDate ? (
+                <View style={styles.sourceBlock}>
+                  <Text style={styles.sourceLabel}>{t('addItem.expirySourceLabel')}</Text>
+                  <View style={styles.sourceRow}>
+                    <Pill
+                      label={`${t('addItem.expirySourceManual')} · ${formatDate(expiryDate)}`}
+                      selected={useManualExpiry}
+                      onPress={() => setUseManualExpiry(true)}
+                      disabled={isLoading}
+                      style={styles.sourcePill}
+                    />
+                    <Pill
+                      label={`${t('addItem.expirySourceEstimate')} · ${formatDate(freezerEstimate)}`}
+                      selected={!useManualExpiry}
+                      onPress={() => setUseManualExpiry(false)}
+                      disabled={isLoading}
+                      style={styles.sourcePill}
+                    />
+                  </View>
+                  <Text style={styles.helper}>{t('addItem.expirySourceHint')}</Text>
+                </View>
+              ) : null}
             </View>
           </Card>
 
@@ -441,6 +509,22 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textMuted,
     marginTop: 6,
+  },
+  sourceBlock: {
+    marginTop: spacing.md,
+  },
+  sourceLabel: {
+    ...typography.label,
+    color: colors.textMuted,
+    marginBottom: 8,
+  },
+  sourceRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  sourcePill: {
+    flexGrow: 1,
   },
 });
 

@@ -124,6 +124,14 @@ export const OTAUpdateProvider = ({ children }) => {
   const updateNow = async () => {
     setReloading(true);
     try {
+      // reloadAsync() does NOT wait for an in-flight download — it relaunches
+      // the most recently *downloaded* bundle. If the user taps before the
+      // background fetch finishes, that's the old bundle, and the prompt
+      // reappears after the reload (the "update asks twice" bug). So make
+      // sure the new bundle is fully downloaded before reloading.
+      if (!updatesState?.isUpdatePending) {
+        await Updates.fetchUpdateAsync();
+      }
       await Updates.reloadAsync();
     } catch (e) {
       console.error('OTA reload failed:', e);

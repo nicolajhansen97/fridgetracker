@@ -24,6 +24,8 @@ import {
 import { colors, gradients, radii, spacing, typography } from '../theme';
 import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
 import { useCategory } from '../hooks/useCategory';
+import { usePremium } from '../context/PremiumContext';
+import PaywallModal from '../components/PaywallModal';
 
 const MS_PER_DAY = 86400000;
 const WINDOW_DAYS = 90;
@@ -72,11 +74,13 @@ const FreezerStatsScreen = ({ navigation }) => {
   const { savedRecipes } = useSavedRecipes();
   const { isPastFreezerWindow, getExpiryStatus } = useFridgeExpiry();
   const { getCategory, labelFor } = useCategory();
-  const { t, formatDate } = useLanguage();
+  const { t, formatDate, formatMoney } = useLanguage();
+  const { isPremium } = usePremium();
 
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [paywallVisible, setPaywallVisible] = useState(false);
 
   const loadStats = useCallback(async () => {
     try {
@@ -117,15 +121,34 @@ const FreezerStatsScreen = ({ navigation }) => {
       return ts >= prevWindowStart && ts < windowStart;
     });
 
+    // 'thrown' is waste; 'deleted' is a row removed for some other reason
+    // (a typo, a duplicate). They were the same action until
+    // ADD_THROWN_ACTION.sql split them, and counting 'deleted' as waste after
+    // that split means showing tidy-ups as waste while missing every real
+    // throw-away. 'deleted' is now tracked but deliberately not reported.
+    //
+    // value = what the event was worth, from the activity snapshot. Items
+    // added without a price contribute nothing, so every money figure here is
+    // a floor, not an exact total — the UI says so.
     const countByAction = (list) =>
       list.reduce(
         (acc, a) => {
+          const value = Number(a.changes?.value);
+          const hasValue = isFinite(value) && value > 0;
           if (a.action === 'created') acc.created += 1;
-          else if (a.action === 'consumed') acc.consumed += 1;
-          else if (a.action === 'deleted') acc.deleted += 1;
+          else if (a.action === 'consumed') {
+            acc.consumed += 1;
+            if (hasValue) { acc.consumedValue += value; acc.pricedEvents += 1; }
+            acc.valuableEvents += 1;
+          } else if (a.action === 'thrown') {
+            acc.thrown += 1;
+            if (hasValue) { acc.thrownValue += value; acc.pricedEvents += 1; }
+            acc.valuableEvents += 1;
+          } else if (a.action === 'deleted') acc.deleted += 1;
           return acc;
         },
-        { created: 0, consumed: 0, deleted: 0 }
+        { created: 0, consumed: 0, thrown: 0, deleted: 0,
+          consumedValue: 0, thrownValue: 0, pricedEvents: 0, valuableEvents: 0 }
       );
 
     const window = countByAction(inWindow);
@@ -133,11 +156,11 @@ const FreezerStatsScreen = ({ navigation }) => {
 
     // Waste ratio: of items that left the freezer (used + thrown), how many
     // were actually eaten? This is the headline metric.
-    const wasteDenom = window.consumed + window.deleted;
+    const wasteDenom = window.consumed + window.thrown;
     const eatenPct = wasteDenom > 0
       ? Math.round((window.consumed / wasteDenom) * 100)
       : null;
-    const prevWasteDenom = prev.consumed + prev.deleted;
+    const prevWasteDenom = prev.consumed + prev.thrown;
     const prevEatenPct = prevWasteDenom > 0
       ? Math.round((prev.consumed / prevWasteDenom) * 100)
       : null;
@@ -146,18 +169,27 @@ const FreezerStatsScreen = ({ navigation }) => {
         ? eatenPct - prevEatenPct
         : null;
 
-    // Top 3 thrown-out items in window.
-    const deletedCounts = new Map();
+    // Top 3 thrown-out items in window, with what they cost where known.
+    // Ranked by money when we have any prices at all, since "spinach, 120 kr"
+    // is a more useful thing to see than "spinach, 4 times"; falls back to
+    // counts for users who never enter prices.
+    const thrownCounts = new Map();
     inWindow.forEach((a) => {
-      if (a.action !== 'deleted') return;
+      if (a.action !== 'thrown') return;
       const key = (a.item_name || '').trim().toLowerCase();
       if (!key) return;
-      const cur = deletedCounts.get(key) || { name: a.item_name, count: 0 };
+      const cur = thrownCounts.get(key) || { name: a.item_name, count: 0, value: 0 };
       cur.count += 1;
-      deletedCounts.set(key, cur);
+      const value = Number(a.changes?.value);
+      if (isFinite(value) && value > 0) cur.value += value;
+      thrownCounts.set(key, cur);
     });
-    const topThrown = [...deletedCounts.values()]
-      .sort((a, b) => b.count - a.count)
+    const thrownList = [...thrownCounts.values()];
+    const anyThrownValue = thrownList.some((r) => r.value > 0);
+    const topThrown = thrownList
+      .sort((a, b) =>
+        anyThrownValue ? b.value - a.value || b.count - a.count : b.count - a.count
+      )
       .slice(0, 3);
 
     // Average freezer time before consumed: pair each "consumed" event with
@@ -187,7 +219,7 @@ const FreezerStatsScreen = ({ navigation }) => {
     // --- Current-inventory derived stats ---
 
     // Items past / approaching their effective freezer window.
-    const pastWindowCount = items.filter(isPastFreezerWindow).length;
+    const pastWindowCount = items.filter((i) => isPastFreezerWindow(i)).length;
     let expiringSoonCount = 0;
     items.forEach((it) => {
       const s = getExpiryStatus(it);
@@ -252,6 +284,18 @@ const FreezerStatsScreen = ({ navigation }) => {
       eatenDelta,
       window,
       topThrown,
+      // Money is only worth showing once something in the window actually had
+      // a price on it. Below that, an empty "0 kr wasted" card reads as a
+      // claim rather than an absence of data.
+      hasMoneyData: window.pricedEvents > 0,
+      // How complete the money picture is, for the caveat line.
+      pricedEvents: window.pricedEvents,
+      valuableEvents: window.valuableEvents,
+      // Total value sitting in the freezer right now.
+      onHandValue: items.reduce((sum, it) => {
+        const p = Number(it.price);
+        return isFinite(p) && p > 0 ? sum + p : sum;
+      }, 0),
       avgDaysFrozen,
       pastWindowCount,
       expiringSoonCount,
@@ -344,7 +388,7 @@ const FreezerStatsScreen = ({ navigation }) => {
                   <Text style={styles.heroSub}>
                     {t('stats.eatenSub', {
                       used: stats.window.consumed,
-                      total: stats.window.consumed + stats.window.deleted,
+                      total: stats.window.consumed + stats.window.thrown,
                     })}
                   </Text>
                   {renderDelta()}
@@ -390,7 +434,7 @@ const FreezerStatsScreen = ({ navigation }) => {
                 <StatTile
                   chip={CHIP.danger}
                   iconName="trash-outline"
-                  value={stats.window.deleted}
+                  value={stats.window.thrown}
                   label={t('stats.thrownThisWindow')}
                 />
                 <StatTile
@@ -403,6 +447,77 @@ const FreezerStatsScreen = ({ navigation }) => {
                 />
               </View>
             </View>
+
+            {/* What it cost — the same events as the tiles above, in money.
+                Only rendered once at least one event in the window carried a
+                price, so a user who never enters prices never sees an empty
+                money card asking to be filled in. */}
+            {stats.hasMoneyData && (
+              <>
+                <SectionTitle
+                  icon={<Icon name="pricetag-outline" size={14} color={colors.textMuted} />}
+                >
+                  {t('stats.moneySection')}
+                </SectionTitle>
+                <TouchableOpacity
+                  activeOpacity={isPremium ? 1 : 0.7}
+                  disabled={isPremium}
+                  onPress={() => setPaywallVisible(true)}
+                >
+                  <Card>
+                    <View style={!isPremium ? styles.moneyLocked : null} pointerEvents="none">
+                      <View style={styles.moneyRow}>
+                        <View style={styles.moneyCol}>
+                          <Text style={[styles.moneyValue, { color: colors.danger }]} numberOfLines={1}>
+                            {formatMoney(stats.window.thrownValue, { compact: true })}
+                          </Text>
+                          <Text style={styles.moneyLabel}>{t('stats.moneyWasted')}</Text>
+                        </View>
+                        <View style={styles.moneyDivider} />
+                        <View style={styles.moneyCol}>
+                          <Text style={[styles.moneyValue, { color: colors.success }]} numberOfLines={1}>
+                            {formatMoney(stats.window.consumedValue, { compact: true })}
+                          </Text>
+                          <Text style={styles.moneyLabel}>{t('stats.moneyEaten')}</Text>
+                        </View>
+                      </View>
+
+                      {stats.onHandValue > 0 && (
+                        <View style={styles.moneyOnHand}>
+                          <Icon name="snow-outline" size={14} color={colors.textMuted} />
+                          <Text style={styles.moneyOnHandText}>
+                            {t('stats.moneyOnHand', {
+                              value: formatMoney(stats.onHandValue),
+                            })}
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Prices are optional, so these totals are a floor. Saying
+                          so is the difference between a number people trust and
+                          one they quietly decide is broken. */}
+                      <Text style={styles.moneyNote}>
+                        {stats.pricedEvents < stats.valuableEvents
+                          ? t('stats.moneyPartial', {
+                              priced: stats.pricedEvents,
+                              total: stats.valuableEvents,
+                            })
+                          : t('stats.moneyComplete')}
+                      </Text>
+                    </View>
+
+                    {!isPremium && (
+                      <View style={styles.moneyProOverlay}>
+                        <View style={styles.moneyProPill}>
+                          <Icon name="lock-closed" size={12} color={colors.primary} />
+                          <Text style={styles.moneyProText}>{t('stats.moneyProCta')}</Text>
+                        </View>
+                      </View>
+                    )}
+                  </Card>
+                </TouchableOpacity>
+              </>
+            )}
 
             {/* Freezer composition */}
             {stats.composition.length > 0 && (
@@ -557,7 +672,12 @@ const FreezerStatsScreen = ({ navigation }) => {
                       <View style={styles.thrownRank}>
                         <Text style={styles.thrownRankText}>{idx + 1}</Text>
                       </View>
-                      <Text style={styles.thrownName} numberOfLines={1}>{row.name}</Text>
+                      <View style={styles.thrownMain}>
+                        <Text style={styles.thrownName} numberOfLines={1}>{row.name}</Text>
+                        {row.value > 0 && isPremium ? (
+                          <Text style={styles.thrownValue}>{formatMoney(row.value)}</Text>
+                        ) : null}
+                      </View>
                       <Text style={styles.thrownCount}>
                         {t('stats.timesThrown', { count: row.count })}
                       </Text>
@@ -596,6 +716,11 @@ const FreezerStatsScreen = ({ navigation }) => {
 
         <View style={{ height: spacing.xxxl }} />
       </ScrollView>
+
+      <PaywallModal
+        visible={paywallVisible}
+        onClose={() => setPaywallVisible(false)}
+      />
     </Screen>
   );
 };
@@ -813,10 +938,91 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textMuted,
   },
+  thrownMain: {
+    flex: 1,
+    minWidth: 0,
+  },
   thrownName: {
     ...typography.bodyStrong,
     color: colors.text,
+  },
+  thrownValue: {
+    ...typography.caption,
+    color: colors.textMuted,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+
+  // — What it cost —
+  moneyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  moneyCol: {
     flex: 1,
+    alignItems: 'center',
+  },
+  moneyValue: {
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  moneyLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  moneyDivider: {
+    width: 1,
+    alignSelf: 'stretch',
+    marginVertical: 4,
+    backgroundColor: colors.border,
+  },
+  moneyOnHand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  moneyOnHandText: {
+    ...typography.caption,
+    color: colors.textMuted,
+    fontWeight: '600',
+  },
+  moneyNote: {
+    fontSize: 11,
+    color: colors.textSubtle,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+  },
+  moneyLocked: {
+    opacity: 0.25,
+  },
+  moneyProOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moneyProPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  moneyProText: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '800',
   },
   thrownCount: {
     ...typography.caption,

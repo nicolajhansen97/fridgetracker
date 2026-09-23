@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,9 @@ import {
   ScrollView,
   Alert,
   Switch,
-  RefreshControl,
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
 import { useHousehold } from '../context/HouseholdContext';
 import { useOTAUpdate } from '../context/OTAUpdateContext';
@@ -23,30 +21,22 @@ import {
   Screen,
   Card,
   Icon,
-  Pill,
+  IconButton,
   SectionTitle,
   SecondaryButton,
 } from '../components/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
 
-const FAMILY_SIZE_KEY = 'freezely_family_size';
-const USE_PACKAGE_NUMBERS_KEY = 'freezely_use_package_numbers';
-
 const ProfileScreen = ({ navigation }) => {
   const {
     user,
     logout,
-    biometricAvailable,
-    biometricType,
-    enableBiometric,
-    disableBiometric,
-    checkBiometricEnabled,
   } = useAuth();
   const { currentHousehold, householdMembers, invitations } = useHousehold();
   const { isPremium, premiumSource, manageSubscription, devPro, setDevPremium } = usePremium();
   const { checking: checkingForUpdate, checkManually } = useOTAUpdate();
-  const { t, locale, setLocale, languages, dateFormat, setDateFormat, dateFormats } = useLanguage();
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
 
   const handleCheckForUpdates = async () => {
@@ -65,79 +55,7 @@ const ProfileScreen = ({ navigation }) => {
     // If isAvailable, the OTAUpdateModal will show automatically via context state.
   };
 
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [bioLoading, setBioLoading] = useState(false);
-  const [familySize, setFamilySize] = useState(4);
-  const [usePackageNumbers, setUsePackageNumbers] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [paywallVisible, setPaywallVisible] = useState(false);
-
-  useEffect(() => {
-    checkBiometricStatus();
-    AsyncStorage.getItem(FAMILY_SIZE_KEY).then((val) => {
-      if (val) setFamilySize(parseInt(val));
-    });
-    AsyncStorage.getItem(USE_PACKAGE_NUMBERS_KEY).then((val) => {
-      if (val !== null) setUsePackageNumbers(val === 'true');
-    });
-  }, []);
-
-  const checkBiometricStatus = async () => {
-    const enabled = await checkBiometricEnabled();
-    setBiometricEnabled(enabled);
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await checkBiometricStatus();
-      const v = await AsyncStorage.getItem(FAMILY_SIZE_KEY);
-      if (v) setFamilySize(parseInt(v));
-      const p = await AsyncStorage.getItem(USE_PACKAGE_NUMBERS_KEY);
-      if (p !== null) setUsePackageNumbers(p === 'true');
-    } catch (e) {
-      console.error('Refresh error:', e);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  const changeFamilySize = (delta) => {
-    const n = Math.min(20, Math.max(1, familySize + delta));
-    setFamilySize(n);
-    AsyncStorage.setItem(FAMILY_SIZE_KEY, String(n));
-  };
-
-  const handleTogglePackageNumbers = (value) => {
-    setUsePackageNumbers(value);
-    AsyncStorage.setItem(USE_PACKAGE_NUMBERS_KEY, String(value));
-  };
-
-  const handleToggleBiometric = async () => {
-    if (!biometricAvailable) {
-      Alert.alert(t('login.notAvailable'), t('login.biometricNotAvailable', { type: biometricType }));
-      return;
-    }
-    setBioLoading(true);
-    if (biometricEnabled) {
-      const result = await disableBiometric();
-      if (result.success) {
-        setBiometricEnabled(false);
-        Alert.alert(t('common.success'), t('settings.biometricDisabled', { type: biometricType }));
-      } else {
-        Alert.alert(t('common.error'), result.error || t('settings.failedDisable'));
-      }
-    } else {
-      const result = await enableBiometric(user?.email);
-      if (result.success) {
-        setBiometricEnabled(true);
-        Alert.alert(t('common.success'), t('settings.biometricEnabled', { type: biometricType }));
-      } else {
-        Alert.alert(t('common.error'), result.error || t('settings.failedEnable'));
-      }
-    }
-    setBioLoading(false);
-  };
 
   const initials = (user?.email || '?').slice(0, 1).toUpperCase();
   const memberCount = householdMembers?.length || 0;
@@ -171,11 +89,18 @@ const ProfileScreen = ({ navigation }) => {
             <Text style={styles.identityHousehold}>{t('settings.appName')}</Text>
           )}
         </View>
+
+        {/* Settings is the most-used thing on this tab, so it gets a button in
+            the header rather than a row the user has to scroll to. */}
+        <IconButton
+          name="settings-outline"
+          onPress={() => navigation.navigate('Settings')}
+          accessibilityLabel={t('settings.profileRow')}
+        />
       </LinearGradient>
 
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <SectionTitle>{t('home.familySharing')}</SectionTitle>
         <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('ManageHousehold')}>
@@ -275,6 +200,12 @@ const ProfileScreen = ({ navigation }) => {
         <SectionTitle>{t('settings.title')}</SectionTitle>
         <Card padded={false}>
           <NavRow
+            iconName="options-outline"
+            title={t('settings.profileRow')}
+            onPress={() => navigation.navigate('Settings')}
+          />
+          <Divider />
+          <NavRow
             iconName="cube-outline"
             title={t('home.manageCompartments')}
             onPress={() => navigation.navigate('ManageDrawers')}
@@ -284,105 +215,6 @@ const ProfileScreen = ({ navigation }) => {
             iconName="bar-chart-outline"
             title={t('home.activityHistory')}
             onPress={() => navigation.navigate('ActivityHistory')}
-          />
-          <Divider />
-          <NavRow
-            iconName="snow-outline"
-            title={t('freezerSettings.profileRow')}
-            onPress={() => navigation.navigate('FreezerStorageSettings')}
-          />
-          <Divider />
-          <NavRow
-            iconName="notifications-outline"
-            title={t('notif.profileRow')}
-            onPress={() => navigation.navigate('NotificationSettings')}
-          />
-        </Card>
-
-        <SectionTitle>{t('settings.household')}</SectionTitle>
-        <Card>
-          <SettingRow
-            label={t('settings.familySize')}
-            description={t('settings.familySizeDesc')}
-            right={
-              <View style={styles.stepper}>
-                <TouchableOpacity style={styles.stepBtn} onPress={() => changeFamilySize(-1)}>
-                  <Text style={styles.stepBtnText}>−</Text>
-                </TouchableOpacity>
-                <Text style={styles.stepValue}>{familySize}</Text>
-                <TouchableOpacity style={styles.stepBtn} onPress={() => changeFamilySize(1)}>
-                  <Text style={styles.stepBtnText}>+</Text>
-                </TouchableOpacity>
-              </View>
-            }
-          />
-          <Divider inset />
-          <SettingRow
-            label={t('settings.usePackageNumbers')}
-            description={t('settings.usePackageNumbersDesc')}
-            right={
-              <Switch
-                value={usePackageNumbers}
-                onValueChange={handleTogglePackageNumbers}
-                trackColor={{ false: colors.borderStrong, true: colors.primary }}
-                thumbColor={colors.surface}
-              />
-            }
-          />
-        </Card>
-
-        <SectionTitle>{t('settings.language')}</SectionTitle>
-        <Card>
-          <View style={styles.langGrid}>
-            {languages.map((lang) => (
-              <Pill
-                key={lang.code}
-                label={lang.label}
-                icon={lang.flag}
-                selected={locale === lang.code}
-                onPress={() => setLocale(lang.code)}
-                style={{ marginBottom: 8, marginRight: 8 }}
-              />
-            ))}
-          </View>
-        </Card>
-
-        <SectionTitle>{t('settings.dateFormat')}</SectionTitle>
-        <Card>
-          <Text style={[styles.settingDescription, { marginBottom: spacing.sm }]}>
-            {t('settings.dateFormatDesc')}
-          </Text>
-          <View style={styles.langGrid}>
-            {dateFormats.map((df) => (
-              <Pill
-                key={df.code}
-                label={`${t(`settings.dateFormat_${df.code}`)} (${df.pattern})`}
-                selected={dateFormat === df.code}
-                onPress={() => setDateFormat(df.code)}
-                style={{ marginBottom: 8, marginRight: 8 }}
-              />
-            ))}
-          </View>
-        </Card>
-
-        <SectionTitle>{t('settings.security')}</SectionTitle>
-        <Card>
-          <SettingRow
-            label={t('settings.biometricLogin', { type: biometricType })}
-            description={
-              biometricAvailable
-                ? t('settings.biometricAvailable', { type: biometricType })
-                : t('settings.biometricUnavailable', { type: biometricType })
-            }
-            right={
-              <Switch
-                value={biometricEnabled}
-                onValueChange={handleToggleBiometric}
-                trackColor={{ false: colors.borderStrong, true: colors.primary }}
-                thumbColor={colors.surface}
-                disabled={!biometricAvailable || bioLoading}
-              />
-            }
           />
         </Card>
 
@@ -595,36 +427,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 2,
     lineHeight: 17,
-  },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  stepBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepBtnText: {
-    fontSize: 18,
-    color: colors.text,
-    fontWeight: '700',
-  },
-  stepValue: {
-    ...typography.h3,
-    color: colors.text,
-    minWidth: 26,
-    textAlign: 'center',
-  },
-
-  langGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingTop: 4,
   },
 
   aboutRow: {

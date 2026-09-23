@@ -9,10 +9,10 @@
 #   data_<ts>.sql     data for public/auth/storage as plain SQL
 #   full_<ts>.dump    pg_dump custom-format archive of public (for pg_restore)
 #
-# Password: NOT taken from the command line. Create %APPDATA%/postgresql/pgpass.conf
-# containing one line (no spaces):
+# Password: NOT taken from the command line. Lives in .pgpass in the repo
+# root (gitignored), one line, no spaces:
 #   aws-1-eu-west-1.pooler.supabase.com:5432:*:postgres.zuzfcnrejdtjehfocwos:<DB-PASSWORD>
-# pg_dump picks it up automatically. chmod is not enforced on Windows.
+# Exposed to pg_dump via PGPASSFILE below.
 #
 # Usage:  bash scripts/backup-db.sh
 set -euo pipefail
@@ -25,6 +25,7 @@ USER="postgres.zuzfcnrejdtjehfocwos"
 DB="postgres"
 OUT="$(cd "$(dirname "$0")/.." && pwd)/backups"
 TS="$(date +%Y%m%d-%H%M%S)"
+export PGPASSFILE="$(cd "$(dirname "$0")/.." && pwd)/.pgpass"
 
 mkdir -p "$OUT"
 

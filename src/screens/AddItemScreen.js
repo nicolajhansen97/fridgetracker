@@ -28,6 +28,7 @@ import {
   Icon,
   Pill,
   AmountField,
+  PriceField,
   CategoryPickerSheet,
   Input,
   PrimaryButton,
@@ -38,6 +39,8 @@ import BarcodeScannerModal from '../components/BarcodeScannerModal';
 import PaywallModal from '../components/PaywallModal';
 import { usePremium } from '../context/PremiumContext';
 import { useCategory } from '../hooks/useCategory';
+import { useItemPrices } from '../hooks/useItemPrices';
+import { parseMoney } from '../utils/currency';
 import { lookupBarcode, analyzeProductImage } from '../utils/productLookup';
 
 const USE_PACKAGE_NUMBERS_KEY = 'freezely_use_package_numbers';
@@ -68,6 +71,7 @@ const AddItemScreen = ({ navigation, route }) => {
   const [notes, setNotes] = useState('');
   const [position, setPosition] = useState('');
   const [unit, setUnit] = useState('pcs');
+  const [price, setPrice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [usePackageNumbers, setUsePackageNumbers] = useState(false);
   const [scannerVisible, setScannerVisible] = useState(false);
@@ -85,6 +89,11 @@ const AddItemScreen = ({ navigation, route }) => {
   const { drawers } = useDrawers();
   const { t, formatDate, locale } = useLanguage();
   const { isPremium } = usePremium();
+  const { priceFor, remember: rememberPrice } = useItemPrices();
+  // What this item cost last time, scaled to the quantity being added. Only a
+  // suggestion — PriceField shows it as a tappable hint rather than filling the
+  // box, so the number in the field is always one the user put there.
+  const rememberedPrice = priceFor(name, quantity);
   const {
     getCategory: catOf, isOverridden, setCategory, labelFor,
     customCategories, addCustomCategory, removeCustomCategory,
@@ -256,6 +265,8 @@ const AddItemScreen = ({ navigation, route }) => {
     }
 
     const addedName = name.trim();
+    const addedQty = parseInt(quantity) || 1;
+    const parsedPrice = parseMoney(price);
     setIsLoading(true);
     const result = await addItem({
       name: addedName,
@@ -266,6 +277,7 @@ const AddItemScreen = ({ navigation, route }) => {
       expiry_date: expiryDate || null,
       notes: notes.trim(),
       position: position ? parseInt(position) : null,
+      price: parsedPrice,
     });
     setIsLoading(false);
 
@@ -281,6 +293,11 @@ const AddItemScreen = ({ navigation, route }) => {
     // Remember the compartment for next time either way.
     try { await AsyncStorage.setItem(LAST_DRAWER_KEY, drawer); } catch {}
 
+    // Remember the price so the next chicken breast pre-fills. Fire-and-forget:
+    // the price is already stored on the item, and a failed suggestion write is
+    // not worth blocking the save on.
+    if (parsedPrice !== null) rememberPrice(addedName, parsedPrice, addedQty, unit);
+
     if (!addAnother) {
       // Return the user to wherever they launched Add Item from.
       dismiss();
@@ -290,6 +307,7 @@ const AddItemScreen = ({ navigation, route }) => {
     // Keep drawer / frozen date / unit; clear the item-specific fields.
     setName('');
     setQuantity('1');
+    setPrice('');
     setNotes('');
     setPosition('');
     setExpiryDate('');
@@ -442,6 +460,19 @@ const AddItemScreen = ({ navigation, route }) => {
                 setQuantity={setQuantity}
                 unit={unit}
                 setUnit={setUnit}
+                disabled={isLoading}
+              />
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.cardInner}>
+              <PriceField
+                value={price}
+                onChangeText={setPrice}
+                remembered={rememberedPrice}
+                onUseRemembered={(p) => setPrice(String(p))}
+                quantity={quantity}
                 disabled={isLoading}
               />
             </View>

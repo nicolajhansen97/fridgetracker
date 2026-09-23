@@ -104,6 +104,8 @@ export const useStockInsights = () => {
       const consumedQty = st ? Number(st.consumed_qty) || 0 : 0;
       const consumedEvents = st ? st.consumed_events || 0 : 0;
       const thrownEvents = st ? st.thrown_events || 0 : 0;
+      const thrownValue = st ? Number(st.thrown_value) || 0 : 0;
+      const consumedValue = st ? Number(st.consumed_value) || 0 : 0;
 
       // Rate is over the observed span (first activity → now), so a recently
       // started item isn't diluted across the whole 90-day window.
@@ -130,6 +132,10 @@ export const useStockInsights = () => {
       all.push({
         key, name, unit, onHand, packs: oh ? oh.count : 0, usedPerWeek, weeksLeft,
         consumedEvents, consumedQty, thrownEvents, status, suggestedQty,
+        thrownValue, consumedValue,
+        // What this item wastes per month at the observed rate. Only meaningful
+        // once prices exist; zero reads as "we don't know", not "nothing".
+        wastedPerMonth: thrownValue > 0 ? (thrownValue / observedWeeks) * 4.345 : 0,
       });
     }
 
@@ -147,7 +153,16 @@ export const useStockInsights = () => {
       .sort((a, b) => a.name.localeCompare(b.name));
     const overbought = all
       .filter((x) => x.status === 'over')
-      .sort((a, b) => b.thrownEvents - a.thrownEvents || b.weeksLeft - a.weeksLeft);
+      // Money first where we have it: the most expensive habit is more useful
+      // to see than the most frequent one.
+      .sort((a, b) =>
+        b.wastedPerMonth - a.wastedPerMonth ||
+        b.thrownEvents - a.thrownEvents ||
+        b.weeksLeft - a.weeksLeft
+      );
+
+    // Total money being thrown away per month across everything tracked.
+    const wastedPerMonth = all.reduce((sum, x) => sum + x.wastedPerMonth, 0);
     // Free-tier "running low": purely inventory-based (down to your last one or
     // two) — no consumption history needed, so it works without the RPC or Pro.
     const lowBasic = all
@@ -165,7 +180,7 @@ export const useStockInsights = () => {
       .sort((a, b) => b.usedPerWeek - a.usedPerWeek)
       .slice(0, 5);
 
-    return { restock, lowBasic, ignoredItems, overbought, mostStocked, mostUsed };
+    return { restock, lowBasic, ignoredItems, overbought, mostStocked, mostUsed, wastedPerMonth };
   }, [items, stats, ignored]);
 
   return { ...insights, loading, error, reload: load, ignore, unignore };
