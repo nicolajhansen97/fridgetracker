@@ -7,7 +7,7 @@ import { colors, radii } from '../../theme';
 //  - 'onHero' (default): translucent white, used on top of the gradient header
 //  - 'surface':  light gray bg, used on white/bg surfaces
 //  - 'ghost':    transparent, used inline with text
-const IconButton = ({ name, onPress, variant = 'onHero', size = 36, accessibilityLabel, disabled, set = 'ion' }) => {
+const IconButton = ({ name, onPress, variant = 'onHero', size = 36, accessibilityLabel, disabled, set: iconSet = 'ion' }) => {
   const tint =
     variant === 'onHero' ? colors.surface
       : variant === 'surface' ? colors.text
@@ -28,7 +28,7 @@ const IconButton = ({ name, onPress, variant = 'onHero', size = 36, accessibilit
         disabled && styles.disabled,
       ]}
     >
-      <Icon name={name} size={Math.round(size * 0.5)} color={tint} set={set} />
+      <Icon name={name} size={Math.round(size * 0.5)} color={tint} set={iconSet} />
     </TouchableOpacity>
   );
 };

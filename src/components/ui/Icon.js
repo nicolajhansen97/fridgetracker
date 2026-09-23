@@ -9,8 +9,8 @@ const SETS = {
   mci: MaterialCommunityIcons,
 };
 
-const Icon = ({ name, size = 20, color = colors.text, set = 'ion', style }) => {
-  const IconSet = SETS[set] || Ionicons;
+const Icon = ({ name, size = 20, color = colors.text, set: iconSet = 'ion', style }) => {
+  const IconSet = SETS[iconSet] || Ionicons;
   return <IconSet name={name} size={size} color={color} style={style} />;
 };
 

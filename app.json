@@ -2,15 +2,10 @@
   "expo": {
     "name": "Freezely",
     "slug": "fridgetracker",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#667eea"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.freezely.app",
@@ -55,6 +50,16 @@
         "expo-notifications",
         {
           "color": "#14B8A6"
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#667eea",
+          "enableFullScreenImage_legacy": true
         }
       ]
     ],
