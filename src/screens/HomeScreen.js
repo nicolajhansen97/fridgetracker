@@ -191,9 +191,12 @@ const HomeScreen = ({ navigation }) => {
         end={{ x: 1, y: 1 }}
         style={[styles.header, { paddingTop: insets.top + spacing.sm }]}
       >
-        {/* Snowfrost — faint brand texture */}
-        <Icon name="snow" size={140} color="rgba(255,255,255,0.12)" style={styles.snowBig} />
+        {/* Snowfrost — faint brand texture. Layered at three sizes so the
+            header reads as frosted glass rather than as a flat gradient with a
+            sticker on it; same treatment as the login screen. */}
+        <Icon name="snow" size={150} color="rgba(255,255,255,0.13)" style={styles.snowBig} />
         <Icon name="snow" size={64} color="rgba(255,255,255,0.10)" style={styles.snowSmall} />
+        <Icon name="snow" size={38} color="rgba(255,255,255,0.09)" style={styles.snowTiny} />
 
         <View style={styles.headerTopRow}>
           <View style={styles.headerLeft}>
@@ -222,6 +225,9 @@ const HomeScreen = ({ navigation }) => {
           <TouchableOpacity activeOpacity={0.85} onPress={goToInventory} style={{ flex: 1 }}>
             <Card style={styles.statCard}>
               <Icon name="snow" size={56} color="rgba(148,163,184,0.12)" style={styles.statSnow} />
+              <View style={[styles.statChip, { backgroundColor: colors.primarySoft }]}>
+                <Icon name="snow-outline" size={15} color={colors.primary} />
+              </View>
               <Text style={styles.statLabel}>{t('home.totalItems')}</Text>
               <Text style={styles.statValue}>{summary.totalItems}</Text>
               <Text style={styles.statSub}>
@@ -237,6 +243,21 @@ const HomeScreen = ({ navigation }) => {
           >
             <Card style={styles.statCard}>
               <Icon name="snow" size={56} color="rgba(148,163,184,0.12)" style={styles.statSnow} />
+              {/* The chip carries the urgency, so the number does not have to
+                  shout on its own — red on white at 34pt was the loudest thing
+                  on the screen even when nothing was actually wrong. */}
+              <View
+                style={[
+                  styles.statChip,
+                  { backgroundColor: summary.expiringCount > 0 ? colors.dangerSoft : colors.successSoft },
+                ]}
+              >
+                <Icon
+                  name={summary.expiringCount > 0 ? 'time-outline' : 'checkmark-circle-outline'}
+                  size={15}
+                  color={summary.expiringCount > 0 ? colors.danger : colors.success}
+                />
+              </View>
               <Text style={styles.statLabel}>{t('home.expiringSoon')}</Text>
               <Text style={[styles.statValue, summary.expiringCount > 0 && { color: colors.danger }]}>
                 {summary.expiringCount}
@@ -252,7 +273,7 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.quickRow}>
           <TouchableOpacity activeOpacity={0.85} onPress={goToCalendar} style={styles.quickTileWrap}>
             <Card style={styles.quickTile}>
-              <View style={styles.quickIcon}>
+              <View style={[styles.quickIcon, { backgroundColor: colors.accentSoft }]}>
                 <Icon name="calendar-outline" size={20} color={colors.accent} />
               </View>
               <Text style={styles.quickLabel} numberOfLines={1}>{t('home.calendarShort')}</Text>
@@ -261,8 +282,8 @@ const HomeScreen = ({ navigation }) => {
 
           <TouchableOpacity activeOpacity={0.85} onPress={goToStats} style={styles.quickTileWrap}>
             <Card style={styles.quickTile}>
-              <View style={styles.quickIcon}>
-                <Icon name="bar-chart-outline" size={20} color={colors.accent} />
+              <View style={[styles.quickIcon, { backgroundColor: colors.primarySoft }]}>
+                <Icon name="bar-chart-outline" size={20} color={colors.primary} />
                 {summary.pastWindowCount > 0 && (
                   <View style={styles.quickBadge}>
                     <Text style={styles.quickBadgeText}>{summary.pastWindowCount}</Text>
@@ -275,8 +296,8 @@ const HomeScreen = ({ navigation }) => {
 
           <TouchableOpacity activeOpacity={0.85} onPress={goToRestock} style={styles.quickTileWrap}>
             <Card style={styles.quickTile}>
-              <View style={styles.quickIcon}>
-                <Icon name="repeat-outline" size={20} color={colors.accent} />
+              <View style={[styles.quickIcon, { backgroundColor: colors.warningSoft }]}>
+                <Icon name="repeat-outline" size={20} color={colors.warning} />
                 {lowCount > 0 && (
                   <View style={[styles.quickBadge, styles.quickBadgeWarn]}>
                     <Text style={styles.quickBadgeText}>{lowCount}</Text>
@@ -312,7 +333,9 @@ const HomeScreen = ({ navigation }) => {
                   key={item.id}
                   style={[styles.expiringRow, idx < summary.expiringList.length - 1 && styles.expiringDivider]}
                 >
-                  <View style={[styles.expiringDot, { backgroundColor: expiryTone(item) }]} />
+                  <View style={[styles.expiringChip, { backgroundColor: expiryTone(item) + '1A' }]}>
+                    <Icon name="snow-outline" size={14} color={expiryTone(item)} />
+                  </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={styles.expiringName} numberOfLines={1}>{item.name}</Text>
                     <View style={styles.expiringMetaRow}>
@@ -411,6 +434,11 @@ const styles = StyleSheet.create({
     right: 58,
     bottom: -10,
   },
+  snowTiny: {
+    position: 'absolute',
+    left: -8,
+    bottom: 6,
+  },
   headerTopRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -470,6 +498,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: -8,
     bottom: -8,
+  },
+  statChip: {
+    width: 30,
+    height: 30,
+    borderRadius: radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
   },
   statLabel: {
     ...typography.label,
@@ -583,10 +619,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  expiringDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  expiringChip: {
+    width: 30,
+    height: 30,
+    borderRadius: radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   expiringName: {
     ...typography.bodyStrong,
