@@ -10,13 +10,12 @@ redesign and the tighter freezer list. That is what these notes lead with.
 
 Paste the plain-text blocks below; they contain no Markdown.
 
-**Limits:** Google Play 500 characters, App Store 4000.
-Counts are verified by `scripts/check-release-notes.js`.
+**Limits** live in each section heading and are verified by
+`node scripts/check-release-notes.js`.
 
 ---
 
-## Google Play — What's new
-
+## Google Play - What's new (500)
 ### English
 
 ```
@@ -79,8 +78,7 @@ Un aspecto más fresco y una lista de congelador que muestra mucho más en panta
 
 ---
 
-## App Store — What's New in This Version
-
+## App Store - What's New in This Version (4000)
 ### English
 
 ```
@@ -199,6 +197,81 @@ El inicio de sesión, el registro y la pantalla de inicio se han rediseñado, y 
 Estadísticas de desperdicio más exactas
 
 Tirar algo ahora se cuenta por separado de borrar un error de escritura, así que tus cifras por fin reflejan el desperdicio real. Puede que se vean distintas que antes: este es el dato corregido.
+```
+
+---
+
+## App Store - Promotional Text (170)
+
+The one store field that can be changed without submitting a build, so it
+is worth pointing at whatever you are currently pushing rather than
+treating it as fixed. It sits above the description on the product page.
+
+### English
+
+```
+New: put a price on what you freeze and see what waste really costs. Plan the week around what is expiring, and tag items so one search gathers a whole meal.
+```
+
+### Dansk
+
+```
+Nyt: sæt pris på det du fryser ned, og se hvad spild egentlig koster. Planlæg ugen om det der udløber, og tag varer så én søgning samler et helt måltid.
+```
+
+### Deutsch
+
+```
+Neu: Preise eintragen und sehen, was Verschwendung wirklich kostet. Plane die Woche um Ablaufendes herum und tagge Artikel, damit eine Suche eine Mahlzeit sammelt.
+```
+
+### Français
+
+```
+Nouveau : indiquez vos prix et voyez le vrai coût du gaspillage. Planifiez la semaine autour de ce qui expire, et étiquetez pour réunir un repas en une recherche.
+```
+
+### Español
+
+```
+Nuevo: pon precio a lo que congelas y mira lo que cuesta el desperdicio. Planea la semana según lo que caduca y etiqueta para reunir una comida en una búsqueda.
+```
+
+---
+
+## Google Play - Short description (80)
+
+Shown in listings and search results, and it changes far less often than
+the release notes, so it describes the app rather than this release.
+
+### English
+
+```
+Track your freezer, eat what you froze, and waste less food and money.
+```
+
+### Dansk
+
+```
+Hold styr på fryseren, spis det du frøs ned, og spild mindre mad og penge.
+```
+
+### Deutsch
+
+```
+Behalte den Gefrierschrank im Blick und wirf weniger Essen und Geld weg.
+```
+
+### Français
+
+```
+Gérez votre congélateur, mangez ce que vous congelez, gaspillez moins.
+```
+
+### Español
+
+```
+Controla tu congelador, come lo que congelas y desperdicia menos comida.
 ```
 
 ---
