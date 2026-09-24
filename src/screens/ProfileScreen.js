@@ -69,9 +69,11 @@ const ProfileScreen = ({ navigation }) => {
         end={{ x: 1, y: 1 }}
         style={[styles.identityHeader, { paddingTop: insets.top + spacing.md }]}
       >
-        {/* Snowfrost — faint brand texture */}
-        <Icon name="snow" size={120} color="rgba(255,255,255,0.10)" style={styles.snowBig} />
-        <Icon name="snow" size={54} color="rgba(255,255,255,0.08)" style={styles.snowSmall} />
+        {/* Snowfrost — faint brand texture, at the three-size density the
+            rest of the app now uses. */}
+        <Icon name="snow" size={128} color="rgba(255,255,255,0.12)" style={styles.snowBig} />
+        <Icon name="snow" size={54} color="rgba(255,255,255,0.09)" style={styles.snowSmall} />
+        <Icon name="snow" size={30} color="rgba(255,255,255,0.08)" style={styles.snowTiny} />
 
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{initials}</Text>
@@ -328,6 +330,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 70,
     bottom: -12,
+  },
+  snowTiny: {
+    position: 'absolute',
+    left: 4,
+    bottom: -4,
   },
   avatar: {
     width: 56,
