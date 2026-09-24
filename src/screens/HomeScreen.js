@@ -491,16 +491,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   glassCard: {
-    backgroundColor: 'rgba(255,255,255,0.16)',
+    backgroundColor: colors.glassPanel,
     borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.30)',
+    borderColor: colors.glassBorder,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
   },
   glassCardAlert: {
-    backgroundColor: 'rgba(255,255,255,0.26)',
-    borderColor: 'rgba(255,255,255,0.55)',
+    backgroundColor: colors.glassPanelStrong,
+    borderColor: colors.glassBorderStrong,
   },
   glassTopRow: {
     flexDirection: 'row',
@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
   },
   glassSub: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
+    color: colors.onHeroMuted,
     marginTop: 2,
   },
   content: {
@@ -591,30 +591,6 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
 
-  entryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  entryCardIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.md,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  entryCardTitle: {
-    ...typography.bodyStrong,
-    fontSize: 16,
-    color: colors.text,
-  },
-  entryCardSub: {
-    ...typography.caption,
-    fontSize: 13,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
 
   expiringRow: {
     flexDirection: 'row',

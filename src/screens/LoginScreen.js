@@ -15,7 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../i18n';
-import { Icon } from '../components/ui';
+import { Icon, FrostOverlay } from '../components/ui';
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
 
 // Set once the user turns the offer down, so the prompt asks a single time
@@ -100,16 +100,7 @@ const LoginScreen = ({ navigation }) => {
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
-      {/* Frost texture. Same device the in-app ScreenHeader uses, scaled up for
-          a full screen: a few oversized snowflakes at very low opacity, placed
-          off-centre and partly bled off the edges so they read as atmosphere
-          rather than as decoration sitting on top of the form. */}
-      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-        <Icon name="snow" size={260} color="rgba(255,255,255,0.09)" style={styles.frostOne} />
-        <Icon name="snow" size={150} color="rgba(255,255,255,0.07)" style={styles.frostTwo} />
-        <Icon name="snow" size={90} color="rgba(255,255,255,0.08)" style={styles.frostThree} />
-        <Icon name="snow" size={58} color="rgba(255,255,255,0.06)" style={styles.frostFour} />
-      </View>
+      <FrostOverlay />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -240,28 +231,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxxl,
   },
 
-  // — Frost texture —
-  frostOne: {
-    position: 'absolute',
-    top: -70,
-    right: -80,
-  },
-  frostTwo: {
-    position: 'absolute',
-    bottom: -30,
-    left: -50,
-  },
-  frostThree: {
-    position: 'absolute',
-    top: '32%',
-    left: -28,
-  },
-  frostFour: {
-    position: 'absolute',
-    top: '12%',
-    left: '38%',
-  },
-
   // — Header —
   header: {
     alignItems: 'center',
@@ -271,16 +240,16 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: radii.xl,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: colors.glassMark,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
+    borderColor: colors.glassMarkBorder,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
   },
   brand: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.75)',
+    color: colors.onHeroSubtle,
     fontWeight: '700',
     letterSpacing: 2.4,
     textTransform: 'uppercase',
@@ -296,16 +265,16 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    color: 'rgba(255,255,255,0.8)',
+    color: colors.onHeroMuted,
     textAlign: 'center',
   },
 
   // — Frosted panel —
   glass: {
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: colors.glassPanel,
     borderRadius: radii.header,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
+    borderColor: colors.glassBorder,
     padding: spacing.xl,
   },
   label: {
@@ -325,7 +294,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: 'rgba(255,255,255,0.96)',
+    backgroundColor: colors.glassField,
     borderRadius: radii.lg,
     borderWidth: 2,
     borderColor: 'transparent',
@@ -348,7 +317,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   forgotText: {
-    color: 'rgba(255,255,255,0.9)',
+    color: colors.onHeroMuted,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -377,7 +346,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xxl,
   },
   signupText: {
-    color: 'rgba(255,255,255,0.8)',
+    color: colors.onHeroMuted,
     fontSize: 14,
   },
   signupLink: {

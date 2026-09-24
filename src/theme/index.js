@@ -53,9 +53,31 @@ export const colors = {
   thrownText:  "#9A3412",  // orange-800
 
   // Translucent overlays (over the gradient header)
-  whiteAlpha20: 'rgba(255,255,255,0.20)',
-  whiteAlpha30: 'rgba(255,255,255,0.30)',
-  whiteAlpha80: 'rgba(255,255,255,0.85)',
+  whiteAlpha20: "rgba(255,255,255,0.20)",
+  whiteAlpha30: "rgba(255,255,255,0.30)",
+  whiteAlpha80: "rgba(255,255,255,0.85)",
+
+  // Frosted glass, for surfaces sitting ON the hero gradient: the auth
+  // screens, the lock screen and the Home stat panes.
+  //
+  // These were 20 different rgba(255,255,255,x) literals spread over five
+  // files, including borders at .26/.28/.30/.35 and subtitle text at
+  // .75/.80/.85 - the same element rendered at slightly different values
+  // because it was retyped rather than referenced. One scale now.
+  glassPanel: "rgba(255,255,255,0.14)",        // large frosted surfaces
+  glassPanelStrong: "rgba(255,255,255,0.26)",  // same pane, raised for emphasis
+  glassBorder: "rgba(255,255,255,0.28)",
+  glassBorderStrong: "rgba(255,255,255,0.50)",
+  glassMark: "rgba(255,255,255,0.18)",         // brand-mark discs
+  glassMarkBorder: "rgba(255,255,255,0.35)",
+  // Inputs stay near-opaque: frosted fields photograph well and read badly in
+  // daylight, and typed text has to stay dark on light.
+  glassField: "rgba(255,255,255,0.96)",
+
+  // Text and icons on the hero gradient.
+  onHero: "#FFFFFF",
+  onHeroMuted: "rgba(255,255,255,0.80)",
+  onHeroSubtle: "rgba(255,255,255,0.72)",
 };
 
 export const gradients = {
