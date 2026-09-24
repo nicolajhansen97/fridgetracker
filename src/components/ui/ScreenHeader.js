@@ -18,9 +18,14 @@ const ScreenHeader = ({ title, subtitle, onBack, right, backLabel }) => {
       end={{ x: 1, y: 1 }}
       style={[styles.container, { paddingTop: insets.top + spacing.sm }]}
     >
-      {/* Snowfrost — faint brand texture */}
-      <Icon name="snow" size={118} color="rgba(255,255,255,0.10)" style={styles.snowBig} />
-      <Icon name="snow" size={52} color="rgba(255,255,255,0.08)" style={styles.snowSmall} />
+      {/* Snowfrost — faint brand texture. Three sizes rather than two: with
+          only a large and a small flake the header read as a gradient with a
+          sticker on it, and the third breaks up that pairing into something
+          closer to frost. This component backs 18 screens, so the density here
+          is what the whole app looks like. */}
+      <Icon name="snow" size={128} color="rgba(255,255,255,0.12)" style={styles.snowBig} />
+      <Icon name="snow" size={52} color="rgba(255,255,255,0.09)" style={styles.snowSmall} />
+      <Icon name="snow" size={30} color="rgba(255,255,255,0.08)" style={styles.snowTiny} />
 
       <View style={styles.row}>
         <View style={styles.side}>
@@ -66,6 +71,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 66,
     bottom: -12,
+  },
+  snowTiny: {
+    position: 'absolute',
+    left: 12,
+    bottom: -6,
   },
   row: {
     flexDirection: 'row',

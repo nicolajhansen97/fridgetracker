@@ -213,6 +213,51 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.addPillText}>{t('home.quickAdd')}</Text>
           </TouchableOpacity>
         </View>
+
+        {/* The two headline numbers, as frosted glass on the gradient rather
+            than white cards below it. This is the login screen's panel
+            treatment carried into the app: it makes the header the dashboard
+            instead of a title bar, and the numbers stop competing with the
+            cards further down. Living inside the header also means they do not
+            scroll away — and sidesteps the ScrollView clipping that an
+            overlapping-card layout would need. */}
+        <View style={styles.glassRow}>
+          <TouchableOpacity activeOpacity={0.85} onPress={goToInventory} style={styles.glassWrap}>
+            <View style={styles.glassCard}>
+              <View style={styles.glassTopRow}>
+                <Icon name="snow-outline" size={16} color={colors.surface} />
+                <Text style={styles.glassLabel}>{t('home.totalItems')}</Text>
+              </View>
+              <Text style={styles.glassValue}>{summary.totalItems}</Text>
+              <Text style={styles.glassSub} numberOfLines={1}>
+                {summary.drawersUsed} {summary.drawersUsed === 1 ? t('home.drawerSingular') : t('home.drawerPlural')}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('ExpiringItems')}
+            style={styles.glassWrap}
+          >
+            {/* Urgency shows as a warmer pane, not a red number: the count is
+                already the biggest thing here. */}
+            <View style={[styles.glassCard, summary.expiringCount > 0 && styles.glassCardAlert]}>
+              <View style={styles.glassTopRow}>
+                <Icon
+                  name={summary.expiringCount > 0 ? 'time-outline' : 'checkmark-circle-outline'}
+                  size={16}
+                  color={colors.surface}
+                />
+                <Text style={styles.glassLabel}>{t('home.expiringSoon')}</Text>
+              </View>
+              <Text style={styles.glassValue}>{summary.expiringCount}</Text>
+              <Text style={styles.glassSub} numberOfLines={1}>
+                {summary.expiringCount > 0 ? t('home.tapToView') : t('home.allFresh')}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
 
       <ScrollView
@@ -220,55 +265,6 @@ const HomeScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        {/* Stats row */}
-        <View style={styles.statsRow}>
-          <TouchableOpacity activeOpacity={0.85} onPress={goToInventory} style={{ flex: 1 }}>
-            <Card style={styles.statCard}>
-              <Icon name="snow" size={56} color="rgba(148,163,184,0.12)" style={styles.statSnow} />
-              <View style={[styles.statChip, { backgroundColor: colors.primarySoft }]}>
-                <Icon name="snow-outline" size={15} color={colors.primary} />
-              </View>
-              <Text style={styles.statLabel}>{t('home.totalItems')}</Text>
-              <Text style={styles.statValue}>{summary.totalItems}</Text>
-              <Text style={styles.statSub}>
-                {summary.drawersUsed} {summary.drawersUsed === 1 ? t('home.drawerSingular') : t('home.drawerPlural')}
-              </Text>
-            </Card>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('ExpiringItems')}
-            style={{ flex: 1 }}
-          >
-            <Card style={styles.statCard}>
-              <Icon name="snow" size={56} color="rgba(148,163,184,0.12)" style={styles.statSnow} />
-              {/* The chip carries the urgency, so the number does not have to
-                  shout on its own — red on white at 34pt was the loudest thing
-                  on the screen even when nothing was actually wrong. */}
-              <View
-                style={[
-                  styles.statChip,
-                  { backgroundColor: summary.expiringCount > 0 ? colors.dangerSoft : colors.successSoft },
-                ]}
-              >
-                <Icon
-                  name={summary.expiringCount > 0 ? 'time-outline' : 'checkmark-circle-outline'}
-                  size={15}
-                  color={summary.expiringCount > 0 ? colors.danger : colors.success}
-                />
-              </View>
-              <Text style={styles.statLabel}>{t('home.expiringSoon')}</Text>
-              <Text style={[styles.statValue, summary.expiringCount > 0 && { color: colors.danger }]}>
-                {summary.expiringCount}
-              </Text>
-              <Text style={styles.statSub}>
-                {summary.expiringCount > 0 ? t('home.tapToView') : t('home.allFresh')}
-              </Text>
-            </Card>
-          </TouchableOpacity>
-        </View>
-
         {/* Quick access — three compact tiles instead of stacked cards */}
         <View style={styles.quickRow}>
           <TouchableOpacity activeOpacity={0.85} onPress={goToCalendar} style={styles.quickTileWrap}>
@@ -419,7 +415,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: spacing.lg,
     // paddingTop is set inline to include the safe-area inset
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.lg,
     borderBottomLeftRadius: radii.header,
     borderBottomRightRadius: radii.header,
     overflow: 'hidden',
@@ -481,47 +477,54 @@ const styles = StyleSheet.create({
     color: colors.surface,
     marginTop: 2,
   },
+  glassRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+  },
+  glassWrap: {
+    flex: 1,
+  },
+  glassCard: {
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.30)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  glassCardAlert: {
+    backgroundColor: 'rgba(255,255,255,0.26)',
+    borderColor: 'rgba(255,255,255,0.55)',
+  },
+  glassTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  glassLabel: {
+    ...typography.label,
+    fontSize: 11,
+    color: colors.surface,
+    opacity: 0.9,
+    flexShrink: 1,
+  },
+  glassValue: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: colors.surface,
+    letterSpacing: -0.8,
+    marginTop: 4,
+  },
+  glassSub: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
+  },
   content: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
     paddingBottom: spacing.lg,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  statCard: {
-    paddingVertical: spacing.lg,
-    overflow: 'hidden',
-  },
-  statSnow: {
-    position: 'absolute',
-    right: -8,
-    bottom: -8,
-  },
-  statChip: {
-    width: 30,
-    height: 30,
-    borderRadius: radii.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  statLabel: {
-    ...typography.label,
-    color: colors.textMuted,
-  },
-  statValue: {
-    fontSize: 34,
-    fontWeight: '800',
-    color: colors.text,
-    letterSpacing: -0.6,
-    marginTop: 6,
-  },
-  statSub: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: 4,
   },
   sectionAction: {
     ...typography.caption,
