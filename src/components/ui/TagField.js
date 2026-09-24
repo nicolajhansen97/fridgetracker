@@ -1,47 +1,94 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { colors, radii, spacing, typography } from '../../theme';
 import Icon from './Icon';
 import { useLanguage } from '../../i18n';
+import { normalizeTag } from '../../hooks/useTagDefinitions';
 
-const MAX_SUGGESTIONS = 6;
+export { normalizeTag };
 
-export const normalizeTag = (s) => (s || '').trim().toLowerCase();
-
-// Tags on an item: the chips it already carries, a box to add one, and
-// suggestions drawn from tags already in use.
+// Tags on an item.
 //
-// The suggestions are the whole point. Typing "barbecue" once and tapping it
-// forever after is the difference between a feature people use and one they
-// abandon after three items — and it is also what stops the same idea existing
-// as "bbq", "BBQ" and "barbeque" a month later. Tags are lower-cased on the
-// way in for the same reason.
-const TagField = ({ value = [], onChange, suggestions = [], disabled }) => {
+// Picking a tag and inventing one are separate actions on purpose. When any
+// text box can mint a tag, one typo puts "gril" in the household's list
+// permanently, sitting next to "grill" with nothing to say which was the
+// mistake. So the normal path is tapping a tag that already exists, and
+// creating one is a second, deliberate step behind a near-match check.
+const TagField = ({
+  value = [],
+  onChange,
+  defined = [],
+  onDefine,
+  nearMatch,
+  exists,
+  disabled,
+}) => {
   const { t } = useLanguage();
+  const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState('');
 
-  const add = (raw) => {
-    const tag = normalizeTag(raw);
-    if (!tag || value.includes(tag)) {
+  const toggle = (tag) =>
+    onChange(value.includes(tag) ? value.filter((x) => x !== tag) : [...value, tag]);
+
+  // Defined tags, selected ones first so what is on the item reads as a group.
+  const ordered = useMemo(() => {
+    const on = defined.filter((tag) => value.includes(tag));
+    const off = defined.filter((tag) => !value.includes(tag));
+    return [...on, ...off];
+  }, [defined, value]);
+
+  const commitNew = async () => {
+    const name = normalizeTag(draft);
+    if (!name) {
+      setCreating(false);
       setDraft('');
       return;
     }
-    onChange([...value, tag]);
+
+    // Already defined: just apply it rather than complaining.
+    if (exists && exists(name)) {
+      if (!value.includes(name)) onChange([...value, name]);
+      setDraft('');
+      setCreating(false);
+      return;
+    }
+
+    const near = nearMatch ? nearMatch(name) : null;
+    if (near) {
+      // A typo and a genuinely new tag look identical in a text box, so ask.
+      // Defaulting to the existing tag is what keeps the list from splitting.
+      Alert.alert(
+        t('tags.similarTitle'),
+        t('tags.similarBody', { typed: name, existing: near }),
+        [
+          {
+            text: t('tags.useExisting', { tag: near }),
+            onPress: () => {
+              if (!value.includes(near)) onChange([...value, near]);
+              setDraft('');
+              setCreating(false);
+            },
+          },
+          {
+            text: t('tags.createAnyway', { tag: name }),
+            style: 'destructive',
+            onPress: async () => {
+              await onDefine?.(name);
+              if (!value.includes(name)) onChange([...value, name]);
+              setDraft('');
+              setCreating(false);
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    await onDefine?.(name);
+    if (!value.includes(name)) onChange([...value, name]);
     setDraft('');
+    setCreating(false);
   };
-
-  const remove = (tag) => onChange(value.filter((x) => x !== tag));
-
-  // Tags already in use that aren't on this item, narrowed by what's typed.
-  const offered = useMemo(() => {
-    const q = normalizeTag(draft);
-    return suggestions
-      .filter((s) => !value.includes(s))
-      .filter((s) => (q ? s.includes(q) : true))
-      .slice(0, MAX_SUGGESTIONS);
-  }, [suggestions, value, draft]);
-
-  const draftIsNew = normalizeTag(draft) && !suggestions.includes(normalizeTag(draft));
 
   return (
     <View>
@@ -50,61 +97,72 @@ const TagField = ({ value = [], onChange, suggestions = [], disabled }) => {
         <Text style={styles.optional}>{t('common.optional')}</Text>
       </View>
 
-      {value.length > 0 ? (
-        <View style={styles.chips}>
-          {value.map((tag) => (
+      <View style={styles.chips}>
+        {ordered.map((tag) => {
+          const on = value.includes(tag);
+          return (
             <TouchableOpacity
               key={tag}
-              style={styles.chip}
-              onPress={() => remove(tag)}
+              style={[styles.chip, on && styles.chipOn]}
+              onPress={() => toggle(tag)}
               disabled={disabled}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel={t('tags.remove', { tag })}
+              accessibilityState={{ selected: on }}
             >
-              <Text style={styles.chipText}>{tag}</Text>
-              <Icon name="close" size={14} color={colors.primaryText} />
+              {on ? <Icon name="checkmark" size={13} color={colors.primaryText} /> : null}
+              <Text style={[styles.chipText, on && styles.chipTextOn]}>{tag}</Text>
             </TouchableOpacity>
-          ))}
-        </View>
-      ) : null}
+          );
+        })}
 
-      <View style={styles.inputRow}>
-        <Icon name="pricetag-outline" size={18} color={colors.textMuted} />
-        <TextInput
-          style={styles.input}
-          value={draft}
-          onChangeText={setDraft}
-          placeholder={t('tags.placeholder')}
-          placeholderTextColor={colors.textSubtle}
-          autoCapitalize="none"
-          autoCorrect={false}
-          editable={!disabled}
-          returnKeyType="done"
-          onSubmitEditing={() => add(draft)}
-        />
-        {draftIsNew ? (
-          <TouchableOpacity onPress={() => add(draft)} hitSlop={8} disabled={disabled}>
-            <Icon name="add-circle" size={22} color={colors.primary} />
+        {!creating ? (
+          <TouchableOpacity
+            style={styles.newChip}
+            onPress={() => setCreating(true)}
+            disabled={disabled}
+            activeOpacity={0.7}
+          >
+            <Icon name="add" size={14} color={colors.primary} />
+            <Text style={styles.newChipText}>{t('tags.newTag')}</Text>
           </TouchableOpacity>
         ) : null}
       </View>
 
-      {offered.length > 0 ? (
-        <View style={styles.suggestions}>
-          {offered.map((tag) => (
-            <TouchableOpacity
-              key={tag}
-              style={styles.suggestion}
-              onPress={() => add(tag)}
-              disabled={disabled}
-              activeOpacity={0.7}
-            >
-              <Icon name="add" size={13} color={colors.textMuted} />
-              <Text style={styles.suggestionText}>{tag}</Text>
-            </TouchableOpacity>
-          ))}
+      {creating ? (
+        <View style={styles.inputRow}>
+          <Icon name="pricetag-outline" size={18} color={colors.textMuted} />
+          <TextInput
+            style={styles.input}
+            value={draft}
+            onChangeText={setDraft}
+            placeholder={t('tags.placeholder')}
+            placeholderTextColor={colors.textSubtle}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoFocus
+            editable={!disabled}
+            returnKeyType="done"
+            onSubmitEditing={commitNew}
+          />
+          <TouchableOpacity onPress={commitNew} hitSlop={8} disabled={disabled}>
+            <Icon name="checkmark-circle" size={22} color={colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              setCreating(false);
+              setDraft('');
+            }}
+            hitSlop={8}
+            disabled={disabled}
+          >
+            <Icon name="close-circle" size={22} color={colors.textSubtle} />
+          </TouchableOpacity>
         </View>
+      ) : null}
+
+      {defined.length === 0 && !creating ? (
+        <Text style={styles.hint}>{t('tags.emptyHint')}</Text>
       ) : null}
     </View>
   );
@@ -130,22 +188,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    marginBottom: 8,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingLeft: 10,
-    paddingRight: 8,
-    paddingVertical: 6,
+    gap: 4,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
     borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  chipOn: {
     backgroundColor: colors.primaryTint,
+    borderColor: colors.primaryTint,
   },
   chipText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  chipTextOn: {
     color: colors.primaryText,
+    fontWeight: '700',
+  },
+  newChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.primary,
+    backgroundColor: 'transparent',
+  },
+  newChipText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primary,
   },
   inputRow: {
     flexDirection: 'row',
@@ -157,6 +240,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     backgroundColor: colors.bg,
     paddingHorizontal: 14,
+    marginTop: 8,
   },
   input: {
     flex: 1,
@@ -164,27 +248,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     padding: 0,
   },
-  suggestions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
+  hint: {
+    fontSize: 12,
+    color: colors.textSubtle,
     marginTop: 8,
-  },
-  suggestion: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  suggestionText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textMuted,
   },
 });
 

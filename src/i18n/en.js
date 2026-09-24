@@ -138,6 +138,12 @@ export default {
     signOutConfirm: "Sign out",
   },
   tags: {
+    newTag: "New tag",
+    emptyHint: "No tags yet. Create one to group things like a barbecue or a bake.",
+    similarTitle: "Similar tag already exists",
+    similarBody: "You typed \"{typed}\" and \"{existing}\" already exists. Using the existing one keeps them together.",
+    useExisting: "Use \"{existing}\"",
+    createAnyway: "Create \"{typed}\"",
     label: "Tags",
     placeholder: "e.g. barbecue, baking, kids",
     remove: "Remove tag {tag}",

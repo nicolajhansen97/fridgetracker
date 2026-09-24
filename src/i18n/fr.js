@@ -131,6 +131,12 @@ export default {
     signOutConfirm: "Se déconnecter",
   },
   tags: {
+    newTag: "Nouvelle étiquette",
+    emptyHint: "Pas encore d’étiquettes. Créez-en une pour regrouper un barbecue ou une fournée.",
+    similarTitle: "Une étiquette similaire existe déjà",
+    similarBody: "Vous avez tapé « {typed} » et « {existing} » existe déjà. Utiliser celle qui existe les garde ensemble.",
+    useExisting: "Utiliser « {existing} »",
+    createAnyway: "Créer « {typed} »",
     label: "Étiquettes",
     placeholder: "ex. : barbecue, pâtisserie, enfants",
     remove: "Retirer l’étiquette {tag}",

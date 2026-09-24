@@ -131,6 +131,12 @@ export default {
     signOutConfirm: "Cerrar sesión",
   },
   tags: {
+    newTag: "Nueva etiqueta",
+    emptyHint: "Aún no hay etiquetas. Crea una para agrupar cosas de una barbacoa o una horneada.",
+    similarTitle: "Ya existe una etiqueta parecida",
+    similarBody: "Escribiste «{typed}» y «{existing}» ya existe. Usar la que existe las mantiene juntas.",
+    useExisting: "Usar «{existing}»",
+    createAnyway: "Crear «{typed}»",
     label: "Etiquetas",
     placeholder: "p. ej. barbacoa, repostería, niños",
     remove: "Quitar la etiqueta {tag}",

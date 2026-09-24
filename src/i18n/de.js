@@ -131,6 +131,12 @@ export default {
     signOutConfirm: "Abmelden",
   },
   tags: {
+    newTag: "Neues Tag",
+    emptyHint: "Noch keine Tags. Erstelle eines, um Dinge für Grillen oder Backen zu bündeln.",
+    similarTitle: "Ähnliches Tag existiert bereits",
+    similarBody: "Du hast „{typed}“ getippt, und „{existing}“ gibt es schon. Das vorhandene zu nutzen hält sie zusammen.",
+    useExisting: "„{existing}“ verwenden",
+    createAnyway: "„{typed}“ erstellen",
     label: "Tags",
     placeholder: "z. B. Grillen, Backen, Kinder",
     remove: "Tag {tag} entfernen",

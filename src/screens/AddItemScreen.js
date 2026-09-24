@@ -41,6 +41,7 @@ import PaywallModal from '../components/PaywallModal';
 import { usePremium } from '../context/PremiumContext';
 import { useCategory } from '../hooks/useCategory';
 import { useItemPrices } from '../hooks/useItemPrices';
+import { useTagDefinitions } from '../hooks/useTagDefinitions';
 import { parseMoney } from '../utils/currency';
 import { lookupBarcode, analyzeProductImage } from '../utils/productLookup';
 
@@ -87,11 +88,17 @@ const AddItemScreen = ({ navigation, route }) => {
   const [lastAdded, setLastAdded] = useState('');
   const nameRef = useRef(null);
 
-  const { addItem, getNextAvailablePosition, items, allTags } = useFridge();
+  const { addItem, getNextAvailablePosition, items } = useFridge();
   const { drawers } = useDrawers();
   const { t, formatDate, locale } = useLanguage();
   const { isPremium } = usePremium();
   const { priceFor, remember: rememberPrice } = useItemPrices();
+  const {
+    tags: definedTags,
+    define: defineTag,
+    nearMatch,
+    exists: tagExists,
+  } = useTagDefinitions();
   // What this item cost last time, scaled to the quantity being added. Only a
   // suggestion — PriceField shows it as a tappable hint rather than filling the
   // box, so the number in the field is always one the user put there.
@@ -488,7 +495,10 @@ const AddItemScreen = ({ navigation, route }) => {
               <TagField
                 value={tags}
                 onChange={setTags}
-                suggestions={allTags}
+                defined={definedTags}
+                onDefine={defineTag}
+                nearMatch={nearMatch}
+                exists={tagExists}
                 disabled={isLoading}
               />
             </View>

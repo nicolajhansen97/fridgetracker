@@ -138,6 +138,12 @@ export default {
     signOutConfirm: "Log ud",
   },
   tags: {
+    newTag: "Nyt tag",
+    emptyHint: "Ingen tags endnu. Opret et for at samle ting til fx grill eller bagning.",
+    similarTitle: "Der findes allerede et lignende tag",
+    similarBody: "Du skrev „{typed}“, og „{existing}“ findes allerede. Bruger du det eksisterende, bliver de samlet.",
+    useExisting: "Brug „{existing}“",
+    createAnyway: "Opret „{typed}“",
     label: "Tags",
     placeholder: "f.eks. grill, bagning, børn",
     remove: "Fjern tagget {tag}",

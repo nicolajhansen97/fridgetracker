@@ -31,6 +31,7 @@ import { colors, radii, spacing, typography } from '../theme';
 import { useCategory } from '../hooks/useCategory';
 import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
 import { useItemPrices } from '../hooks/useItemPrices';
+import { useTagDefinitions } from '../hooks/useTagDefinitions';
 import { parseMoney } from '../utils/currency';
 
 const EditItemScreen = ({ route, navigation }) => {
@@ -59,8 +60,14 @@ const EditItemScreen = ({ route, navigation }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [catPickerVisible, setCatPickerVisible] = useState(false);
 
-  const { updateItem, allTags } = useFridge();
+  const { updateItem } = useFridge();
   const { priceFor, remember: rememberPrice } = useItemPrices();
+  const {
+    tags: definedTags,
+    define: defineTag,
+    nearMatch,
+    exists: tagExists,
+  } = useTagDefinitions();
   const { getFreezerEstimate } = useFridgeExpiry();
   const { drawers } = useDrawers();
   const { t, formatDate } = useLanguage();
@@ -239,7 +246,10 @@ const EditItemScreen = ({ route, navigation }) => {
               <TagField
                 value={tags}
                 onChange={setTags}
-                suggestions={allTags}
+                defined={definedTags}
+                onDefine={defineTag}
+                nearMatch={nearMatch}
+                exists={tagExists}
                 disabled={isLoading}
               />
             </View>
