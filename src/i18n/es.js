@@ -138,6 +138,10 @@ export default {
     create: 'Crear',
   },
   login: {
+    biometricOfferTitle: "¿Usar {type} la próxima vez?",
+    biometricOfferBody: "Inicia sesión con un vistazo en lugar de escribir tu contraseña. Puedes cambiarlo cuando quieras en Ajustes.",
+    biometricOfferEnable: "Usar {type}",
+    biometricOfferLater: "Ahora no",
     welcomeBack: 'Bienvenido de nuevo',
     signInToContinue: 'Inicie sesi\u00f3n para continuar',
     enterEmail: 'Ingrese su correo electr\u00f3nico',

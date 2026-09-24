@@ -147,6 +147,10 @@ export default {
 
   // Login-skærm
   login: {
+    biometricOfferTitle: "Brug {type} næste gang?",
+    biometricOfferBody: "Log ind med et blik i stedet for at taste din adgangskode. Du kan altid ændre det i Indstillinger.",
+    biometricOfferEnable: "Brug {type}",
+    biometricOfferLater: "Ikke nu",
     welcomeBack: 'Velkommen tilbage',
     signInToContinue: 'Log ind for at fortsætte',
     enterEmail: 'Indtast din e-mail',

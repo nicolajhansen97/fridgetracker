@@ -138,6 +138,10 @@ export default {
     create: 'Erstellen',
   },
   login: {
+    biometricOfferTitle: "Nächstes Mal {type} verwenden?",
+    biometricOfferBody: "Melde dich mit einem Blick an, statt dein Passwort zu tippen. Du kannst das jederzeit in den Einstellungen ändern.",
+    biometricOfferEnable: "{type} verwenden",
+    biometricOfferLater: "Jetzt nicht",
     welcomeBack: 'Willkommen zurück',
     signInToContinue: 'Melden Sie sich an, um fortzufahren',
     enterEmail: 'Geben Sie Ihre E-Mail-Adresse ein',

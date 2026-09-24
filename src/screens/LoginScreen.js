@@ -9,20 +9,24 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
-  Switch,
   ScrollView,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../i18n';
 import { Icon } from '../components/ui';
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
 
+// Set once the user turns the offer down, so the prompt asks a single time
+// rather than on every sign-in. Settings keeps its own toggle for anyone who
+// changes their mind later.
+const BIOMETRIC_OFFER_DECLINED_KEY = 'freezely_biometric_offer_declined';
+
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [enableBiometricToggle, setEnableBiometricToggle] = useState(false);
   // Which field has focus, so it can light up against the gradient. On a
   // coloured background a plain cursor is easy to lose.
   const [focused, setFocused] = useState(null);
@@ -56,14 +60,47 @@ const LoginScreen = ({ navigation }) => {
     const result = await login(email, password);
     setIsLoading(false);
     if (result.success) {
-      if (enableBiometricToggle && biometricAvailable) {
-        const biometricResult = await enableBiometric(email);
-        if (biometricResult.success) {
-          Alert.alert(t('common.success'), t('login.biometricEnabled', { type: biometricType }));
-        }
-      }
+      offerBiometric(email);
     } else {
       Alert.alert(t('login.loginFailed'), result.error || 'Invalid credentials');
+    }
+  };
+
+  // Offer biometric login AFTER a successful sign-in rather than asking for a
+  // decision before one. Nothing about enabling it needs the password - it
+  // stores the email and gates the already-persisted session behind a face or
+  // fingerprint check - so there is no reason to ask up front.
+  //
+  // Fire-and-forget: the navigator swaps away from this screen the moment auth
+  // succeeds. Alert is a native modal and survives that, but nothing in here
+  // may touch component state.
+  const offerBiometric = async (emailForLogin) => {
+    try {
+      if (!biometricAvailable) return;
+      if (await checkBiometricEnabled()) return;
+      if ((await AsyncStorage.getItem(BIOMETRIC_OFFER_DECLINED_KEY)) === 'true') return;
+
+      Alert.alert(
+        t('login.biometricOfferTitle', { type: biometricType }),
+        t('login.biometricOfferBody', { type: biometricType }),
+        [
+          {
+            text: t('login.biometricOfferLater'),
+            style: 'cancel',
+            onPress: () => {
+              AsyncStorage.setItem(BIOMETRIC_OFFER_DECLINED_KEY, 'true').catch(() => {});
+            },
+          },
+          {
+            text: t('login.biometricOfferEnable'),
+            onPress: () => {
+              enableBiometric(emailForLogin).catch(() => {});
+            },
+          },
+        ]
+      );
+    } catch {
+      // An unavailable keystore is not worth interrupting a successful login.
     }
   };
 
@@ -74,14 +111,6 @@ const LoginScreen = ({ navigation }) => {
     if (!result.success && result.error === 'Session expired. Please login with password again.') {
       Alert.alert(t('login.sessionExpired'), result.error);
     }
-  };
-
-  const toggleBiometricOption = () => {
-    if (!biometricAvailable) {
-      Alert.alert(t('login.notAvailable'), t('login.biometricNotAvailable', { type: biometricType }));
-      return;
-    }
-    setEnableBiometricToggle(!enableBiometricToggle);
   };
 
   return (
@@ -185,22 +214,6 @@ const LoginScreen = ({ navigation }) => {
             >
               <Text style={styles.forgotText}>{t('login.forgotPassword')}</Text>
             </TouchableOpacity>
-
-            {biometricAvailable && (
-              <View style={styles.bioToggleRow}>
-                <Icon name="finger-print-outline" size={18} color={colors.primary} />
-                <Text style={styles.bioToggleText}>
-                  {t('login.enableBiometric', { type: biometricType })}
-                </Text>
-                <Switch
-                  value={enableBiometricToggle}
-                  onValueChange={toggleBiometricOption}
-                  trackColor={{ false: colors.borderStrong, true: colors.primary }}
-                  thumbColor={colors.surface}
-                  disabled={isLoading}
-                />
-              </View>
-            )}
 
             <TouchableOpacity
               style={[styles.signInBtn, isLoading && styles.btnBusy]}
@@ -371,23 +384,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.9)',
     fontSize: 13,
     fontWeight: '600',
-  },
-
-  bioToggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginTop: spacing.lg,
-  },
-  bioToggleText: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '600',
-    flex: 1,
   },
 
   signInBtn: {

@@ -147,6 +147,10 @@ export default {
 
   // Login Screen
   login: {
+    biometricOfferTitle: "Use {type} next time?",
+    biometricOfferBody: "Sign in with a glance instead of typing your password. You can change this any time in Settings.",
+    biometricOfferEnable: "Use {type}",
+    biometricOfferLater: "Not now",
     welcomeBack: 'Welcome Back',
     signInToContinue: 'Sign in to continue',
     enterEmail: 'Enter your email',
