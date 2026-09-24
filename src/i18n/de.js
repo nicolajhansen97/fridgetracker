@@ -121,6 +121,15 @@ export default {
     generating: "Suche etwas zum Kochen…",
     generateFailed: "Konnte keine Mahlzeit vorschlagen",
   },
+  lock: {
+    title: "Freezely ist gesperrt",
+    subtitle: "Zum Fortfahren mit {type} entsperren",
+    unlock: "Mit {type} entsperren",
+    usePassword: "Abmelden und Passwort verwenden",
+    signOutTitle: "Abmelden?",
+    signOutBody: "Du brauchst deine E-Mail und dein Passwort, um wieder hineinzukommen. Nutze das, wenn {type} nicht funktioniert.",
+    signOutConfirm: "Abmelden",
+  },
   common: {
     optional: "Optional",
     back: 'Zurück',
@@ -139,7 +148,7 @@ export default {
   },
   login: {
     biometricOfferTitle: "Nächstes Mal {type} verwenden?",
-    biometricOfferBody: "Melde dich mit einem Blick an, statt dein Passwort zu tippen. Du kannst das jederzeit in den Einstellungen ändern.",
+    biometricOfferBody: "Halte Freezely gesperrt und öffne es mit einem Blick, statt etwas zu tippen. Du kannst das jederzeit in den Einstellungen ändern.",
     biometricOfferEnable: "{type} verwenden",
     biometricOfferLater: "Jetzt nicht",
     welcomeBack: 'Willkommen zurück',

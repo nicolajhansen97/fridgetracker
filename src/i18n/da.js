@@ -128,6 +128,15 @@ export default {
     generating: "Finder noget at lave…",
     generateFailed: "Kunne ikke foreslå et måltid",
   },
+  lock: {
+    title: "Freezely er låst",
+    subtitle: "Lås op med {type} for at fortsætte",
+    unlock: "Lås op med {type}",
+    usePassword: "Log ud og brug adgangskode",
+    signOutTitle: "Log ud?",
+    signOutBody: "Du skal bruge din e-mail og adgangskode for at komme ind igen. Brug det her, hvis {type} ikke virker.",
+    signOutConfirm: "Log ud",
+  },
   common: {
     optional: "Valgfrit",
     back: 'Tilbage',
@@ -148,7 +157,7 @@ export default {
   // Login-skærm
   login: {
     biometricOfferTitle: "Brug {type} næste gang?",
-    biometricOfferBody: "Log ind med et blik i stedet for at taste din adgangskode. Du kan altid ændre det i Indstillinger.",
+    biometricOfferBody: "Hold Freezely låst, og åbn den med et blik i stedet for at taste noget. Du kan altid ændre det i Indstillinger.",
     biometricOfferEnable: "Brug {type}",
     biometricOfferLater: "Ikke nu",
     welcomeBack: 'Velkommen tilbage',

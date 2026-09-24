@@ -1,8 +1,15 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef, useCallback } from 'react';
+import { AppState } from 'react-native';
 import { supabase } from '../config/supabase';
 import { BiometricAuth } from '../utils/BiometricAuth';
 
 const AuthContext = createContext();
+
+// How long the app may sit in the background before it re-locks. Locking the
+// instant you switch apps makes a quick glance at a recipe or the calculator
+// infuriating; never re-locking makes the lock decorative. A minute is the
+// usual compromise.
+const LOCK_GRACE_MS = 60 * 1000;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -10,6 +17,11 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricType, setBiometricType] = useState('Biometric');
+  // Signed in, but hidden behind a biometric gate. Distinct from
+  // !isAuthenticated: the session is alive and valid, it just is not shown
+  // until the right face or finger turns up.
+  const [locked, setLocked] = useState(false);
+  const backgroundedAt = useRef(null);
 
   useEffect(() => {
     // Check biometric availability
@@ -23,12 +35,20 @@ export const AuthProvider = ({ children }) => {
     };
     checkBiometric();
 
-    // Check active sessions on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Check active sessions on mount, and lock straight away if there is one
+    // and the user asked for the gate. Done together so the app never flashes
+    // its contents for a frame before the lock appears.
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
       setIsAuthenticated(!!session);
+      if (session) {
+        const { available } = await BiometricAuth.isAvailable();
+        if (available && (await BiometricAuth.isBiometricEnabled())) setLocked(true);
+      }
       setLoading(false);
-    });
+    };
+    init();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -37,6 +57,28 @@ export const AuthProvider = ({ children }) => {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  // Re-lock when the app comes back from the background after long enough.
+  // Checked against SecureStore rather than a cached flag so turning the lock
+  // off in Settings takes effect immediately.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'background' || state === 'inactive') {
+        if (backgroundedAt.current === null) backgroundedAt.current = Date.now();
+        return;
+      }
+      if (state !== 'active') return;
+
+      const since = backgroundedAt.current;
+      backgroundedAt.current = null;
+      if (since === null || Date.now() - since < LOCK_GRACE_MS) return;
+
+      BiometricAuth.isBiometricEnabled()
+        .then((on) => { if (on) setLocked(true); })
+        .catch(() => {});
+    });
+    return () => sub.remove();
   }, []);
 
   const login = async (email, password) => {
@@ -50,6 +92,9 @@ export const AuthProvider = ({ children }) => {
 
       setUser(data.user);
       setIsAuthenticated(true);
+      // Just proved themselves with a password; do not immediately demand a
+      // face as well.
+      setLocked(false);
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
@@ -98,45 +143,42 @@ export const AuthProvider = ({ children }) => {
 
       setUser(null);
       setIsAuthenticated(false);
+      setLocked(false);
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
     }
   };
 
-  const loginWithBiometric = async () => {
+  // Clear the gate after a successful face/fingerprint check.
+  //
+  // This replaces the old loginWithBiometric(), which could never succeed: it
+  // required supabase.auth.getSession() to return a session, but it was only
+  // ever reachable from the login screen, which is only shown when there is no
+  // session. Every scan ended in "Session expired". Biometrics are a lock over
+  // a live session, not a way to create one.
+  const unlock = useCallback(async () => {
     try {
-      const result = await BiometricAuth.performBiometricLogin();
-
-      if (!result.success) {
-        return { success: false, error: result.reason };
-      }
-
-      // Get the session from Supabase using the stored email
-      // Note: For security, we still need valid session
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session) {
-        setUser(session.user);
-        setIsAuthenticated(true);
+      const name = await BiometricAuth.getBiometricName();
+      const result = await BiometricAuth.authenticate("Unlock Freezely with " + name);
+      if (result.success) {
+        setLocked(false);
         return { success: true };
-      } else {
-        return {
-          success: false,
-          error: 'Session expired. Please login with password again.'
-        };
       }
+      return { success: false, error: result.error };
     } catch (error) {
       return { success: false, error: error.message };
     }
-  };
+  }, []);
 
   const enableBiometric = async (email) => {
     return await BiometricAuth.enableBiometric(email);
   };
 
   const disableBiometric = async () => {
-    return await BiometricAuth.disableBiometric();
+    const res = await BiometricAuth.disableBiometric();
+    setLocked(false);
+    return res;
   };
 
   const checkBiometricEnabled = async () => {
@@ -155,7 +197,8 @@ export const AuthProvider = ({ children }) => {
         register,
         forgotPassword,
         logout,
-        loginWithBiometric,
+        locked,
+        unlock,
         enableBiometric,
         disableBiometric,
         checkBiometricEnabled,

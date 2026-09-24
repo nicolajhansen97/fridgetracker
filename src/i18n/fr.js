@@ -121,6 +121,15 @@ export default {
     generating: "Recherche d’une idée…",
     generateFailed: "Impossible de proposer un repas",
   },
+  lock: {
+    title: "Freezely est verrouillé",
+    subtitle: "Déverrouillez avec {type} pour continuer",
+    unlock: "Déverrouiller avec {type}",
+    usePassword: "Se déconnecter et utiliser le mot de passe",
+    signOutTitle: "Se déconnecter ?",
+    signOutBody: "Vous aurez besoin de votre e-mail et de votre mot de passe pour revenir. À utiliser si {type} ne fonctionne pas.",
+    signOutConfirm: "Se déconnecter",
+  },
   common: {
     optional: "Facultatif",
     back: 'Retour',
@@ -139,7 +148,7 @@ export default {
   },
   login: {
     biometricOfferTitle: "Utiliser {type} la prochaine fois ?",
-    biometricOfferBody: "Connectez-vous d’un regard au lieu de taper votre mot de passe. Vous pouvez changer cela à tout moment dans les Réglages.",
+    biometricOfferBody: "Gardez Freezely verrouillé et ouvrez-le d’un regard, sans rien taper. Vous pouvez changer cela à tout moment dans les Réglages.",
     biometricOfferEnable: "Utiliser {type}",
     biometricOfferLater: "Pas maintenant",
     welcomeBack: 'Bon retour',

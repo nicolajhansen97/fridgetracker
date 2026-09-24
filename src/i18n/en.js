@@ -128,6 +128,15 @@ export default {
     generating: "Finding something to cook…",
     generateFailed: "Couldn't suggest a meal",
   },
+  lock: {
+    title: "Freezely is locked",
+    subtitle: "Unlock with {type} to continue",
+    unlock: "Unlock with {type}",
+    usePassword: "Sign out and use password",
+    signOutTitle: "Sign out?",
+    signOutBody: "You will need your email and password to get back in. Use this if {type} is not working.",
+    signOutConfirm: "Sign out",
+  },
   common: {
     optional: "Optional",
     back: 'Back',
@@ -148,7 +157,7 @@ export default {
   // Login Screen
   login: {
     biometricOfferTitle: "Use {type} next time?",
-    biometricOfferBody: "Sign in with a glance instead of typing your password. You can change this any time in Settings.",
+    biometricOfferBody: "Keep Freezely locked and open it with a glance instead of typing anything. You can change this any time in Settings.",
     biometricOfferEnable: "Use {type}",
     biometricOfferLater: "Not now",
     welcomeBack: 'Welcome Back',

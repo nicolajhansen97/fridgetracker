@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -36,20 +36,9 @@ const LoginScreen = ({ navigation }) => {
     login,
     biometricAvailable,
     biometricType,
-    loginWithBiometric,
     enableBiometric,
     checkBiometricEnabled,
   } = useAuth();
-
-  useEffect(() => {
-    const initBiometric = async () => {
-      if (biometricAvailable) {
-        const enabled = await checkBiometricEnabled();
-        if (enabled) handleBiometricLogin();
-      }
-    };
-    initBiometric();
-  }, [biometricAvailable]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -101,15 +90,6 @@ const LoginScreen = ({ navigation }) => {
       );
     } catch {
       // An unavailable keystore is not worth interrupting a successful login.
-    }
-  };
-
-  const handleBiometricLogin = async () => {
-    setIsLoading(true);
-    const result = await loginWithBiometric();
-    setIsLoading(false);
-    if (!result.success && result.error === 'Session expired. Please login with password again.') {
-      Alert.alert(t('login.sessionExpired'), result.error);
     }
   };
 
@@ -228,19 +208,6 @@ const LoginScreen = ({ navigation }) => {
               )}
             </TouchableOpacity>
 
-            {biometricAvailable && (
-              <TouchableOpacity
-                style={styles.bioBtn}
-                onPress={handleBiometricLogin}
-                disabled={isLoading}
-                activeOpacity={0.85}
-              >
-                <Icon name="finger-print-outline" size={18} color={colors.surface} />
-                <Text style={styles.bioBtnText}>
-                  {t('login.loginWithBiometric', { type: biometricType })}
-                </Text>
-              </TouchableOpacity>
-            )}
           </View>
 
           <View style={styles.signupRow}>
@@ -403,24 +370,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.2,
   },
-  bioBtn: {
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.45)',
-    paddingVertical: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: spacing.md,
-  },
-  bioBtnText: {
-    color: colors.surface,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-
   signupRow: {
     flexDirection: 'row',
     justifyContent: 'center',
