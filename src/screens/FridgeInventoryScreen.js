@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   itemCard: {
-    marginBottom: spacing.sm,
+    marginBottom: 6,
     overflow: 'hidden',
   },
   itemCardUseFirst: {
@@ -440,8 +440,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   iconBox: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
     borderRadius: radii.md,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
@@ -464,10 +464,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    marginTop: 8,
+    marginTop: 6,
   },
   actions: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     gap: 6,
   },
   fab: {
