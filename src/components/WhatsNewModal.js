@@ -41,17 +41,31 @@ const WhatsNewModal = () => {
             <Text style={styles.headerVersion}>v{latest.version}</Text>
           </LinearGradient>
 
-          <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-            {latest.features.map((feature, i) => (
-              <View key={i} style={styles.featureRow}>
-                <Text style={styles.featureIcon}>{feature.icon}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.featureTitle}>{t(feature.titleKey)}</Text>
-                  <Text style={styles.featureDesc}>{t(feature.descKey)}</Text>
+          <View style={styles.bodyWrap}>
+            <ScrollView
+              style={styles.body}
+              showsVerticalScrollIndicator
+              contentContainerStyle={styles.bodyContent}
+            >
+              {latest.features.map((feature, i) => (
+                <View key={i} style={styles.featureRow}>
+                  <Text style={styles.featureIcon}>{feature.icon}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.featureTitle}>{t(feature.titleKey)}</Text>
+                    <Text style={styles.featureDesc}>{t(feature.descKey)}</Text>
+                  </View>
                 </View>
-              </View>
-            ))}
-          </ScrollView>
+              ))}
+            </ScrollView>
+
+            {/* Fades the last row out against the sheet instead of letting it
+                end on a hard edge, which reads as the list simply stopping. */}
+            <LinearGradient
+              pointerEvents="none"
+              colors={["rgba(255,255,255,0)", colors.surface]}
+              style={styles.fade}
+            />
+          </View>
 
           <View style={styles.actions}>
             <PrimaryButton title={t('changelog.letsGo')} onPress={dismiss} />
@@ -95,10 +109,24 @@ const styles = StyleSheet.create({
     color: colors.surface,
     letterSpacing: -0.4,
   },
+  bodyWrap: {
+    flexShrink: 1,
+  },
   body: {
     paddingHorizontal: spacing.xxl,
     paddingTop: spacing.lg,
-    paddingBottom: spacing.sm,
+  },
+  // Bottom padding lives on the content, not the ScrollView, so the last row
+  // can scroll clear of the fade rather than sitting under it.
+  bodyContent: {
+    paddingBottom: spacing.xxl,
+  },
+  fade: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 36,
   },
   featureRow: {
     flexDirection: 'row',

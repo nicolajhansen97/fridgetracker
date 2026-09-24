@@ -632,20 +632,20 @@ export default {
   },
 
   changelog: {
-    v120_tags_title: "Dinge für eine Mahlzeit taggen",
-    v120_tags_desc: "Versieh deine Artikel mit Tags wie „Grillen“ oder „Backen“ und filtere den Gefrierschrank danach, um eine ganze Mahlzeit zusammenzustellen — statt alles „Grillhähnchen“ nennen zu müssen.",
+    v120_tags_title: "Tags, nach denen du suchen kannst",
+    v120_tags_desc: "Gib deinen Artikeln ein Tag wie Grillen oder Backen. Suche nach Grillen, und alles mit diesem Tag taucht auf. So musst du nichts mehr Grillhähnchen nennen, nur um es zusammen zu finden.",
     v120_lock_title: "Face ID und Touch ID verbessert",
-    v120_lock_desc: "Freezely bleibt jetzt angemeldet und sperrt sich stattdessen selbst, statt dich erneut anmelden zu lassen — App öffnen, kurz hinsehen, drin. In den Einstellungen aktivierbar.",
+    v120_lock_desc: "Freezely bleibt jetzt angemeldet und sperrt sich stattdessen selbst, statt dich erneut anmelden zu lassen. App öffnen, kurz hinsehen, drin. In den Einstellungen aktivierbar.",
     v120_look_title: "Ein frischeres Aussehen",
     v120_look_desc: "Anmelden, Registrieren und der Startbildschirm wurden rund um Milchglas und etwas mehr Frost neu gestaltet, damit die App aussieht wie das, was sie ist.",
     v120_space_title: "Mehr Gefrierschrank, weniger Scrollen",
-    v120_space_desc: "Artikel in deiner Gefrierliste brauchen deutlich weniger Platz, sodass du viel mehr auf einmal siehst — ohne dass an einzelnen Artikeln etwas fehlt.",
+    v120_space_desc: "Artikel in deiner Gefrierliste brauchen deutlich weniger Platz, sodass du viel mehr auf einmal siehst. An den einzelnen Artikeln fehlt dabei nichts.",
     v114_prices_title: "Preise dazu",
-    v114_prices_desc: "Trage ein, was etwas gekostet hat — Preise werden pro Artikel gemerkt, du tippst sie also nur einmal. Deine Statistik zeigt danach in Geld, was gegessen und was weggeworfen wurde, nicht nur in Stückzahlen.",
+    v114_prices_desc: "Trage ein, was etwas gekostet hat. Preise werden pro Artikel gemerkt, du tippst sie also nur einmal. Deine Statistik zeigt danach in Geld, was gegessen und was weggeworfen wurde, nicht nur in Stückzahlen.",
     v114_mealplan_title: "Plane deine Woche",
-    v114_mealplan_desc: "Ein neuer Essensplan im Rezepte-Tab. Plane jeden Tag aus deinem Kochbuch, aus dem Kopf oder mit einem Vorschlag rund um das, was bald abläuft — und schicke die fehlenden Zutaten direkt auf die Einkaufsliste.",
+    v114_mealplan_desc: "Ein neuer Essensplan im Rezepte-Tab. Plane jeden Tag aus deinem Kochbuch, aus dem Kopf oder mit einem Vorschlag rund um das, was bald abläuft, und schicke die fehlenden Zutaten direkt auf die Einkaufsliste.",
     v114_wastefix_title: "Genauere Verschwendungs-Statistik",
-    v114_wastefix_desc: "Wegwerfen wird jetzt getrennt davon gezählt, einen Tippfehler zu löschen — deine Zahlen zeigen endlich echte Lebensmittelverschwendung. Sie können anders aussehen als vorher: das ist der korrigierte Wert.",
+    v114_wastefix_desc: "Wegwerfen wird jetzt getrennt davon gezählt, einen Tippfehler zu löschen. Deine Zahlen zeigen endlich echte Lebensmittelverschwendung. Sie können anders aussehen als vorher: das ist der korrigierte Wert.",
     // v1.1.3
     v113_yourdate_title: 'Dein eigenes Datum zählt',
     v113_yourdate_desc:

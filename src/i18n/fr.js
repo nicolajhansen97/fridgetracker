@@ -632,18 +632,18 @@ export default {
   },
 
   changelog: {
-    v120_tags_title: "Étiquetez pour un repas",
-    v120_tags_desc: "Posez des étiquettes comme « barbecue » ou « pâtisserie » sur vos produits, puis filtrez le congélateur par l’une d’elles pour réunir tout un repas — au lieu de devoir tout appeler « poulet barbecue ».",
+    v120_tags_title: "Des étiquettes que vous pouvez rechercher",
+    v120_tags_desc: "Donnez à vos produits une étiquette comme barbecue ou pâtisserie. Cherchez barbecue et tout ce qui porte cette étiquette apparaît. Vous n’avez plus à appeler quelque chose poulet barbecue juste pour le retrouver groupé.",
     v120_lock_title: "Face ID et Touch ID améliorés",
     v120_lock_desc: "Freezely reste maintenant connecté et se verrouille à la place, au lieu de vous redemander de vous connecter : ouvrez l’app, un regard, et vous y êtes. À activer dans les Réglages.",
     v120_look_title: "Une allure plus fraîche",
     v120_look_desc: "La connexion, l’inscription et l’écran d’accueil ont été repensés autour du verre givré et d’un peu plus de givre, pour que l’app ressemble à ce qu’elle est.",
     v120_space_title: "Plus de congélateur, moins de défilement",
-    v120_space_desc: "Les produits de votre liste prennent nettement moins de place, vous en voyez donc beaucoup plus d’un coup — sans rien retirer à chacun d’eux.",
+    v120_space_desc: "Les produits de votre liste prennent nettement moins de place, vous en voyez donc beaucoup plus d’un coup. Rien n’a été retiré à chacun d’eux.",
     v114_prices_title: "Ajoutez le prix",
-    v114_prices_desc: "Indiquez ce qu’un produit a coûté au moment de l’ajouter — les prix sont mémorisés par produit, vous ne les saisissez qu’une fois. Vos statistiques montrent alors en argent ce que vous avez mangé et jeté, pas seulement en nombre.",
+    v114_prices_desc: "Indiquez ce qu’un produit a coûté au moment de l’ajouter. Les prix sont mémorisés par produit, vous ne les saisissez qu’une fois. Vos statistiques montrent alors en argent ce que vous avez mangé et jeté, pas seulement en nombre.",
     v114_mealplan_title: "Planifiez votre semaine",
-    v114_mealplan_desc: "Un nouveau menu de la semaine dans l’onglet Recettes. Planifiez chaque jour depuis votre livre de recettes, de tête, ou avec une suggestion construite autour de ce qui expire — puis envoyez les ingrédients manquants vers votre liste de courses.",
+    v114_mealplan_desc: "Un nouveau menu de la semaine dans l’onglet Recettes. Planifiez chaque jour depuis votre livre de recettes, de tête, ou avec une suggestion construite autour de ce qui expire, puis envoyez les ingrédients manquants vers votre liste de courses.",
     v114_wastefix_title: "Statistiques de gaspillage plus justes",
     v114_wastefix_desc: "Jeter un produit est désormais compté séparément de la simple suppression d’une erreur de saisie, vos chiffres reflètent donc enfin le vrai gaspillage. Ils peuvent paraître différents : c’est la valeur corrigée.",
     // v1.1.3

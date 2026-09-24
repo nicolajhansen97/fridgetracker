@@ -632,18 +632,18 @@ export default {
   },
 
   changelog: {
-    v120_tags_title: "Etiqueta cosas para una comida",
-    v120_tags_desc: "Pon etiquetas como «barbacoa» o «repostería» en tus artículos y luego filtra el congelador por una para reúnir una comida entera — en vez de tener que llamarlo todo «pollo a la barbacoa».",
+    v120_tags_title: "Etiquetas que puedes buscar",
+    v120_tags_desc: "Dale a tus artículos una etiqueta como barbacoa o repostería. Busca barbacoa y aparece todo lo que la lleva, así que ya no tienes que llamar a algo pollo a la barbacoa solo para encontrarlo junto.",
     v120_lock_title: "Face ID y Touch ID mejorados",
     v120_lock_desc: "Ahora Freezely mantiene la sesión iniciada y se bloquea a sí misma en lugar de pedirte que inicies sesión otra vez: abres la app, la miras y ya estás dentro. Actívalo en Ajustes.",
     v120_look_title: "Un aspecto más fresco",
     v120_look_desc: "El inicio de sesión, el registro y la pantalla de inicio se han rediseñado con cristal esmerilado y algo más de escarcha, para que la app parezca lo que es.",
     v120_space_title: "Más congelador, menos scroll",
-    v120_space_desc: "Los artículos de tu lista ocupan bastante menos espacio, así que ves muchos más de una vez — sin quitarle nada a cada uno.",
+    v120_space_desc: "Los artículos de tu lista ocupan bastante menos espacio, así que ves muchos más de una vez. No se ha quitado nada de cada uno.",
     v114_prices_title: "Ponle precio",
-    v114_prices_desc: "Añade lo que costó algo al guardarlo — los precios se recuerdan por artículo, así que solo los escribes una vez. Tus estadísticas muestran entonces en dinero lo que comiste y lo que tiraste, no solo cantidades.",
+    v114_prices_desc: "Añade lo que costó algo al guardarlo. Los precios se recuerdan por artículo, así que solo los escribes una vez. Tus estadísticas muestran entonces en dinero lo que comiste y lo que tiraste, no solo cantidades.",
     v114_mealplan_title: "Planea tu semana",
-    v114_mealplan_desc: "Un nuevo plan de comidas en la pestaña Recetas. Planea cada día desde tu recetario, de tu cabeza o con una sugerencia creada alrededor de lo que está a punto de caducar — y envía los ingredientes que faltan directo a tu lista de la compra.",
+    v114_mealplan_desc: "Un nuevo plan de comidas en la pestaña Recetas. Planea cada día desde tu recetario, de tu cabeza o con una sugerencia creada alrededor de lo que está a punto de caducar, y envía los ingredientes que faltan directo a tu lista de la compra.",
     v114_wastefix_title: "Estadísticas de desperdicio más exactas",
     v114_wastefix_desc: "Tirar algo ahora se cuenta por separado de borrar un error de escritura, así que tus cifras por fin reflejan el desperdicio real. Puede que se vean distintas que antes: este es el dato corregido.",
     // v1.1.3

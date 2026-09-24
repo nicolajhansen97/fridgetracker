@@ -667,20 +667,20 @@ export default {
   },
 
   changelog: {
-    v120_tags_title: "Tag ting til et måltid",
-    v120_tags_desc: "Sæt tags som „grill“ eller „bagning“ på dine varer, og filtrer så fryseren efter ét tag for at samle et helt måltid — i stedet for at skulle kalde alting „grillkylling“.",
+    v120_tags_title: "Tags du kan søge efter",
+    v120_tags_desc: "Giv dine varer et tag som grill eller bagning. Søg efter grill, og alt med det tag dukker op, så du ikke længere behøver at kalde noget grillkylling bare for at finde det samlet.",
     v120_lock_title: "Face ID og Touch ID forbedret",
-    v120_lock_desc: "Freezely forbliver nu logget ind og låser i stedet sig selv i stedet for at bede dig logge ind igen — åbn appen, kig på den, og du er inde med det samme. Slå det til under Indstillinger.",
+    v120_lock_desc: "Freezely forbliver nu logget ind og låser i stedet sig selv i stedet for at bede dig logge ind igen. Åbn appen, kig på den, og du er inde med det samme. Slå det til under Indstillinger.",
     v120_look_title: "Et friskere udseende",
     v120_look_desc: "Log ind, opret konto og startskærmen er redesignet omkring frostet glas og lidt mere rim, så appen ligner det, den er.",
     v120_space_title: "Mere fryser, mindre scrollen",
-    v120_space_desc: "Varerne i din fryserliste fylder mærkbart mindre, så du ser langt flere ad gangen — uden at der er fjernet noget fra den enkelte vare.",
+    v120_space_desc: "Varerne i din fryserliste fylder mærkbart mindre, så du ser langt flere ad gangen. Der er ikke fjernet noget fra den enkelte vare.",
     v114_prices_title: "Sæt en pris på det",
-    v114_prices_desc: "Tilføj hvad noget kostede, når du opretter det — priser huskes per vare, så du kun skriver dem én gang. Din statistik viser derefter hvad du spiste og hvad du smed ud i kroner, ikke bare i antal.",
+    v114_prices_desc: "Tilføj hvad noget kostede, når du opretter det. Priser huskes per vare, så du kun skriver dem én gang. Din statistik viser derefter hvad du spiste og hvad du smed ud i kroner, ikke bare i antal.",
     v114_mealplan_title: "Planlæg din uge",
-    v114_mealplan_desc: "En ny madplan under Opskrifter. Planlæg hver dag fra din kogebog, dit eget hoved eller et forslag bygget op om det der snart udløber — og send de manglende ingredienser direkte til indkøbslisten.",
+    v114_mealplan_desc: "En ny madplan under Opskrifter. Planlæg hver dag fra din kogebog, dit eget hoved eller et forslag bygget op om det der snart udløber, og send så de manglende ingredienser direkte til indkøbslisten.",
     v114_wastefix_title: "Mere præcis spildstatistik",
-    v114_wastefix_desc: "At smide noget ud tælles nu adskilt fra bare at slette en tastefejl, så dine spildtal endelig afspejler rigtigt madspild. De kan se anderledes ud end før — det er det rettede tal.",
+    v114_wastefix_desc: "At smide noget ud tælles nu adskilt fra bare at slette en tastefejl, så dine spildtal endelig afspejler rigtigt madspild. De kan se anderledes ud end før. Det er det rettede tal.",
     // v1.1.3
     v113_yourdate_title: 'Din egen dato bliver respekteret',
     v113_yourdate_desc:
