@@ -553,6 +553,8 @@ export default {
 
   // Changelog Screen
   changelog: {
+    v120_tags_title: "Tag things for a meal",
+    v120_tags_desc: "Put tags like \"barbecue\" or \"baking\" on your items, then filter your freezer by one to pull a whole meal together — instead of having to call everything \"barbecue chicken\".",
     v120_lock_title: "Face ID and Touch ID improved",
     v120_lock_desc: "Freezely now stays signed in and locks itself instead of asking you to sign in again — open the app, glance at it, and you're straight in. Switch it on in Settings.",
     v120_look_title: "A fresher look",

@@ -632,6 +632,8 @@ export default {
   },
 
   changelog: {
+    v120_tags_title: "Etiqueta cosas para una comida",
+    v120_tags_desc: "Pon etiquetas como «barbacoa» o «repostería» en tus artículos y luego filtra el congelador por una para reúnir una comida entera — en vez de tener que llamarlo todo «pollo a la barbacoa».",
     v120_lock_title: "Face ID y Touch ID mejorados",
     v120_lock_desc: "Ahora Freezely mantiene la sesión iniciada y se bloquea a sí misma en lugar de pedirte que inicies sesión otra vez: abres la app, la miras y ya estás dentro. Actívalo en Ajustes.",
     v120_look_title: "Un aspecto más fresco",

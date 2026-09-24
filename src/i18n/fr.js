@@ -632,6 +632,8 @@ export default {
   },
 
   changelog: {
+    v120_tags_title: "Étiquetez pour un repas",
+    v120_tags_desc: "Posez des étiquettes comme « barbecue » ou « pâtisserie » sur vos produits, puis filtrez le congélateur par l’une d’elles pour réunir tout un repas — au lieu de devoir tout appeler « poulet barbecue ».",
     v120_lock_title: "Face ID et Touch ID améliorés",
     v120_lock_desc: "Freezely reste maintenant connecté et se verrouille à la place, au lieu de vous redemander de vous connecter : ouvrez l’app, un regard, et vous y êtes. À activer dans les Réglages.",
     v120_look_title: "Une allure plus fraîche",

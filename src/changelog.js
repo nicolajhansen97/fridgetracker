@@ -23,6 +23,7 @@ export const CHANGELOG = [
       { icon: '🔒', titleKey: 'changelog.v120_lock_title',     descKey: 'changelog.v120_lock_desc' },
       { icon: '💰', titleKey: 'changelog.v114_prices_title',   descKey: 'changelog.v114_prices_desc' },
       { icon: '📅', titleKey: 'changelog.v114_mealplan_title', descKey: 'changelog.v114_mealplan_desc' },
+      { icon: '🏷', titleKey: 'changelog.v120_tags_title',     descKey: 'changelog.v120_tags_desc' },
       { icon: '✨', titleKey: 'changelog.v120_look_title',     descKey: 'changelog.v120_look_desc' },
       { icon: '🧊', titleKey: 'changelog.v120_space_title',    descKey: 'changelog.v120_space_desc' },
     ],

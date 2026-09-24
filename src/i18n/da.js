@@ -667,6 +667,8 @@ export default {
   },
 
   changelog: {
+    v120_tags_title: "Tag ting til et måltid",
+    v120_tags_desc: "Sæt tags som „grill“ eller „bagning“ på dine varer, og filtrer så fryseren efter ét tag for at samle et helt måltid — i stedet for at skulle kalde alting „grillkylling“.",
     v120_lock_title: "Face ID og Touch ID forbedret",
     v120_lock_desc: "Freezely forbliver nu logget ind og låser i stedet sig selv i stedet for at bede dig logge ind igen — åbn appen, kig på den, og du er inde med det samme. Slå det til under Indstillinger.",
     v120_look_title: "Et friskere udseende",

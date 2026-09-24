@@ -632,6 +632,8 @@ export default {
   },
 
   changelog: {
+    v120_tags_title: "Dinge für eine Mahlzeit taggen",
+    v120_tags_desc: "Versieh deine Artikel mit Tags wie „Grillen“ oder „Backen“ und filtere den Gefrierschrank danach, um eine ganze Mahlzeit zusammenzustellen — statt alles „Grillhähnchen“ nennen zu müssen.",
     v120_lock_title: "Face ID und Touch ID verbessert",
     v120_lock_desc: "Freezely bleibt jetzt angemeldet und sperrt sich stattdessen selbst, statt dich erneut anmelden zu lassen — App öffnen, kurz hinsehen, drin. In den Einstellungen aktivierbar.",
     v120_look_title: "Ein frischeres Aussehen",
