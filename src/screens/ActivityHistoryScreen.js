@@ -30,11 +30,11 @@ const actionIconName = (action) => {
 };
 
 const actionColorMap = {
-  created: '#065F46',
-  updated: '#92400E',
-  consumed: '#075985',
-  thrown: '#9A3412',
-  deleted: '#991B1B',
+  created: colors.successText,
+  updated: colors.warningText,
+  consumed: colors.infoText,
+  thrown: colors.thrownText,
+  deleted: colors.dangerText,
 };
 
 // Soft fills paired with the foregrounds above — same pairs as the Badge tones,

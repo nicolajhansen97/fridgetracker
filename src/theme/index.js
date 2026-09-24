@@ -38,6 +38,20 @@ export const colors = {
   info: '#0EA5E9',         // sky-500
   infoSoft: '#E0F2FE',     // sky-100
 
+  // Deep text/icon colours meant to sit ON the matching *Soft background.
+  // These existed as loose hex literals in Badge, ActivityHistory and Home -
+  // the same five values written out three times, which is exactly how a
+  // palette drifts. Naming them here makes the pairing explicit: successText
+  // belongs on successSoft, and so on.
+  primaryText: "#0F766E",  // teal-700   on primaryTint
+  successText: "#065F46",  // emerald-800 on successSoft
+  warningText: "#92400E",  // amber-800   on warningSoft
+  dangerText:  "#991B1B",  // red-800     on dangerSoft
+  infoText:    "#075985",  // sky-800     on infoSoft
+  // Thrown away sits between warning and danger on purpose: it is worse than
+  // a nudge and not as final as a deletion.
+  thrownText:  "#9A3412",  // orange-800
+
   // Translucent overlays (over the gradient header)
   whiteAlpha20: 'rgba(255,255,255,0.20)',
   whiteAlpha30: 'rgba(255,255,255,0.30)',

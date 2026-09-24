@@ -168,6 +168,10 @@ const HomeScreen = ({ navigation }) => {
       case 'created': return 'add-circle-outline';
       case 'updated': return 'create-outline';
       case 'consumed': return 'restaurant-outline';
+      // 'thrown' arrived with v1.1.2 and never got added here, so binned food
+      // showed on Home as a grey generic document while Activity History gave
+      // it an orange trash bin. Same icon and colour in both places now.
+      case 'thrown': return 'trash-bin-outline';
       case 'deleted': return 'trash-outline';
       default: return 'document-text-outline';
     }
@@ -175,10 +179,11 @@ const HomeScreen = ({ navigation }) => {
 
   const actionColor = (action) => {
     switch (action) {
-      case 'created': return '#065F46';
-      case 'updated': return '#92400E';
-      case 'consumed': return '#075985';
-      case 'deleted': return colors.danger;
+      case 'created': return colors.successText;
+      case 'updated': return colors.warningText;
+      case 'consumed': return colors.infoText;
+      case 'thrown': return colors.thrownText;
+      case 'deleted': return colors.dangerText;
       default: return colors.textMuted;
     }
   };

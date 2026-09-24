@@ -29,6 +29,70 @@ import { colors, radii, spacing, typography } from '../theme';
 
 const STATUS_TONE = { low: 'warning', over: 'info', ok: 'success' };
 
+// Row and ProTeaser live at module scope deliberately. Defined inside the
+// screen component they were a brand new component type on every render, so
+// React could not reconcile them - it tore down and rebuilt every row in every
+// list each time `added` changed or the insights reloaded, instead of updating
+// the few rows that actually differed.
+//
+// The trade is that everything they used to close over now arrives as props.
+// `line` is passed already rendered rather than passing two formatter
+// functions down, which keeps the prop list honest about what this component
+// actually needs.
+const Row = ({ e, showAdd, showBadge, cost, line, added, t, onIgnore, onAdd }) => (
+  <View style={styles.row}>
+    <View style={{ flex: 1, minWidth: 0 }}>
+      <View style={styles.rowHead}>
+        <Text style={styles.name} numberOfLines={1}>{e.name}</Text>
+        {showBadge ? (
+          <Badge tone={STATUS_TONE[e.status]}>{t(`restock.status_${e.status}`)}</Badge>
+        ) : null}
+      </View>
+      <Text style={styles.meta} numberOfLines={2}>{line}</Text>
+      {cost ? <Text style={styles.wasteCost}>{cost}</Text> : null}
+    </View>
+    {showAdd ? (
+      added[e.key] ? (
+        <View style={styles.addedTag}>
+          <Icon name="checkmark" size={16} color={colors.success} />
+          <Text style={styles.addedText}>{t('restock.added')}</Text>
+        </View>
+      ) : (
+        <View style={styles.lowActions}>
+          <TouchableOpacity
+            style={styles.ignoreBtn}
+            onPress={() => onIgnore(e.key)}
+            activeOpacity={0.7}
+            accessibilityLabel={t('restock.ignore')}
+            hitSlop={6}
+          >
+            <Icon name="close" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.addBtn} onPress={() => onAdd(e)} activeOpacity={0.8}>
+            <Icon name="cart-outline" size={15} color={colors.surface} />
+            <Text style={styles.addBtnText}>{t('restock.add')}</Text>
+          </TouchableOpacity>
+        </View>
+      )
+    ) : null}
+  </View>
+);
+
+// Soft, non-blocking upsell shown to free users in place of the usage-based
+// ("smart") sections.
+const ProTeaser = ({ t, onUpgrade }) => (
+  <Card style={[styles.card, styles.teaser]}>
+    <View style={styles.teaserIcon}>
+      <Icon name="sparkles-outline" size={20} color={colors.secondary} />
+    </View>
+    <Text style={styles.teaserTitle}>{t('restock.proTitle')}</Text>
+    <Text style={styles.teaserBody}>{t('restock.proBody')}</Text>
+    <TouchableOpacity style={styles.teaserBtn} onPress={onUpgrade} activeOpacity={0.85}>
+      <Text style={styles.teaserBtnText}>{t('restock.proCta')}</Text>
+    </TouchableOpacity>
+  </Card>
+);
+
 // Collapsible section header: colored icon + a one-line "what this is" + a count
 // and chevron. Tapping expands/collapses, so a freezer with lots of items reads
 // as four short headers instead of one long scroll.
@@ -134,60 +198,6 @@ const StockInsightsScreen = ({ navigation }) => {
     return parts.join(' · ');
   };
 
-  const Row = ({ e, showAdd, showBadge, stock, cost }) => (
-    <View style={styles.row}>
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <View style={styles.rowHead}>
-          <Text style={styles.name} numberOfLines={1}>{e.name}</Text>
-          {showBadge ? (
-            <Badge tone={STATUS_TONE[e.status]}>{t(`restock.status_${e.status}`)}</Badge>
-          ) : null}
-        </View>
-        <Text style={styles.meta} numberOfLines={2}>{stock ? stockLine(e) : metaLine(e)}</Text>
-        {cost ? <Text style={styles.wasteCost}>{cost}</Text> : null}
-      </View>
-      {showAdd ? (
-        added[e.key] ? (
-          <View style={styles.addedTag}>
-            <Icon name="checkmark" size={16} color={colors.success} />
-            <Text style={styles.addedText}>{t('restock.added')}</Text>
-          </View>
-        ) : (
-          <View style={styles.lowActions}>
-            <TouchableOpacity
-              style={styles.ignoreBtn}
-              onPress={() => ignore(e.key)}
-              activeOpacity={0.7}
-              accessibilityLabel={t('restock.ignore')}
-              hitSlop={6}
-            >
-              <Icon name="close" size={18} color={colors.textMuted} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.addBtn} onPress={() => addToList(e)} activeOpacity={0.8}>
-              <Icon name="cart-outline" size={15} color={colors.surface} />
-              <Text style={styles.addBtnText}>{t('restock.add')}</Text>
-            </TouchableOpacity>
-          </View>
-        )
-      ) : null}
-    </View>
-  );
-
-  // Soft, non-blocking upsell card shown to free users in place of the
-  // usage-based ("smart") sections.
-  const ProTeaser = () => (
-    <Card style={[styles.card, styles.teaser]}>
-      <View style={styles.teaserIcon}>
-        <Icon name="sparkles-outline" size={20} color={colors.secondary} />
-      </View>
-      <Text style={styles.teaserTitle}>{t('restock.proTitle')}</Text>
-      <Text style={styles.teaserBody}>{t('restock.proBody')}</Text>
-      <TouchableOpacity style={styles.teaserBtn} onPress={() => setPaywallVisible(true)} activeOpacity={0.85}>
-        <Text style={styles.teaserBtnText}>{t('restock.proCta')}</Text>
-      </TouchableOpacity>
-    </Card>
-  );
-
   const hasAny =
     lowList.length > 0 || overbought.length > 0 || mostStocked.length > 0 || mostUsed.length > 0;
 
@@ -244,7 +254,7 @@ const StockInsightsScreen = ({ navigation }) => {
                       {lowList.map((e, i) => (
                         <View key={e.key}>
                           {i > 0 && <View style={styles.divider} />}
-                          <Row e={e} showAdd />
+                          <Row e={e} showAdd line={metaLine(e)} added={added} t={t} onIgnore={ignore} onAdd={addToList} />
                         </View>
                       ))}
                     </Card>
@@ -270,7 +280,7 @@ const StockInsightsScreen = ({ navigation }) => {
                       {mostStocked.map((e, i) => (
                         <View key={e.key}>
                           {i > 0 && <View style={styles.divider} />}
-                          <Row e={e} stock />
+                          <Row e={e} line={stockLine(e)} added={added} t={t} onIgnore={ignore} onAdd={addToList} />
                         </View>
                       ))}
                     </Card>
@@ -305,7 +315,7 @@ const StockInsightsScreen = ({ navigation }) => {
                           {overbought.map((e, i) => (
                             <View key={e.key}>
                               {i > 0 && <View style={styles.divider} />}
-                              <Row e={e} cost={wasteCostLabel(e)} />
+                              <Row e={e} cost={wasteCostLabel(e)} line={metaLine(e)} added={added} t={t} onIgnore={ignore} onAdd={addToList} />
                             </View>
                           ))}
                         </Card>
@@ -331,7 +341,7 @@ const StockInsightsScreen = ({ navigation }) => {
                           {mostUsed.map((e, i) => (
                             <View key={e.key}>
                               {i > 0 && <View style={styles.divider} />}
-                              <Row e={e} showBadge />
+                              <Row e={e} showBadge line={metaLine(e)} added={added} t={t} onIgnore={ignore} onAdd={addToList} />
                             </View>
                           ))}
                         </Card>
@@ -340,7 +350,7 @@ const StockInsightsScreen = ({ navigation }) => {
                   )}
                 </>
               ) : (
-                <ProTeaser />
+                <ProTeaser t={t} onUpgrade={() => setPaywallVisible(true)} />
               )}
             </>
           )}

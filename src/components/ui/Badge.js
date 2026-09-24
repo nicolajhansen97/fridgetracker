@@ -6,11 +6,11 @@ import { colors, radii } from '../../theme';
 // Tone variants: 'default', 'primary', 'warning', 'danger', 'success', 'info'.
 const tones = {
   default: { bg: colors.surfaceMuted, fg: colors.textMuted },
-  primary: { bg: '#CCFBF1', fg: '#0F766E' },     // teal-100 / teal-700
-  warning: { bg: colors.warningSoft, fg: '#92400E' },
-  danger:  { bg: colors.dangerSoft, fg: '#991B1B' },
-  success: { bg: colors.successSoft, fg: '#065F46' },
-  info:    { bg: colors.infoSoft, fg: '#075985' },
+  primary: { bg: colors.primaryTint, fg: colors.primaryText },
+  warning: { bg: colors.warningSoft, fg: colors.warningText },
+  danger:  { bg: colors.dangerSoft, fg: colors.dangerText },
+  success: { bg: colors.successSoft, fg: colors.successText },
+  info:    { bg: colors.infoSoft, fg: colors.infoText },
 };
 
 const Badge = ({ children, tone = 'default', style }) => {
