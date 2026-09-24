@@ -10,6 +10,7 @@ export { default as Pill } from './Pill';
 export { default as AmountField } from './AmountField';
 export { default as PriceField } from './PriceField';
 export { default as FrostOverlay } from './FrostOverlay';
+export { default as TagField, normalizeTag } from './TagField';
 export { default as CategoryPickerSheet } from './CategoryPickerSheet';
 export { default as Input } from './Input';
 export { default as Badge } from './Badge';

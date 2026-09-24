@@ -130,6 +130,11 @@ export default {
     signOutBody: "Du brauchst deine E-Mail und dein Passwort, um wieder hineinzukommen. Nutze das, wenn {type} nicht funktioniert.",
     signOutConfirm: "Abmelden",
   },
+  tags: {
+    label: "Tags",
+    placeholder: "z. B. Grillen, Backen, Kinder",
+    remove: "Tag {tag} entfernen",
+  },
   common: {
     optional: "Optional",
     back: 'Zurück',

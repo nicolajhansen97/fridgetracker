@@ -137,6 +137,11 @@ export default {
     signOutBody: "You will need your email and password to get back in. Use this if {type} is not working.",
     signOutConfirm: "Sign out",
   },
+  tags: {
+    label: "Tags",
+    placeholder: "e.g. barbecue, baking, kids",
+    remove: "Remove tag {tag}",
+  },
   common: {
     optional: "Optional",
     back: 'Back',

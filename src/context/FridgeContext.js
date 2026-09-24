@@ -83,6 +83,7 @@ export const FridgeProvider = ({ children }) => {
             // Optional: null means "no price recorded", which every money
             // total downstream simply skips.
             price: itemData.price ?? null,
+            tags: itemData.tags || [],
           },
         ])
         .select();
@@ -228,6 +229,12 @@ export const FridgeProvider = ({ children }) => {
     }
   };
 
+  const allTags = React.useMemo(() => {
+    const seen = new Set();
+    for (const item of items) for (const tag of item.tags || []) seen.add(tag);
+    return [...seen].sort();
+  }, [items]);
+
   const getNextAvailablePosition = () => {
     const usedPositions = new Set(
       items
@@ -253,6 +260,7 @@ export const FridgeProvider = ({ children }) => {
         throwItem,
         consumePartial,
         loadItems,
+        allTags,
         getNextAvailablePosition,
       }}
     >

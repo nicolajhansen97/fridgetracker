@@ -130,6 +130,11 @@ export default {
     signOutBody: "Necesitarás tu correo y contraseña para volver a entrar. Úsalo si {type} no funciona.",
     signOutConfirm: "Cerrar sesión",
   },
+  tags: {
+    label: "Etiquetas",
+    placeholder: "p. ej. barbacoa, repostería, niños",
+    remove: "Quitar la etiqueta {tag}",
+  },
   common: {
     optional: "Opcional",
     back: 'Volver',

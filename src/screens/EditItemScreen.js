@@ -22,6 +22,7 @@ import {
   Pill,
   AmountField,
   PriceField,
+  TagField,
   CategoryPickerSheet,
   Input,
   PrimaryButton,
@@ -54,10 +55,11 @@ const EditItemScreen = ({ route, navigation }) => {
   const [position, setPosition] = useState(item.position ? String(item.position) : '');
   const [unit, setUnit] = useState(item.unit || 'pcs');
   const [price, setPrice] = useState(item.price != null ? String(item.price) : '');
+  const [tags, setTags] = useState(item.tags || []);
   const [isLoading, setIsLoading] = useState(false);
   const [catPickerVisible, setCatPickerVisible] = useState(false);
 
-  const { updateItem } = useFridge();
+  const { updateItem, allTags } = useFridge();
   const { priceFor, remember: rememberPrice } = useItemPrices();
   const { getFreezerEstimate } = useFridgeExpiry();
   const { drawers } = useDrawers();
@@ -121,6 +123,7 @@ const EditItemScreen = ({ route, navigation }) => {
       notes: notes.trim(),
       position: position ? parseInt(position) : null,
       price: parsedPrice,
+      tags,
     });
     setIsLoading(false);
 
@@ -226,6 +229,17 @@ const EditItemScreen = ({ route, navigation }) => {
                 remembered={priceFor(name, quantity)}
                 onUseRemembered={(p) => setPrice(String(p))}
                 quantity={quantity}
+                disabled={isLoading}
+              />
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.cardInner}>
+              <TagField
+                value={tags}
+                onChange={setTags}
+                suggestions={allTags}
                 disabled={isLoading}
               />
             </View>

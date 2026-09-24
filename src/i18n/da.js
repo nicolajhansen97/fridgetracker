@@ -137,6 +137,11 @@ export default {
     signOutBody: "Du skal bruge din e-mail og adgangskode for at komme ind igen. Brug det her, hvis {type} ikke virker.",
     signOutConfirm: "Log ud",
   },
+  tags: {
+    label: "Tags",
+    placeholder: "f.eks. grill, bagning, børn",
+    remove: "Fjern tagget {tag}",
+  },
   common: {
     optional: "Valgfrit",
     back: 'Tilbage',

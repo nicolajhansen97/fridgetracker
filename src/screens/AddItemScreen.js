@@ -29,6 +29,7 @@ import {
   Pill,
   AmountField,
   PriceField,
+  TagField,
   CategoryPickerSheet,
   Input,
   PrimaryButton,
@@ -72,6 +73,7 @@ const AddItemScreen = ({ navigation, route }) => {
   const [position, setPosition] = useState('');
   const [unit, setUnit] = useState('pcs');
   const [price, setPrice] = useState('');
+  const [tags, setTags] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [usePackageNumbers, setUsePackageNumbers] = useState(false);
   const [scannerVisible, setScannerVisible] = useState(false);
@@ -85,7 +87,7 @@ const AddItemScreen = ({ navigation, route }) => {
   const [lastAdded, setLastAdded] = useState('');
   const nameRef = useRef(null);
 
-  const { addItem, getNextAvailablePosition, items } = useFridge();
+  const { addItem, getNextAvailablePosition, items, allTags } = useFridge();
   const { drawers } = useDrawers();
   const { t, formatDate, locale } = useLanguage();
   const { isPremium } = usePremium();
@@ -278,6 +280,7 @@ const AddItemScreen = ({ navigation, route }) => {
       notes: notes.trim(),
       position: position ? parseInt(position) : null,
       price: parsedPrice,
+      tags,
     });
     setIsLoading(false);
 
@@ -473,6 +476,19 @@ const AddItemScreen = ({ navigation, route }) => {
                 remembered={rememberedPrice}
                 onUseRemembered={(p) => setPrice(String(p))}
                 quantity={quantity}
+                disabled={isLoading}
+              />
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.cardInner}>
+              {/* Kept across "save and add another": a barbecue haul is exactly
+                  the case where six things in a row share one label. */}
+              <TagField
+                value={tags}
+                onChange={setTags}
+                suggestions={allTags}
                 disabled={isLoading}
               />
             </View>

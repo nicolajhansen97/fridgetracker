@@ -32,7 +32,7 @@ import ItemActionSheet from '../components/ItemActionSheet';
 const USE_FIRST_FG = '#7C2D12';
 
 const FridgeInventoryScreen = ({ navigation }) => {
-  const { items, deleteItem, consumeItem, consumePartial, throwItem, loadItems } = useFridge();
+  const { items, deleteItem, consumeItem, consumePartial, throwItem, loadItems, allTags } = useFridge();
   const { drawers: drawerDefs } = useDrawers();
   const { getEffectiveExpiry, isExpiringSoon: isItemExpiringSoon } = useFridgeExpiry();
   const { t, formatDate } = useLanguage();
@@ -40,6 +40,9 @@ const FridgeInventoryScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showExpiringSoon, setShowExpiringSoon] = useState(false);
+  // One tag at a time. Intersecting several is a power feature nobody asked
+  // for; "show me the barbecue stuff" is the whole job.
+  const [activeTag, setActiveTag] = useState(null);
   const [actionItem, setActionItem] = useState(null);
 
   const onRefresh = async () => {
@@ -97,9 +100,11 @@ const FridgeInventoryScreen = ({ navigation }) => {
       const query = searchQuery.toLowerCase();
       const nameMatch = item.name.toLowerCase().includes(query);
       const positionMatch = item.position && String(item.position) === searchQuery.trim();
-      if (!nameMatch && !positionMatch) return false;
+      const tagMatch = (item.tags || []).some((tag) => tag.includes(query));
+      if (!nameMatch && !positionMatch && !tagMatch) return false;
     }
     if (showExpiringSoon && !isItemExpiringSoon(item)) return false;
+    if (activeTag && !(item.tags || []).includes(activeTag)) return false;
     return true;
   });
 
@@ -166,6 +171,26 @@ const FridgeInventoryScreen = ({ navigation }) => {
           onPress={() => setShowExpiringSoon((v) => !v)}
         />
       </View>
+
+      {/* Tag filters, only once tags exist. An empty row of nothing teaching
+          you about a feature you have not used is just clutter. */}
+      {allTags.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tagRow}
+          keyboardShouldPersistTaps="handled"
+        >
+          {allTags.map((tag) => (
+            <Pill
+              key={tag}
+              label={tag}
+              selected={activeTag === tag}
+              onPress={() => setActiveTag((cur) => (cur === tag ? null : tag))}
+            />
+          ))}
+        </ScrollView>
+      ) : null}
 
       {/* Pinned above the list so the item to grab first stays visible while
           scrolling — no hunting through results. Tapping opens its actions. */}
@@ -432,6 +457,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: USE_FIRST_FG,
+  },
+  tagRow: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
   },
   itemRow: {
     flexDirection: 'row',
