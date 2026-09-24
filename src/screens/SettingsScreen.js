@@ -37,14 +37,7 @@ const USE_PACKAGE_NUMBERS_KEY = 'freezely_use_package_numbers';
 // links here. Storage times and reminders are big enough to keep their own
 // screens, but appear here as ordinary rows showing their current state.
 const SettingsScreen = ({ navigation }) => {
-  const {
-    user,
-    biometricAvailable,
-    biometricType,
-    enableBiometric,
-    disableBiometric,
-    checkBiometricEnabled,
-  } = useAuth();
+  const { user } = useAuth();
   const {
     t, locale, setLocale, languages,
     dateFormat, setDateFormat, dateFormats,
@@ -53,8 +46,6 @@ const SettingsScreen = ({ navigation }) => {
   const { dateSource, setDateSource, overrides } = useFreezerSettings();
   const { resolved: notifPrefs } = useNotifications();
 
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [bioLoading, setBioLoading] = useState(false);
   const [familySize, setFamilySize] = useState(4);
   const [usePackageNumbers, setUsePackageNumbers] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -62,7 +53,6 @@ const SettingsScreen = ({ navigation }) => {
   const [sheet, setSheet] = useState(null);
 
   useEffect(() => {
-    checkBiometricStatus();
     AsyncStorage.getItem(FAMILY_SIZE_KEY).then((val) => {
       if (val) setFamilySize(parseInt(val));
     });
@@ -71,15 +61,9 @@ const SettingsScreen = ({ navigation }) => {
     });
   }, []);
 
-  const checkBiometricStatus = async () => {
-    const enabled = await checkBiometricEnabled();
-    setBiometricEnabled(enabled);
-  };
-
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await checkBiometricStatus();
       const v = await AsyncStorage.getItem(FAMILY_SIZE_KEY);
       if (v) setFamilySize(parseInt(v));
       const p = await AsyncStorage.getItem(USE_PACKAGE_NUMBERS_KEY);
@@ -100,32 +84,6 @@ const SettingsScreen = ({ navigation }) => {
   const handleTogglePackageNumbers = (value) => {
     setUsePackageNumbers(value);
     AsyncStorage.setItem(USE_PACKAGE_NUMBERS_KEY, String(value));
-  };
-
-  const handleToggleBiometric = async () => {
-    if (!biometricAvailable) {
-      Alert.alert(t('login.notAvailable'), t('login.biometricNotAvailable', { type: biometricType }));
-      return;
-    }
-    setBioLoading(true);
-    if (biometricEnabled) {
-      const result = await disableBiometric();
-      if (result.success) {
-        setBiometricEnabled(false);
-        Alert.alert(t('common.success'), t('settings.biometricDisabled', { type: biometricType }));
-      } else {
-        Alert.alert(t('common.error'), result.error || t('settings.failedDisable'));
-      }
-    } else {
-      const result = await enableBiometric(user?.email);
-      if (result.success) {
-        setBiometricEnabled(true);
-        Alert.alert(t('common.success'), t('settings.biometricEnabled', { type: biometricType }));
-      } else {
-        Alert.alert(t('common.error'), result.error || t('settings.failedEnable'));
-      }
-    }
-    setBioLoading(false);
   };
 
   // Right-hand summaries for the rows that open another screen. Both say what
@@ -238,24 +196,6 @@ const SettingsScreen = ({ navigation }) => {
             label={t('settings.currency')}
             value={formatMoney(24.5)}
             onPress={() => setSheet('currency')}
-          />
-          <Divider />
-          <SettingRow
-            label={t('settings.biometricLogin', { type: biometricType })}
-            description={
-              biometricAvailable
-                ? t('settings.biometricAvailable', { type: biometricType })
-                : t('settings.biometricUnavailable', { type: biometricType })
-            }
-            right={
-              <Switch
-                value={biometricEnabled}
-                onValueChange={handleToggleBiometric}
-                trackColor={{ false: colors.borderStrong, true: colors.primary }}
-                thumbColor={colors.surface}
-                disabled={!biometricAvailable || bioLoading}
-              />
-            }
           />
         </Card>
       </ScrollView>

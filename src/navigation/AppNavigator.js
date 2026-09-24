@@ -30,7 +30,6 @@ import ActivityHistoryScreen from '../screens/ActivityHistoryScreen';
 import ManageHouseholdScreen from '../screens/ManageHouseholdScreen';
 import RecipeSuggestionsScreen from '../screens/RecipeSuggestionsScreen';
 import MealPlanScreen from '../screens/MealPlanScreen';
-import LockScreen from '../screens/LockScreen';
 import ShoppingListScreen from '../screens/ShoppingListScreen';
 import ChangelogScreen from '../screens/ChangelogScreen';
 import FeedbackScreen from '../screens/FeedbackScreen';
@@ -186,13 +185,9 @@ const MainTabs = () => {
 };
 
 const AppNavigator = () => {
-  const { isAuthenticated, loading, locked } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   if (loading) return null;
 
-  // The lock is an overlay on top of NavigationContainer rather than a route
-  // inside it. That way it cannot be dismissed with a back gesture or a deep
-  // link, and the navigation state underneath survives — unlock and you are
-  // back on the screen you left, not bounced to the first tab.
   return (
     <>
       {/* Light status-bar icons: both the in-app gradient headers and the
@@ -209,12 +204,6 @@ const AppNavigator = () => {
           </AuthStack.Navigator>
         )}
       </NavigationContainer>
-
-      {isAuthenticated && locked ? (
-        <View style={StyleSheet.absoluteFill}>
-          <LockScreen />
-        </View>
-      ) : null}
     </>
   );
 };

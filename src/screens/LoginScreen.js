@@ -11,17 +11,11 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../i18n';
 import { Icon, FrostOverlay } from '../components/ui';
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
-
-// Set once the user turns the offer down, so the prompt asks a single time
-// rather than on every sign-in. Settings keeps its own toggle for anyone who
-// changes their mind later.
-const BIOMETRIC_OFFER_DECLINED_KEY = 'freezely_biometric_offer_declined';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -32,13 +26,7 @@ const LoginScreen = ({ navigation }) => {
   const [focused, setFocused] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const { t } = useLanguage();
-  const {
-    login,
-    biometricAvailable,
-    biometricType,
-    enableBiometric,
-    checkBiometricEnabled,
-  } = useAuth();
+  const { login } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -49,47 +37,9 @@ const LoginScreen = ({ navigation }) => {
     const result = await login(email, password);
     setIsLoading(false);
     if (result.success) {
-      offerBiometric(email);
+      // Nothing to do: the navigator swaps to the app on the auth state change.
     } else {
       Alert.alert(t('login.loginFailed'), result.error || 'Invalid credentials');
-    }
-  };
-
-  // Offer biometric login AFTER a successful sign-in rather than asking for a
-  // decision before one. Nothing about enabling it needs the password - it
-  // stores the email and gates the already-persisted session behind a face or
-  // fingerprint check - so there is no reason to ask up front.
-  //
-  // Fire-and-forget: the navigator swaps away from this screen the moment auth
-  // succeeds. Alert is a native modal and survives that, but nothing in here
-  // may touch component state.
-  const offerBiometric = async (emailForLogin) => {
-    try {
-      if (!biometricAvailable) return;
-      if (await checkBiometricEnabled()) return;
-      if ((await AsyncStorage.getItem(BIOMETRIC_OFFER_DECLINED_KEY)) === 'true') return;
-
-      Alert.alert(
-        t('login.biometricOfferTitle', { type: biometricType }),
-        t('login.biometricOfferBody', { type: biometricType }),
-        [
-          {
-            text: t('login.biometricOfferLater'),
-            style: 'cancel',
-            onPress: () => {
-              AsyncStorage.setItem(BIOMETRIC_OFFER_DECLINED_KEY, 'true').catch(() => {});
-            },
-          },
-          {
-            text: t('login.biometricOfferEnable'),
-            onPress: () => {
-              enableBiometric(emailForLogin).catch(() => {});
-            },
-          },
-        ]
-      );
-    } catch {
-      // An unavailable keystore is not worth interrupting a successful login.
     }
   };
 
