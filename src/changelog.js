@@ -5,11 +5,23 @@
 // The app shows the "What's New" popup once per version.
 // ─────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.1.4';
+export const CURRENT_VERSION = '1.2.0';
 
 // Features use translation keys — add the matching keys to each language file.
 // The i18n system falls back to English automatically if a language is missing a key.
 export const CHANGELOG = [
+  {
+    // Store release, not an OTA: this is the first build on the new app
+    // framework, so it ships with its own native runtime version (1.2.0).
+    version: '1.2.0',
+    date: '2026-09-24',
+    features: [
+      { icon: '🔒', titleKey: 'changelog.v120_lock_title',   descKey: 'changelog.v120_lock_desc' },
+      { icon: '✨', titleKey: 'changelog.v120_look_title',   descKey: 'changelog.v120_look_desc' },
+      { icon: '🧊', titleKey: 'changelog.v120_space_title',  descKey: 'changelog.v120_space_desc' },
+      { icon: '⚡', titleKey: 'changelog.v120_engine_title', descKey: 'changelog.v120_engine_desc' },
+    ],
+  },
   {
     version: '1.1.4',
     date: '2026-09-23',

@@ -662,6 +662,14 @@ export default {
   },
 
   changelog: {
+    v120_lock_title: "Face ID og Touch ID virker nu",
+    v120_lock_desc: "De virkede ikke ordentligt før — slår man dem til og prøvede at logge ind, fejlede det bare. Freezely forbliver nu logget ind og låser i stedet sig selv, så du åbner appen, kigger på den, og er inde med det samme. Slå det til under Indstillinger.",
+    v120_look_title: "Et friskere udseende",
+    v120_look_desc: "Log ind, opret konto og startskærmen er redesignet omkring frostet glas og lidt mere rim, så appen ligner det, den er.",
+    v120_space_title: "Mere fryser, mindre scrollen",
+    v120_space_desc: "Varerne i din fryserliste fylder mærkbart mindre, så du ser langt flere ad gangen — uden at der er fjernet noget fra den enkelte vare.",
+    v120_engine_title: "Bygget om indeni",
+    v120_engine_desc: "Freezely kører nu på den nyeste app-platform. Du skal ikke gøre noget: det betyder bedre ydeevne, færre mærkelige fejl og understøttelse af de nyeste telefoner.",
     v114_prices_title: "Sæt en pris på det",
     v114_prices_desc: "Tilføj hvad noget kostede, når du opretter det — priser huskes per vare, så du kun skriver dem én gang. Din statistik viser derefter hvad du spiste og hvad du smed ud i kroner, ikke bare i antal.",
     v114_mealplan_title: "Planlæg din uge",

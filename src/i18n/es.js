@@ -627,6 +627,14 @@ export default {
   },
 
   changelog: {
+    v120_lock_title: "Face ID y Touch ID ya funcionan",
+    v120_lock_desc: "Antes no funcionaban bien — al activarlos e intentar iniciar sesión simplemente fallaba. Ahora Freezely se mantiene con la sesión iniciada y se bloquea a sí misma: abres la app, la miras y ya estás dentro. Actívalo en Ajustes.",
+    v120_look_title: "Un aspecto más fresco",
+    v120_look_desc: "El inicio de sesión, el registro y la pantalla de inicio se han rediseñado con cristal esmerilado y algo más de escarcha, para que la app parezca lo que es.",
+    v120_space_title: "Más congelador, menos scroll",
+    v120_space_desc: "Los artículos de tu lista ocupan bastante menos espacio, así que ves muchos más de una vez — sin quitarle nada a cada uno.",
+    v120_engine_title: "Reconstruida por dentro",
+    v120_engine_desc: "Freezely funciona ahora sobre la última plataforma de apps. No tienes que hacer nada: mejor rendimiento, menos fallos raros y compatibilidad con los móviles más nuevos.",
     v114_prices_title: "Ponle precio",
     v114_prices_desc: "Añade lo que costó algo al guardarlo — los precios se recuerdan por artículo, así que solo los escribes una vez. Tus estadísticas muestran entonces en dinero lo que comiste y lo que tiraste, no solo cantidades.",
     v114_mealplan_title: "Planea tu semana",

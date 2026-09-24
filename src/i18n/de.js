@@ -627,6 +627,14 @@ export default {
   },
 
   changelog: {
+    v120_lock_title: "Face ID und Touch ID funktionieren jetzt",
+    v120_lock_desc: "Vorher funktionierten sie nicht richtig — einschalten und anmelden schlug schlicht fehl. Freezely bleibt jetzt angemeldet und sperrt sich stattdessen selbst: App öffnen, kurz hinsehen, drin. In den Einstellungen aktivierbar.",
+    v120_look_title: "Ein frischeres Aussehen",
+    v120_look_desc: "Anmelden, Registrieren und der Startbildschirm wurden rund um Milchglas und etwas mehr Frost neu gestaltet, damit die App aussieht wie das, was sie ist.",
+    v120_space_title: "Mehr Gefrierschrank, weniger Scrollen",
+    v120_space_desc: "Artikel in deiner Gefrierliste brauchen deutlich weniger Platz, sodass du viel mehr auf einmal siehst — ohne dass an einzelnen Artikeln etwas fehlt.",
+    v120_engine_title: "Innen neu gebaut",
+    v120_engine_desc: "Freezely läuft jetzt auf der neuesten App-Plattform. Für dich ändert sich nichts: bessere Leistung, weniger seltsame Fehler und Unterstützung für die neuesten Telefone.",
     v114_prices_title: "Preise dazu",
     v114_prices_desc: "Trage ein, was etwas gekostet hat — Preise werden pro Artikel gemerkt, du tippst sie also nur einmal. Deine Statistik zeigt danach in Geld, was gegessen und was weggeworfen wurde, nicht nur in Stückzahlen.",
     v114_mealplan_title: "Plane deine Woche",
