@@ -15,11 +15,16 @@ export const CHANGELOG = [
     // framework, so it ships with its own native runtime version (1.2.0).
     version: '1.2.0',
     date: '2026-09-24',
+    // Prices and the meal plan reuse the v1.1.4 keys rather than duplicating
+    // the copy in five languages. Listing them here as well means nobody
+    // misses them: if the 1.1.4 OTA ships first they read about them there,
+    // and if this store build lands first they read about them here.
     features: [
-      { icon: '🔒', titleKey: 'changelog.v120_lock_title',   descKey: 'changelog.v120_lock_desc' },
-      { icon: '✨', titleKey: 'changelog.v120_look_title',   descKey: 'changelog.v120_look_desc' },
-      { icon: '🧊', titleKey: 'changelog.v120_space_title',  descKey: 'changelog.v120_space_desc' },
-      { icon: '⚡', titleKey: 'changelog.v120_engine_title', descKey: 'changelog.v120_engine_desc' },
+      { icon: '🔒', titleKey: 'changelog.v120_lock_title',     descKey: 'changelog.v120_lock_desc' },
+      { icon: '💰', titleKey: 'changelog.v114_prices_title',   descKey: 'changelog.v114_prices_desc' },
+      { icon: '📅', titleKey: 'changelog.v114_mealplan_title', descKey: 'changelog.v114_mealplan_desc' },
+      { icon: '✨', titleKey: 'changelog.v120_look_title',     descKey: 'changelog.v120_look_desc' },
+      { icon: '🧊', titleKey: 'changelog.v120_space_title',    descKey: 'changelog.v120_space_desc' },
     ],
   },
   {

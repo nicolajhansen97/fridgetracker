@@ -627,14 +627,12 @@ export default {
   },
 
   changelog: {
-    v120_lock_title: "Face ID et Touch ID fonctionnent enfin",
-    v120_lock_desc: "Ils ne marchaient pas vraiment avant — activer l’option puis se connecter échouait tout simplement. Freezely reste maintenant connecté et se verrouille à la place : ouvrez l’app, un regard, et vous y êtes. À activer dans les Réglages.",
+    v120_lock_title: "Face ID et Touch ID améliorés",
+    v120_lock_desc: "Freezely reste maintenant connecté et se verrouille à la place, au lieu de vous redemander de vous connecter : ouvrez l’app, un regard, et vous y êtes. À activer dans les Réglages.",
     v120_look_title: "Une allure plus fraîche",
     v120_look_desc: "La connexion, l’inscription et l’écran d’accueil ont été repensés autour du verre givré et d’un peu plus de givre, pour que l’app ressemble à ce qu’elle est.",
     v120_space_title: "Plus de congélateur, moins de défilement",
     v120_space_desc: "Les produits de votre liste prennent nettement moins de place, vous en voyez donc beaucoup plus d’un coup — sans rien retirer à chacun d’eux.",
-    v120_engine_title: "Reconstruit en profondeur",
-    v120_engine_desc: "Freezely tourne désormais sur la dernière plateforme applicative. Rien à faire de votre côté : de meilleures performances, moins de bugs bizarres et la prise en charge des téléphones les plus récents.",
     v114_prices_title: "Ajoutez le prix",
     v114_prices_desc: "Indiquez ce qu’un produit a coûté au moment de l’ajouter — les prix sont mémorisés par produit, vous ne les saisissez qu’une fois. Vos statistiques montrent alors en argent ce que vous avez mangé et jeté, pas seulement en nombre.",
     v114_mealplan_title: "Planifiez votre semaine",

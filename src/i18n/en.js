@@ -548,14 +548,12 @@ export default {
 
   // Changelog Screen
   changelog: {
-    v120_lock_title: "Face ID and Touch ID now work",
-    v120_lock_desc: "They didn't work properly before — turning it on and trying to sign in just failed. Freezely now stays signed in and locks itself instead, so you open the app, glance at it, and you're straight in. Switch it on in Settings.",
+    v120_lock_title: "Face ID and Touch ID improved",
+    v120_lock_desc: "Freezely now stays signed in and locks itself instead of asking you to sign in again — open the app, glance at it, and you're straight in. Switch it on in Settings.",
     v120_look_title: "A fresher look",
     v120_look_desc: "Signing in, signing up and the home screen have been redesigned around frosted glass and a bit more frost, so the app looks like what it is.",
     v120_space_title: "More freezer, less scrolling",
     v120_space_desc: "Items in your freezer list take up noticeably less room, so you see far more of them at once — with nothing removed from each one.",
-    v120_engine_title: "Rebuilt underneath",
-    v120_engine_desc: "Freezely now runs on the latest app framework. Nothing to do on your side: it means better performance, fewer odd bugs, and support for the newest phones.",
     v114_prices_title: "Put a price on it",
     v114_prices_desc: "Add what something cost when you add it — prices are remembered per item, so you only type them once. Your stats then show what you ate and what you threw away in money, not just counts.",
     v114_mealplan_title: "Plan your week",
