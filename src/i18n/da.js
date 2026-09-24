@@ -675,8 +675,6 @@ export default {
   changelog: {
     v120_tags_title: "Tags du kan søge efter",
     v120_tags_desc: "Giv dine varer et tag som grill eller bagning. Søg efter grill, og alt med det tag dukker op, så du ikke længere behøver at kalde noget grillkylling bare for at finde det samlet.",
-    v120_lock_title: "Face ID og Touch ID forbedret",
-    v120_lock_desc: "Freezely forbliver nu logget ind og låser i stedet sig selv i stedet for at bede dig logge ind igen. Åbn appen, kig på den, og du er inde med det samme. Slå det til under Indstillinger.",
     v120_look_title: "Et friskere udseende",
     v120_look_desc: "Log ind, opret konto og startskærmen er redesignet omkring frostet glas og lidt mere rim, så appen ligner det, den er.",
     v120_space_title: "Mere fryser, mindre scrollen",

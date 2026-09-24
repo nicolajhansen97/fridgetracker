@@ -640,8 +640,6 @@ export default {
   changelog: {
     v120_tags_title: "Tags, nach denen du suchen kannst",
     v120_tags_desc: "Gib deinen Artikeln ein Tag wie Grillen oder Backen. Suche nach Grillen, und alles mit diesem Tag taucht auf. So musst du nichts mehr Grillhähnchen nennen, nur um es zusammen zu finden.",
-    v120_lock_title: "Face ID und Touch ID verbessert",
-    v120_lock_desc: "Freezely bleibt jetzt angemeldet und sperrt sich stattdessen selbst, statt dich erneut anmelden zu lassen. App öffnen, kurz hinsehen, drin. In den Einstellungen aktivierbar.",
     v120_look_title: "Ein frischeres Aussehen",
     v120_look_desc: "Anmelden, Registrieren und der Startbildschirm wurden rund um Milchglas und etwas mehr Frost neu gestaltet, damit die App aussieht wie das, was sie ist.",
     v120_space_title: "Mehr Gefrierschrank, weniger Scrollen",

@@ -640,8 +640,6 @@ export default {
   changelog: {
     v120_tags_title: "Etiquetas que puedes buscar",
     v120_tags_desc: "Dale a tus artículos una etiqueta como barbacoa o repostería. Busca barbacoa y aparece todo lo que la lleva, así que ya no tienes que llamar a algo pollo a la barbacoa solo para encontrarlo junto.",
-    v120_lock_title: "Face ID y Touch ID mejorados",
-    v120_lock_desc: "Ahora Freezely mantiene la sesión iniciada y se bloquea a sí misma en lugar de pedirte que inicies sesión otra vez: abres la app, la miras y ya estás dentro. Actívalo en Ajustes.",
     v120_look_title: "Un aspecto más fresco",
     v120_look_desc: "El inicio de sesión, el registro y la pantalla de inicio se han rediseñado con cristal esmerilado y algo más de escarcha, para que la app parezca lo que es.",
     v120_space_title: "Más congelador, menos scroll",

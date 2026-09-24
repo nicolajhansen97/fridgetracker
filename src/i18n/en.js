@@ -561,8 +561,6 @@ export default {
   changelog: {
     v120_tags_title: "Tags you can search for",
     v120_tags_desc: "Give items a tag like grill or baking. Search for grill and everything with that tag comes up, so you no longer have to call things grill chicken just to find them together.",
-    v120_lock_title: "Face ID and Touch ID improved",
-    v120_lock_desc: "Freezely now stays signed in and locks itself instead of asking you to sign in again. Open the app, glance at it, and you are straight in. Switch it on in Settings.",
     v120_look_title: "A fresher look",
     v120_look_desc: "Signing in, signing up and the home screen have been redesigned around frosted glass and a bit more frost, so the app looks like what it is.",
     v120_space_title: "More freezer, less scrolling",

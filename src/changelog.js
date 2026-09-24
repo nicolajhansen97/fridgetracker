@@ -20,7 +20,6 @@ export const CHANGELOG = [
     // misses them: if the 1.1.4 OTA ships first they read about them there,
     // and if this store build lands first they read about them here.
     features: [
-      { icon: '🔒', titleKey: 'changelog.v120_lock_title',     descKey: 'changelog.v120_lock_desc' },
       { icon: '💰', titleKey: 'changelog.v114_prices_title',   descKey: 'changelog.v114_prices_desc' },
       { icon: '📅', titleKey: 'changelog.v114_mealplan_title', descKey: 'changelog.v114_mealplan_desc' },
       { icon: '🏷', titleKey: 'changelog.v120_tags_title',     descKey: 'changelog.v120_tags_desc' },

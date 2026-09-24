@@ -640,8 +640,6 @@ export default {
   changelog: {
     v120_tags_title: "Des étiquettes que vous pouvez rechercher",
     v120_tags_desc: "Donnez à vos produits une étiquette comme barbecue ou pâtisserie. Cherchez barbecue et tout ce qui porte cette étiquette apparaît. Vous n’avez plus à appeler quelque chose poulet barbecue juste pour le retrouver groupé.",
-    v120_lock_title: "Face ID et Touch ID améliorés",
-    v120_lock_desc: "Freezely reste maintenant connecté et se verrouille à la place, au lieu de vous redemander de vous connecter : ouvrez l’app, un regard, et vous y êtes. À activer dans les Réglages.",
     v120_look_title: "Une allure plus fraîche",
     v120_look_desc: "La connexion, l’inscription et l’écran d’accueil ont été repensés autour du verre givré et d’un peu plus de givre, pour que l’app ressemble à ce qu’elle est.",
     v120_space_title: "Plus de congélateur, moins de défilement",
