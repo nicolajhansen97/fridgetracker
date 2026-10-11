@@ -48,6 +48,10 @@ import { lookupBarcode, analyzeProductImage } from '../utils/productLookup';
 const USE_PACKAGE_NUMBERS_KEY = 'freezely_use_package_numbers';
 const LAST_DRAWER_KEY = 'freezely_last_drawer';
 
+// Names compare equal regardless of case and spacing: "Minced  beef" is the
+// same thing as "minced beef".
+const sameName = (s) => (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
 const AddItemScreen = ({ navigation, route }) => {
   // Launched from Home's Quick Add (vs. opened from within the Freezer tab).
   const fromHome = route?.params?.from === 'home';
@@ -157,6 +161,19 @@ const AddItemScreen = ({ navigation, route }) => {
       }
     }
     return out;
+  }, [name, items]);
+
+  // Items already in the freezer under this name, oldest first so the top line
+  // is the one to eat next. A notice, not a block: a second bag of peas is
+  // often deliberate, but buying one because the first was forgotten is the
+  // waste this app exists to prevent. Exact matches only, because anything
+  // looser turns "peas" into "pears".
+  const duplicates = useMemo(() => {
+    const q = sameName(name);
+    if (!q) return [];
+    return items
+      .filter((it) => sameName(it.name) === q)
+      .sort((a, b) => (a.frozen_date || '9999').localeCompare(b.frozen_date || '9999'));
   }, [name, items]);
 
   // Frozen date is almost always today; quick-pick chips make that one tap.
@@ -399,6 +416,36 @@ const AddItemScreen = ({ navigation, route }) => {
                       <Text style={styles.suggestText} numberOfLines={1}>{s}</Text>
                     </TouchableOpacity>
                   ))}
+                </View>
+              </>
+            )}
+
+            {duplicates.length > 0 && (
+              <>
+                <View style={styles.divider} />
+                <View style={styles.dupWrap}>
+                  <View style={styles.dupHead}>
+                    <Icon name="layers-outline" size={15} color={colors.warningText} />
+                    <Text style={styles.dupTitle}>{t('addItem.alreadyHave')}</Text>
+                  </View>
+                  {duplicates.slice(0, 3).map((it) => (
+                    <Text key={it.id} style={styles.dupLine} numberOfLines={1}>
+                      {[
+                        `${it.quantity}${it.unit ? ` ${it.unit}` : ''}`,
+                        it.drawer,
+                        it.frozen_date
+                          ? t('addItem.frozenOn', { date: formatDate(it.frozen_date) })
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </Text>
+                  ))}
+                  {duplicates.length > 3 ? (
+                    <Text style={styles.dupLine}>
+                      {t('addItem.andMore', { count: duplicates.length - 3 })}
+                    </Text>
+                  ) : null}
                 </View>
               </>
             )}
@@ -817,6 +864,28 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     color: colors.text,
+  },
+  dupWrap: {
+    backgroundColor: colors.warningSoft,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    gap: 3,
+  },
+  dupHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  dupTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.warningText,
+  },
+  dupLine: {
+    fontSize: 13,
+    color: colors.warningText,
+    paddingLeft: 21,
   },
   notesRow: {
     flexDirection: 'row',

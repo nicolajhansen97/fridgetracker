@@ -5,11 +5,21 @@
 // The app shows the "What's New" popup once per version.
 // ─────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.2.0';
+export const CURRENT_VERSION = '1.2.1';
 
 // Features use translation keys — add the matching keys to each language file.
 // The i18n system falls back to English automatically if a language is missing a key.
 export const CHANGELOG = [
+  {
+    // OTA on top of the 1.2.0 store build. app.json stays at 1.2.0 so the
+    // update reaches that runtime; only this number moves.
+    version: '1.2.1',
+    date: '2026-10-11',
+    features: [
+      { icon: '🏷', titleKey: 'changelog.v121_tagdelete_title',  descKey: 'changelog.v121_tagdelete_desc' },
+      { icon: '📦', titleKey: 'changelog.v121_duplicates_title', descKey: 'changelog.v121_duplicates_desc' },
+    ],
+  },
   {
     // Store release, not an OTA: this is the first build on the new app
     // framework, so it ships with its own native runtime version (1.2.0).
