@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../config/supabase';
 import { useHousehold } from '../context/HouseholdContext';
+import { useFridge } from '../context/FridgeContext';
 
 export const normalizeTag = (s) => (s || '').trim().toLowerCase();
 
@@ -39,6 +40,7 @@ const editDistance = (a, b) => {
 // near-match check in front of it.
 export const useTagDefinitions = () => {
   const { currentHousehold } = useHousehold();
+  const { items, loadItems } = useFridge();
   const [tags, setTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const cache = useRef([]);
@@ -123,5 +125,50 @@ export const useTagDefinitions = () => {
     }
   }, [currentHousehold?.id, load]);
 
-  return { tags, loading, define, rename, nearMatch, exists, reload: load };
+  // How many items carry a tag, for the delete confirmation. Counted from the
+  // items already loaded rather than asked of the server: the number is there
+  // so the consequence is visible before the tap, and this is the same list the
+  // person has been looking at.
+  const usageCount = useCallback(
+    (raw) => {
+      const name = normalizeTag(raw);
+      return items.filter((item) => (item.tags || []).includes(name)).length;
+    },
+    [items]
+  );
+
+  // Deletes the definition and takes the tag off every item, in one call. The
+  // two cannot be separated: the picker only shows defined tags, so a tag left
+  // on items after its definition went would be invisible and impossible to
+  // untick, while still matching searches.
+  const remove = useCallback(async (raw) => {
+    const name = normalizeTag(raw);
+    try {
+      const { error } = await supabase.rpc('delete_tag', {
+        p_name: name,
+        p_household_id: currentHousehold?.id || null,
+      });
+      if (error) throw error;
+      cache.current = cache.current.filter((tag) => tag !== name);
+      setTags(cache.current);
+      // The server has already stripped it from items; reload so the freezer
+      // list and search stop showing it.
+      loadItems();
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, [currentHousehold?.id, loadItems]);
+
+  return {
+    tags,
+    loading,
+    define,
+    rename,
+    remove,
+    usageCount,
+    nearMatch,
+    exists,
+    reload: load,
+  };
 };

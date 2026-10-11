@@ -65,6 +65,8 @@ const EditItemScreen = ({ route, navigation }) => {
   const {
     tags: definedTags,
     define: defineTag,
+    remove: deleteTag,
+    usageCount: tagUsage,
     nearMatch,
     exists: tagExists,
   } = useTagDefinitions();
@@ -248,6 +250,8 @@ const EditItemScreen = ({ route, navigation }) => {
                 onChange={setTags}
                 defined={definedTags}
                 onDefine={defineTag}
+                onDelete={deleteTag}
+                usageCount={tagUsage}
                 nearMatch={nearMatch}
                 exists={tagExists}
                 disabled={isLoading}

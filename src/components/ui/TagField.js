@@ -14,11 +14,18 @@ export { normalizeTag };
 // permanently, sitting next to "grill" with nothing to say which was the
 // mistake. So the normal path is tapping a tag that already exists, and
 // creating one is a second, deliberate step behind a near-match check.
+//
+// Deleting is the way back out when a typo gets through anyway. It lives behind
+// an Edit mode rather than on every chip, because a tap on a chip already means
+// "put this on the item", and a destructive action one mis-tap away from that
+// is how tags get lost.
 const TagField = ({
   value = [],
   onChange,
   defined = [],
   onDefine,
+  onDelete,
+  usageCount,
   nearMatch,
   exists,
   disabled,
@@ -26,6 +33,12 @@ const TagField = ({
   const { t } = useLanguage();
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState('');
+  const [editing, setEditing] = useState(false);
+
+  // Derived rather than reset in an effect: deleting the last tag simply ends
+  // edit mode, with nothing left to tap.
+  const canEdit = !!onDelete && defined.length > 0;
+  const isEditing = editing && canEdit;
 
   const toggle = (tag) =>
     onChange(value.includes(tag) ? value.filter((x) => x !== tag) : [...value, tag]);
@@ -36,6 +49,38 @@ const TagField = ({
     const off = defined.filter((tag) => !value.includes(tag));
     return [...on, ...off];
   }, [defined, value]);
+
+  const confirmDelete = (tag) => {
+    const count = usageCount ? usageCount(tag) : 0;
+    Alert.alert(
+      t('tags.deleteTitle', { tag }),
+      count > 0 ? t('tags.deleteBody', { count }) : t('tags.deleteBodyUnused'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            const result = await onDelete(tag);
+            if (result && result.success === false) {
+              Alert.alert(t('common.error'), t('tags.deleteFailed'));
+              return;
+            }
+            // Drop it from this form as well. Otherwise saving the item puts
+            // back the tag that was just deleted, now with no definition, where
+            // the picker cannot show it and nobody can take it off.
+            if (value.includes(tag)) onChange(value.filter((x) => x !== tag));
+          },
+        },
+      ]
+    );
+  };
+
+  const toggleEditing = () => {
+    setEditing((on) => !on);
+    setCreating(false);
+    setDraft('');
+  };
 
   const commitNew = async () => {
     const name = normalizeTag(draft);
@@ -62,7 +107,7 @@ const TagField = ({
         t('tags.similarBody', { typed: name, existing: near }),
         [
           {
-            text: t('tags.useExisting', { tag: near }),
+            text: t('tags.useExisting', { existing: near }),
             onPress: () => {
               if (!value.includes(near)) onChange([...value, near]);
               setDraft('');
@@ -70,7 +115,7 @@ const TagField = ({
             },
           },
           {
-            text: t('tags.createAnyway', { tag: name }),
+            text: t('tags.createAnyway', { typed: name }),
             style: 'destructive',
             onPress: async () => {
               await onDefine?.(name);
@@ -93,30 +138,49 @@ const TagField = ({
   return (
     <View>
       <View style={styles.labelRow}>
-        <Text style={styles.label}>{t('tags.label')}</Text>
-        <Text style={styles.optional}>{t('common.optional')}</Text>
+        <View style={styles.labelLeft}>
+          <Text style={styles.label}>{t('tags.label')}</Text>
+          <Text style={styles.optional}>{t('common.optional')}</Text>
+        </View>
+        {canEdit ? (
+          <TouchableOpacity
+            onPress={toggleEditing}
+            disabled={disabled}
+            hitSlop={10}
+            accessibilityRole="button"
+          >
+            <Text style={styles.editText}>
+              {isEditing ? t('tags.done') : t('tags.edit')}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <View style={styles.chips}>
         {ordered.map((tag) => {
-          const on = value.includes(tag);
+          // In edit mode every chip looks the same: whether it is on this item
+          // is beside the point when the question is whether it should exist.
+          const on = value.includes(tag) && !isEditing;
           return (
             <TouchableOpacity
               key={tag}
-              style={[styles.chip, on && styles.chipOn]}
-              onPress={() => toggle(tag)}
+              style={[styles.chip, on && styles.chipOn, isEditing && styles.chipEditing]}
+              onPress={() => (isEditing ? confirmDelete(tag) : toggle(tag))}
+              onLongPress={canEdit && !isEditing ? () => confirmDelete(tag) : undefined}
               disabled={disabled}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityState={{ selected: on }}
+              accessibilityState={isEditing ? undefined : { selected: on }}
+              accessibilityLabel={isEditing ? t('tags.deleteNamed', { tag }) : tag}
             >
               {on ? <Icon name="checkmark" size={13} color={colors.primaryText} /> : null}
               <Text style={[styles.chipText, on && styles.chipTextOn]}>{tag}</Text>
+              {isEditing ? <Icon name="close" size={14} color={colors.dangerText} /> : null}
             </TouchableOpacity>
           );
         })}
 
-        {!creating ? (
+        {!creating && !isEditing ? (
           <TouchableOpacity
             style={styles.newChip}
             onPress={() => setCreating(true)}
@@ -161,6 +225,8 @@ const TagField = ({
         </View>
       ) : null}
 
+      {isEditing ? <Text style={styles.hint}>{t('tags.editHint')}</Text> : null}
+
       {defined.length === 0 && !creating ? (
         <Text style={styles.hint}>{t('tags.emptyHint')}</Text>
       ) : null}
@@ -175,9 +241,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 8,
   },
+  labelLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   label: {
     ...typography.label,
     color: colors.textMuted,
+  },
+  editText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primary,
   },
   optional: {
     ...typography.label,
@@ -203,6 +279,10 @@ const styles = StyleSheet.create({
   chipOn: {
     backgroundColor: colors.primaryTint,
     borderColor: colors.primaryTint,
+  },
+  chipEditing: {
+    borderColor: colors.dangerSoft,
+    backgroundColor: colors.surface,
   },
   chipText: {
     fontSize: 13,
