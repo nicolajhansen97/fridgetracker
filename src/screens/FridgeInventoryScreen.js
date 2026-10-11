@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFridge } from '../context/FridgeContext';
+import { useLastOneNudge } from '../hooks/useLastOneNudge';
 import { useDrawers } from '../context/DrawerContext';
 import { useLanguage } from '../i18n';
 import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
@@ -33,6 +34,7 @@ const USE_FIRST_FG = '#7C2D12';
 
 const FridgeInventoryScreen = ({ navigation }) => {
   const { items, deleteItem, consumeItem, consumePartial, throwItem, loadItems } = useFridge();
+  const nudgeIfLast = useLastOneNudge();
   const { drawers: drawerDefs } = useDrawers();
   const { getEffectiveExpiry, isExpiringSoon: isItemExpiringSoon } = useFridgeExpiry();
   const { t, formatDate } = useLanguage();
@@ -63,6 +65,7 @@ const FridgeInventoryScreen = ({ navigation }) => {
     if (!item) return;
     const result = await consumeItem(item.id);
     if (!result.success) Alert.alert(t('common.error'), result.error);
+    else nudgeIfLast(item);
   };
 
   const onThrow = async () => {
@@ -90,6 +93,7 @@ const FridgeInventoryScreen = ({ navigation }) => {
       return; // nothing actually used
     }
     if (!result.success) Alert.alert(t('common.error'), result.error);
+    else if (remaining <= 0) nudgeIfLast(item);
   };
 
   const filteredItems = items.filter((item) => {

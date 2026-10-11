@@ -16,8 +16,11 @@ export const CHANGELOG = [
     version: '1.2.1',
     date: '2026-10-11',
     features: [
-      { icon: '🏷', titleKey: 'changelog.v121_tagdelete_title',  descKey: 'changelog.v121_tagdelete_desc' },
+      { icon: '🎯', titleKey: 'changelog.v121_score_title',      descKey: 'changelog.v121_score_desc' },
+      { icon: '🛒', titleKey: 'changelog.v121_lastone_title',    descKey: 'changelog.v121_lastone_desc' },
       { icon: '📦', titleKey: 'changelog.v121_duplicates_title', descKey: 'changelog.v121_duplicates_desc' },
+      { icon: '🗓', titleKey: 'changelog.v121_weekly_title',     descKey: 'changelog.v121_weekly_desc' },
+      { icon: '🏷', titleKey: 'changelog.v121_tagdelete_title',  descKey: 'changelog.v121_tagdelete_desc' },
     ],
   },
   {

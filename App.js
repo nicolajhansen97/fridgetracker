@@ -6,6 +6,7 @@ import { AuthProvider } from './src/context/AuthContext';
 import { PremiumProvider } from './src/context/PremiumContext';
 import { HouseholdProvider } from './src/context/HouseholdContext';
 import { FridgeProvider } from './src/context/FridgeContext';
+import { NudgeProvider } from './src/context/NudgeContext';
 import { DrawerProvider } from './src/context/DrawerContext';
 import { ActivityProvider } from './src/context/ActivityContext';
 import { ShoppingListProvider } from './src/context/ShoppingListContext';
@@ -40,7 +41,9 @@ export default function App() {
                     <FreezerSettingsProvider>
                     <NotificationProvider>
                     <OTAUpdateProvider>
-                      <AppNavigator />
+                      <NudgeProvider>
+                        <AppNavigator />
+                      </NudgeProvider>
                       <OTAUpdateModal />
                       <SessionTracker />
                     </OTAUpdateProvider>

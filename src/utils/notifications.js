@@ -97,17 +97,32 @@ const atTime = (now, dayOffset, hhmm) => {
   return d;
 };
 
+// When the next weekly summary inside the planning horizon fires, or null if
+// none falls inside it. The caller needs this before planning, to fetch the
+// week the summary looks back on.
+export const nextWeeklyDate = (prefs, now = new Date()) => {
+  const p = { ...DEFAULT_PREFS, ...(prefs || {}) };
+  for (let d = 0; d < HORIZON_DAYS; d++) {
+    const at = atTime(now, d, p.weeklyTime);
+    if (at > now && at.getDay() === Number(p.weeklyDay)) return at;
+  }
+  return null;
+};
+
 // Plan the notifications for the next HORIZON_DAYS.
 //
 //   items      — raw fridge items
 //   daysUntil  — (item) => number|null, already bound to the user's overrides
 //                (pass useFridgeExpiry().getDaysUntilExpiry)
+//   lookback   — { ate, threw, threwValue } for the week before the next
+//                weekly summary, or null; see nextWeeklyDate
 //   now        — injectable for tests
 //
 // Returns [{ kind, date, due: [name], overdue: n, weekCount: n }], unformatted.
-export const buildSchedule = ({ items, daysUntil, prefs, isPremium, now = new Date() }) => {
+export const buildSchedule = ({ items, daysUntil, prefs, isPremium, lookback = null, now = new Date() }) => {
   const p = resolvePrefs(prefs, isPremium);
   if (!p.enabled) return [];
+  const hasLookback = !!(lookback && (lookback.ate || lookback.threw));
 
   // Days-to-expiry is computed once relative to today; on a future day `d` the
   // remaining days are simply (days - d). Items with no expiry tracking at all
@@ -118,7 +133,8 @@ export const buildSchedule = ({ items, daysUntil, prefs, isPremium, now = new Da
     if (days === null || days === undefined || Number.isNaN(days)) continue;
     tracked.push({ name: item?.name || '', days });
   }
-  if (!tracked.length) return [];
+  // An empty freezer can still have had a week worth summing up.
+  if (!tracked.length && !(p.weeklySummary && hasLookback)) return [];
 
   const plan = [];
 
@@ -160,7 +176,9 @@ export const buildSchedule = ({ items, daysUntil, prefs, isPremium, now = new Da
       }
     }
 
-    // Weekly summary (Pro) — the week ahead, for planning rather than rescue.
+    // Weekly summary (Pro) — the week ahead, for planning rather than rescue,
+    // plus how the last one went. With a look-back it is sent even in a week
+    // where nothing expires: "you ate 9 things" is worth hearing too.
     if (p.weeklySummary) {
       const weeklyAt = atTime(now, d, p.weeklyTime);
       if (weeklyAt > now && weeklyAt.getDay() === Number(p.weeklyDay)) {
@@ -168,13 +186,14 @@ export const buildSchedule = ({ items, daysUntil, prefs, isPremium, now = new Da
         const overdue = tracked.filter(
           (i) => remaining(i) < 0 && remaining(i) >= -OVERDUE_GRACE_DAYS
         );
-        if (week.length || overdue.length) {
+        if (week.length || overdue.length || hasLookback) {
           plan.push({
             kind: 'weekly',
             date: weeklyAt,
             due: week.sort((a, b) => a.days - b.days).map((i) => i.name),
             overdue: overdue.length,
             weekCount: week.length,
+            lookback: hasLookback ? lookback : null,
           });
         }
       }

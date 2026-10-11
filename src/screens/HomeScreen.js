@@ -19,6 +19,7 @@ import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
 import { useStockInsights } from '../hooks/useStockInsights';
 import { usePremium } from '../context/PremiumContext';
 import WhatsNewModal from '../components/WhatsNewModal';
+import FreezerScoreCard from '../components/FreezerScoreCard';
 import {
   Screen,
   Card,
@@ -309,6 +310,8 @@ const HomeScreen = ({ navigation }) => {
             </Card>
           </TouchableOpacity>
         </View>
+
+        <FreezerScoreCard />
 
         {/* Expiring soon list — "use first" */}
         {summary.expiringList.length > 0 && (

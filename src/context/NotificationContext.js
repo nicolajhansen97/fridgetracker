@@ -10,9 +10,11 @@ import React, {
 import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFridge } from './FridgeContext';
+import { useHousehold } from './HouseholdContext';
 import { usePremium } from './PremiumContext';
 import { useLanguage } from '../i18n';
 import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
+import { fetchOutcomes } from '../utils/outcomes';
 import {
   DEFAULT_PREFS,
   PREFS_KEY,
@@ -22,6 +24,7 @@ import {
   cancelAll,
   configureNotifications,
   getPermissionStatus,
+  nextWeeklyDate,
   requestPermission,
   resolvePrefs,
 } from '../utils/notifications';
@@ -46,7 +49,8 @@ export const NotificationProvider = ({ children }) => {
   const { items } = useFridge();
   const { isPremium } = usePremium();
   const { getDaysUntilExpiry } = useFridgeExpiry();
-  const { t, locale } = useLanguage();
+  const { t, locale, formatMoney } = useLanguage();
+  const { currentHousehold } = useHousehold();
 
   const [prefs, setPrefs] = useState(DEFAULT_PREFS);
   const [loaded, setLoaded] = useState(false);
@@ -114,6 +118,19 @@ export const NotificationProvider = ({ children }) => {
   // than in the util so the scheduling maths stays i18n-free.
   const formatEntry = useCallback(
     (entry) => {
+      // "Last week: 6 eaten, 1 thrown away (kr 40)". The amount only appears
+      // once prices exist; a count alone is still the useful part.
+      const formatLookback = (lb) => {
+        if (!lb) return '';
+        const parts = [];
+        if (lb.ate) parts.push(t('notif.lookbackAte', { count: lb.ate }));
+        if (lb.threw) {
+          const threw = t('notif.lookbackThrew', { count: lb.threw });
+          parts.push(lb.threwValue > 0 ? `${threw} (${formatMoney(lb.threwValue)})` : threw);
+        }
+        return parts.length ? t('notif.lookback', { list: parts.join(', ') }) : '';
+      };
+
       const shown = entry.due.slice(0, MAX_NAMES_IN_BODY).filter(Boolean);
       const hidden = entry.due.length - shown.length;
       const list =
@@ -124,6 +141,18 @@ export const NotificationProvider = ({ children }) => {
       }
 
       if (entry.kind === 'weekly') {
+        const lookback = formatLookback(entry.lookback);
+        const withLookback = (text) => (lookback ? `${text}\n${lookback}` : text);
+
+        // Nothing due and nothing past: the look-back is the whole message.
+        if (!entry.weekCount && !entry.overdue) {
+          return {
+            kind: entry.kind,
+            date: entry.date,
+            title: t('notif.weeklyQuietTitle'),
+            body: lookback,
+          };
+        }
         // A week with nothing due but something already past would otherwise
         // read "0 items expire this week".
         if (!entry.weekCount && entry.overdue) {
@@ -131,7 +160,7 @@ export const NotificationProvider = ({ children }) => {
             kind: entry.kind,
             date: entry.date,
             title: t('notif.overdueTitle', { count: entry.overdue }),
-            body: t('notif.overdueBody'),
+            body: withLookback(t('notif.overdueBody')),
           };
         }
         const body = entry.overdue
@@ -141,7 +170,7 @@ export const NotificationProvider = ({ children }) => {
           kind: entry.kind,
           date: entry.date,
           title: t('notif.weeklyTitle', { count: entry.weekCount }),
-          body,
+          body: withLookback(body),
         };
       }
 
@@ -165,26 +194,47 @@ export const NotificationProvider = ({ children }) => {
         body,
       };
     },
-    [t]
+    [t, formatMoney]
   );
 
+  // Rebuilds can overlap now that one waits on the network; only the newest
+  // may apply its schedule.
+  const runRef = useRef(0);
+
   const reschedule = useCallback(async () => {
+    const run = ++runRef.current;
     const resolved = resolvePrefs(prefs, isPremium);
     if (!resolved.enabled || permission !== 'granted') {
       await cancelAll();
       setScheduledCount(0);
       return 0;
     }
+
+    // The weekly summary looks back on the seven days before it fires. Most of
+    // those days have already happened; anything eaten or binned in between
+    // happens in the app, changes the inventory and brings us back here.
+    let lookback = null;
+    if (resolved.weeklySummary) {
+      const at = nextWeeklyDate(resolved);
+      if (at) {
+        const since = new Date(at);
+        since.setDate(since.getDate() - 7);
+        lookback = await fetchOutcomes(currentHousehold?.id, since);
+        if (run !== runRef.current) return 0;
+      }
+    }
+
     const plan = buildSchedule({
       items,
       daysUntil: getDaysUntilExpiry,
       prefs,
       isPremium,
+      lookback,
     });
     const n = await applySchedule(plan.map(formatEntry));
     setScheduledCount(n);
     return n;
-  }, [prefs, isPremium, permission, items, getDaysUntilExpiry, formatEntry]);
+  }, [prefs, isPremium, permission, items, getDaysUntilExpiry, formatEntry, currentHousehold?.id]);
 
   // Debounced: `reschedule` changes identity whenever items or prefs do, so a
   // burst of edits collapses into one rebuild.

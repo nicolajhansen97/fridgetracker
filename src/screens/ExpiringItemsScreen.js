@@ -13,6 +13,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFridge } from '../context/FridgeContext';
+import { useLastOneNudge } from '../hooks/useLastOneNudge';
 import { useLanguage } from '../i18n';
 import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
 import {
@@ -48,6 +49,7 @@ const statusTone = (status) => {
 
 const ExpiringItemsScreen = ({ navigation }) => {
   const { items, loading, deleteItem, consumeItem, consumePartial, throwItem, loadItems } = useFridge();
+  const nudgeIfLast = useLastOneNudge();
   const { getEffectiveExpiry, getFreezerInfo, usesManualExpiry, dateSource } = useFridgeExpiry();
   const { t, formatDate } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
@@ -120,6 +122,7 @@ const ExpiringItemsScreen = ({ navigation }) => {
     if (!item) return;
     const result = await consumeItem(item.id);
     if (!result.success) Alert.alert(t('common.error'), result.error);
+    else nudgeIfLast(item);
   };
 
   const onThrow = async () => {
@@ -147,6 +150,7 @@ const ExpiringItemsScreen = ({ navigation }) => {
       return; // nothing actually used
     }
     if (!result.success) Alert.alert(t('common.error'), result.error);
+    else if (remaining <= 0) nudgeIfLast(item);
   };
 
   return (

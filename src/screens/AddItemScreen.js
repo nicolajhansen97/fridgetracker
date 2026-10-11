@@ -43,14 +43,11 @@ import { useCategory } from '../hooks/useCategory';
 import { useItemPrices } from '../hooks/useItemPrices';
 import { useTagDefinitions } from '../hooks/useTagDefinitions';
 import { parseMoney } from '../utils/currency';
+import { sameName } from '../utils/names';
 import { lookupBarcode, analyzeProductImage } from '../utils/productLookup';
 
 const USE_PACKAGE_NUMBERS_KEY = 'freezely_use_package_numbers';
 const LAST_DRAWER_KEY = 'freezely_last_drawer';
-
-// Names compare equal regardless of case and spacing: "Minced  beef" is the
-// same thing as "minced beef".
-const sameName = (s) => (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
 
 const AddItemScreen = ({ navigation, route }) => {
   // Launched from Home's Quick Add (vs. opened from within the Freezer tab).
