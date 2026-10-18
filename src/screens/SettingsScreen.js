@@ -102,8 +102,8 @@ const SettingsScreen = ({ navigation }) => {
     hint: f.pattern,
   }));
   const dateSourceOptions = [
-    { value: 'estimate', label: t('expiring.filterEstimate'), hint: t('settings.dateSourceEstimateHint') },
     { value: 'mine', label: t('expiring.filterMine'), hint: t('settings.dateSourceMineHint') },
+    { value: 'estimate', label: t('expiring.filterEstimate'), hint: t('settings.dateSourceEstimateHint') },
   ];
 
   // Each option previews itself, so the difference between kr, € and £ is

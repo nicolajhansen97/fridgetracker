@@ -32,9 +32,16 @@ export const FreezerSettingsProvider = ({ children }) => {
   const [categoryOverrides, setCategoryOverrides] = useState({});
   // User-defined categories: [{ key: 'custom:<id>', name }].
   const [customCategories, setCustomCategories] = useState([]);
-  // Defaults to the freezer estimate, which is how the app has always judged
-  // frozen food; 'mine' hands that back to the dates the user picked.
-  const [dateSource, setDateSourceState] = useState(DATE_SOURCE.ESTIMATE);
+  // Defaults to the user's own dates; items without one still get the
+  // estimate either way.
+  //
+  // 1.1.3 made the estimate the default, on the theory that typed dates are
+  // mostly the fridge date printed on the package. Measured in October 2026
+  // that held for 34 of 297 typed dates, while all 297 were hidden behind an
+  // estimate a median of 153 days away. People were editing items to fix a
+  // date the list never showed. A stored choice, either way, is kept: this
+  // only changes what someone gets if they never picked.
+  const [dateSource, setDateSourceState] = useState(DATE_SOURCE.MINE);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {

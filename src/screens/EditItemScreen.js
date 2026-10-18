@@ -30,6 +30,7 @@ import {
 import { colors, radii, spacing, typography } from '../theme';
 import { useCategory } from '../hooks/useCategory';
 import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
+import { DATE_SOURCE } from '../utils/freezerStorage';
 import { useItemPrices } from '../hooks/useItemPrices';
 import { useTagDefinitions } from '../hooks/useTagDefinitions';
 import { parseMoney } from '../utils/currency';
@@ -70,7 +71,7 @@ const EditItemScreen = ({ route, navigation }) => {
     nearMatch,
     exists: tagExists,
   } = useTagDefinitions();
-  const { getFreezerEstimate } = useFridgeExpiry();
+  const { getFreezerEstimate, dateSource } = useFridgeExpiry();
   const { drawers } = useDrawers();
   const { t, formatDate } = useLanguage();
   const {
@@ -310,7 +311,14 @@ const EditItemScreen = ({ route, navigation }) => {
               {/* Both dates exist and disagree about when this item is due —
                   let the user say which one is real. Hidden when there is only
                   one candidate, since then there is nothing to choose. */}
-              {expiryDate && frozenDate ? (
+              {expiryDate && frozenDate && dateSource === DATE_SOURCE.ESTIMATE ? (
+                // The app-wide setting overrides the per-item choice, so the
+                // switch here would show "My date" selected while the list
+                // shows the estimate. Say what is actually happening instead.
+                <Text style={[styles.helper, styles.sourceGlobal]}>
+                  {t('addItem.expirySourceGlobal')}
+                </Text>
+              ) : expiryDate && frozenDate ? (
                 <View style={styles.sourceBlock}>
                   <Text style={styles.sourceLabel}>{t('addItem.expirySourceLabel')}</Text>
                   <View style={styles.sourceRow}>
@@ -537,6 +545,9 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textMuted,
     marginTop: 6,
+  },
+  sourceGlobal: {
+    marginTop: spacing.md,
   },
   sourceBlock: {
     marginTop: spacing.md,
