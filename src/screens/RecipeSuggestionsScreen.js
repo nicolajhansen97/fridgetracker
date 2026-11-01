@@ -53,15 +53,29 @@ const iconForRecipe = (title = '') => {
   return FOOD_ICONS[hash % FOOD_ICONS.length];
 };
 
+const FRACTIONS = [
+  [0.125, '⅛'], [0.25, '¼'], [1 / 3, '⅓'], [0.5, '½'], [2 / 3, '⅔'], [0.75, '¾'],
+];
+
 const formatQty = (qty) => {
   if (!qty && qty !== 0) return '';
-  const fractions = { 0.25: '¼', 0.5: '½', 0.75: '¾', 0.33: '⅓', 0.67: '⅔', 0.125: '⅛' };
-  const rounded = Math.round(qty * 1000) / 1000;
-  const whole = Math.floor(rounded);
-  const frac = Math.round((rounded - whole) * 1000) / 1000;
-  const fracStr = fractions[frac] || (frac > 0 ? frac.toFixed(2).replace(/\.?0+$/, '') : '');
-  if (whole === 0) return fracStr || String(rounded);
-  return fracStr ? `${whole} ${fracStr}` : String(whole > 0 ? whole : rounded);
+  const whole = Math.floor(qty);
+  const rest = qty - whole;
+  // Large amounts (grams, ml) read better as plain numbers.
+  if (rest < 0.02 || qty >= 20) return String(Math.round(qty * 10) / 10);
+  const near = FRACTIONS.find(([v]) => Math.abs(rest - v) < 0.02);
+  if (!near) return String(Math.round(qty * 100) / 100);
+  return whole > 0 ? `${whole} ${near[1]}` : near[1];
+};
+
+// Pantry staples (salt, oil, flour…) are assumed to be at home: they don't
+// count as missing and don't go on the shopping list.
+const ingredientStats = (ingredients = []) => {
+  const counted = ingredients.filter((i) => !i.pantry);
+  const matched = counted.filter((i) => i.inFridge).length;
+  const total = counted.length;
+  const missing = total - matched;
+  return { matched, total, missing, allMatched: total > 0 && missing === 0 };
 };
 
 
@@ -197,16 +211,24 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
         console.warn('[generate-recipes] rate-limited:', friendly);
         throw new Error(friendly);
       }
+      // Provider errors are for us, not the user. Log the detail, show a
+      // message they can act on.
       console.warn('[generate-recipes] invoke error' + status + ':', detail);
-      throw new Error(detail + status);
+      throw new Error(t('recipes.generateFailed'));
     }
-    if (data?.error) throw new Error(data.error);
+    if (data?.error) {
+      console.warn('[generate-recipes] error:', data.error);
+      throw new Error(t('recipes.generateFailed'));
+    }
     return data?.recipes || [];
   };
 
   const searchRecipes = async () => {
     const trimmedPrompt = aiPrompt.trim();
     if (selectedIngredients.length === 0 && !trimmedPrompt) return;
+    // Searching again means "show me something else", so tell the AI what
+    // it already suggested.
+    const excludeTitles = recipes.map((r) => r.title).filter(Boolean);
     setRecipes([]);
     setLoading(true);
     setError(null);
@@ -219,6 +241,7 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
         familySize,
         locale,
         prompt: trimmedPrompt || undefined,
+        excludeTitles: excludeTitles.length ? excludeTitles : undefined,
       });
       setRecipes(newRecipes);
     } catch (e) {
@@ -266,7 +289,9 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
 
   const addMissingToShoppingListFn = async () => {
     if (!selectedRecipe) return;
-    const missing = (selectedRecipe.ingredients || []).filter((ing) => !ing.inFridge);
+    const missing = (selectedRecipe.ingredients || []).filter(
+      (ing) => !ing.inFridge && !ing.pantry
+    );
     if (missing.length === 0) {
       Alert.alert(t('recipes.allInStock'), t('recipes.allInStockDesc'));
       return;
@@ -289,16 +314,26 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
   };
 
   // Saved recipes store the inFridge flag from when they were saved. Re-run
-  // a loose name match against the current fridge so the modal shows accurate
-  // strikethroughs after items get eaten / replenished.
+  // a name match against the current fridge so the modal shows accurate
+  // strikethroughs after items get eaten / replenished. Newer recipes know
+  // exactly which item they matched (fridgeItem); older ones fall back to a
+  // loose match on the ingredient name.
   const recipeWithLiveInFridge = (recipe) => {
     if (!recipe) return recipe;
     const fridgeNames = items.map((i) => (i.name || '').toLowerCase());
     const updatedIngredients = (recipe.ingredients || []).map((ing) => {
+      if ('fridgeItem' in ing) {
+        // null means the AI found no matching item when the recipe was made
+        // (e.g. salt, or "peber" which is not "peberfrugt").
+        const inFridge =
+          !!ing.fridgeItem && fridgeNames.includes(ing.fridgeItem.toLowerCase());
+        return { ...ing, inFridge };
+      }
       const n = (ing.name || '').toLowerCase();
-      const inFridge =
-        n.length > 1 &&
-        fridgeNames.some((f) => f.includes(n) || n.includes(f));
+      // Short names ("is", "æg") would substring-match half the freezer.
+      const inFridge = fridgeNames.some(
+        (f) => f === n || (f.length >= 4 && n.length >= 4 && (f.includes(n) || n.includes(f)))
+      );
       return { ...ing, inFridge };
     });
     return { ...recipe, ingredients: updatedIngredients };
@@ -406,11 +441,7 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
                 // Re-compute inFridge against the current fridge so badges are
                 // accurate even if the recipe was saved a week ago.
                 const live = recipeWithLiveInFridge(recipe);
-                const ingredients = live.ingredients || [];
-                const matched = ingredients.filter((i) => i.inFridge).length;
-                const total = ingredients.length;
-                const missing = total - matched;
-                const allMatched = total > 0 && missing === 0;
+                const { matched, total, missing, allMatched } = ingredientStats(live.ingredients);
                 return (
                   <TouchableOpacity
                     key={recipe.id || idx}
@@ -620,11 +651,7 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
                   {familySize !== 4 ? `  ·  ${t('recipes.forPeople', { count: familySize })}` : ''}
                 </SectionTitle>
                 {recipes.map((recipe, idx) => {
-                  const ingredients = recipe.ingredients || [];
-                  const matched = ingredients.filter((i) => i.inFridge).length;
-                  const total = ingredients.length;
-                  const missing = total - matched;
-                  const allMatched = total > 0 && missing === 0;
+                  const { matched, total, missing, allMatched } = ingredientStats(recipe.ingredients);
                   return (
                     <TouchableOpacity
                       key={idx}
@@ -882,6 +909,8 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
                       <View style={styles.ingDotWrap}>
                         {ing.inFridge ? (
                           <Icon name="checkmark-circle" size={16} color={colors.primary} />
+                        ) : ing.pantry ? (
+                          <Icon name="home-outline" size={14} color={colors.textSubtle} />
                         ) : (
                           <View style={styles.ingBullet} />
                         )}
@@ -890,6 +919,9 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
                         {ing.amount ? <Text style={styles.ingQty}>{formatQty(ing.amount)} </Text> : null}
                         {ing.unit ? <Text style={styles.ingUnit}>{ing.unit} </Text> : null}
                         {ing.name}
+                        {ing.pantry && !ing.inFridge ? (
+                          <Text style={styles.ingPantry}>{`  ·  ${t('recipes.pantryStaple')}`}</Text>
+                        ) : null}
                       </Text>
                     </View>
                   ))}
@@ -1322,6 +1354,7 @@ const styles = StyleSheet.create({
   ingInFridge: { color: colors.textSubtle, textDecorationLine: 'line-through' },
   ingQty: { fontWeight: '700', color: colors.text },
   ingUnit: { color: colors.textMuted },
+  ingPantry: { ...typography.caption, color: colors.textSubtle },
   step: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   stepNumberBadge: {
     backgroundColor: colors.primary,

@@ -853,6 +853,8 @@ export default {
     save: 'Save recipe',
     unsave: 'Remove from saved',
     dailyLimitReached: "You've reached today's limit of {limit} AI requests. Try again tomorrow.",
+    generateFailed: "Couldn't come up with recipes right now. Check your connection and try again.",
+    pantryStaple: 'staple',
   },
 
   // Freezer Stats Screen

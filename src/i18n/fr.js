@@ -674,6 +674,8 @@ export default {
     save: 'Enregistrer la recette',
     unsave: 'Retirer des enregistrees',
     dailyLimitReached: "Vous avez atteint la limite quotidienne de {limit} requetes IA. Reessayez demain.",
+    generateFailed: "Impossible de proposer des recettes pour le moment. Verifiez votre connexion et reessayez.",
+    pantryStaple: 'placard',
   },
 
   changelog: {

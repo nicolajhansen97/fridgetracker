@@ -673,6 +673,8 @@ export default {
     save: 'Rezept speichern',
     unsave: 'Aus Gespeicherten entfernen',
     dailyLimitReached: 'Du hast das heutige Limit von {limit} KI-Anfragen erreicht. Versuche es morgen erneut.',
+    generateFailed: 'Gerade konnten keine Rezepte erstellt werden. Prüfe deine Verbindung und versuche es erneut.',
+    pantryStaple: 'Vorrat',
   },
 
   changelog: {

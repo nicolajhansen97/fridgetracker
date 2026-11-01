@@ -674,6 +674,8 @@ export default {
     save: 'Guardar receta',
     unsave: 'Quitar de guardadas',
     dailyLimitReached: 'Has alcanzado el límite diario de {limit} solicitudes de IA. Inténtalo mañana.',
+    generateFailed: 'No se pudieron crear recetas ahora. Revisa tu conexión e inténtalo de nuevo.',
+    pantryStaple: 'básico',
   },
 
   changelog: {

@@ -708,6 +708,8 @@ export default {
     save: 'Gem opskrift',
     unsave: 'Fjern fra gemte',
     dailyLimitReached: 'Du har nået dagens grænse på {limit} AI-anmodninger. Prøv igen i morgen.',
+    generateFailed: 'Kunne ikke finde opskrifter lige nu. Tjek din forbindelse og prøv igen.',
+    pantryStaple: 'basisvare',
   },
 
   changelog: {
