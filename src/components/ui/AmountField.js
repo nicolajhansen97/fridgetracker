@@ -7,12 +7,21 @@ import {
   StyleSheet,
   Modal,
   Pressable,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { colors, radii, spacing, typography } from '../../theme';
 import Icon from './Icon';
 import { useLanguage } from '../../i18n';
+import { useCustomUnits } from '../../hooks/useCustomUnits';
 
 const UNITS = ['pcs', 'kg', 'g', 'lbs', 'oz', 'portions'];
+
+// Matches the length check on public.custom_units.
+const MAX_UNIT_LENGTH = 15;
+
+const sameUnit = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 // "How much" control: a connected -/+ stepper for the quantity paired with a
 // tap-to-open unit dropdown, reading as a single "Amount" unit. Replaces the
@@ -20,6 +29,35 @@ const UNITS = ['pcs', 'kg', 'g', 'lbs', 'oz', 'portions'];
 const AmountField = ({ quantity, setQuantity, unit, setUnit, disabled }) => {
   const { t } = useLanguage();
   const [pickerVisible, setPickerVisible] = useState(false);
+  const { units: customUnits, addUnit, removeUnit } = useCustomUnits();
+  const [adding, setAdding] = useState(false);
+  const [newUnit, setNewUnit] = useState('');
+
+  // An item can carry a unit that isn't in the list (it was removed, or set
+  // before the list was shared). Still list it so it shows as selected and
+  // can be kept.
+  const options = [...UNITS, ...customUnits.map((c) => c.name)];
+  if (unit && !options.some((u) => sameUnit(u, unit))) options.push(unit);
+
+  const closePicker = () => {
+    setPickerVisible(false);
+    setAdding(false);
+    setNewUnit('');
+  };
+
+  const pick = (u) => {
+    setUnit(u);
+    closePicker();
+  };
+
+  const addCustomUnit = () => {
+    const u = newUnit.trim().slice(0, MAX_UNIT_LENGTH);
+    if (!u) return;
+    // Re-adding an existing unit just selects it.
+    const existing = options.find((o) => sameUnit(o, u));
+    if (!existing) addUnit(u);
+    pick(existing || u);
+  };
 
   // Nudge the quantity with the -/+ buttons, never dropping below 1.
   const adjustQty = (delta) => {
@@ -78,30 +116,80 @@ const AmountField = ({ quantity, setQuantity, unit, setUnit, disabled }) => {
         transparent
         animationType="fade"
         statusBarTranslucent
-        onRequestClose={() => setPickerVisible(false)}
+        onRequestClose={closePicker}
       >
-        <Pressable style={styles.backdrop} onPress={() => setPickerVisible(false)}>
-          <Pressable style={styles.sheet}>
-            <Text style={styles.sheetTitle}>{t('addItem.selectUnit')}</Text>
-            {UNITS.map((u, i) => {
-              const on = u === unit;
-              return (
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <Pressable style={styles.backdrop} onPress={closePicker}>
+            <Pressable style={styles.sheet}>
+              <Text style={styles.sheetTitle}>{t('addItem.selectUnit')}</Text>
+              <ScrollView style={styles.optList} keyboardShouldPersistTaps="handled">
+                {options.map((u) => {
+                  const on = sameUnit(u, unit || '');
+                  const custom = customUnits.find((c) => c.name === u);
+                  return (
+                    <TouchableOpacity
+                      key={u}
+                      style={styles.optRow}
+                      onPress={() => pick(u)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.optText, on && styles.optTextOn]}>{u}</Text>
+                      <View style={styles.optRight}>
+                        {on ? <Icon name="checkmark" size={20} color={colors.primary} /> : null}
+                        {custom ? (
+                          <TouchableOpacity
+                            onPress={() => removeUnit(custom)}
+                            hitSlop={10}
+                            accessibilityLabel={t('addItem.removeUnit', { unit: u })}
+                          >
+                            <Icon name="close-circle" size={20} color={colors.textSubtle} />
+                          </TouchableOpacity>
+                        ) : null}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              {adding ? (
+                <View style={styles.addRow}>
+                  <TextInput
+                    style={styles.addInput}
+                    value={newUnit}
+                    onChangeText={setNewUnit}
+                    placeholder={t('addItem.customUnitPlaceholder')}
+                    placeholderTextColor={colors.textSubtle}
+                    maxLength={MAX_UNIT_LENGTH}
+                    autoFocus
+                    autoCapitalize="none"
+                    returnKeyType="done"
+                    onSubmitEditing={addCustomUnit}
+                  />
+                  <TouchableOpacity
+                    style={[styles.addBtn, !newUnit.trim() && styles.addBtnDisabled]}
+                    onPress={addCustomUnit}
+                    disabled={!newUnit.trim()}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.addBtnText}>{t('addItem.addUnit')}</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
                 <TouchableOpacity
-                  key={u}
-                  style={[styles.optRow, i === UNITS.length - 1 && styles.optRowLast]}
-                  onPress={() => {
-                    setUnit(u);
-                    setPickerVisible(false);
-                  }}
+                  style={styles.addTrigger}
+                  onPress={() => setAdding(true)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.optText, on && styles.optTextOn]}>{u}</Text>
-                  {on ? <Icon name="checkmark" size={20} color={colors.primary} /> : null}
+                  <Icon name="add-circle-outline" size={20} color={colors.primary} />
+                  <Text style={styles.addTriggerText}>{t('addItem.addCustomUnit')}</Text>
                 </TouchableOpacity>
-              );
-            })}
+              )}
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -187,9 +275,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  optRowLast: {
-    borderBottomWidth: 0,
-  },
   optText: {
     fontSize: 16,
     fontWeight: '600',
@@ -197,6 +282,59 @@ const styles = StyleSheet.create({
   },
   optTextOn: {
     color: colors.primary,
+  },
+  flex: { flex: 1 },
+  // Room for ~7 rows; a long custom list scrolls instead of pushing the
+  // "add" row off screen.
+  optList: { maxHeight: 360 },
+  optRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  addTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 14,
+  },
+  addTriggerText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  addRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingTop: spacing.md,
+  },
+  addInput: {
+    flex: 1,
+    height: 48,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    backgroundColor: colors.bg,
+    paddingHorizontal: 14,
+    fontSize: 16,
+    color: colors.text,
+  },
+  addBtn: {
+    height: 48,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addBtnDisabled: {
+    opacity: 0.5,
+  },
+  addBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.surface,
   },
 });
 
