@@ -4,6 +4,7 @@ import { colors, radii, spacing, typography } from '../../theme';
 import Icon from './Icon';
 import { useLanguage } from '../../i18n';
 import { findCurrency } from '../../utils/currency';
+import { parseQuantity } from '../../utils/quantity';
 
 // "What did it cost" control, deliberately optional.
 //
@@ -30,8 +31,8 @@ const PriceField = ({
   const showSuggestion =
     remembered !== null && remembered !== undefined && !String(value || '').trim();
 
-  const qty = Number(quantity);
-  const showEach = isFinite(qty) && qty > 1;
+  const qty = parseQuantity(quantity);
+  const showEach = qty > 1;
 
   return (
     <View>

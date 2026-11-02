@@ -43,6 +43,7 @@ import { useCategory } from '../hooks/useCategory';
 import { useItemPrices } from '../hooks/useItemPrices';
 import { useTagDefinitions } from '../hooks/useTagDefinitions';
 import { parseMoney } from '../utils/currency';
+import { parseQuantity } from '../utils/quantity';
 import { sameName } from '../utils/names';
 import { lookupBarcode, analyzeProductImage } from '../utils/productLookup';
 
@@ -290,13 +291,13 @@ const AddItemScreen = ({ navigation, route }) => {
     }
 
     const addedName = name.trim();
-    const addedQty = parseInt(quantity) || 1;
+    const addedQty = parseQuantity(quantity) || 1;
     const parsedPrice = parseMoney(price);
     setIsLoading(true);
     const result = await addItem({
       name: addedName,
       drawer,
-      quantity: parseInt(quantity) || 1,
+      quantity: addedQty,
       unit,
       frozen_date: frozenDate || null,
       expiry_date: expiryDate || null,

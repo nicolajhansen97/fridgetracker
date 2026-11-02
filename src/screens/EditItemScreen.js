@@ -34,6 +34,7 @@ import { DATE_SOURCE } from '../utils/freezerStorage';
 import { useItemPrices } from '../hooks/useItemPrices';
 import { useTagDefinitions } from '../hooks/useTagDefinitions';
 import { parseMoney } from '../utils/currency';
+import { parseQuantity } from '../utils/quantity';
 
 const EditItemScreen = ({ route, navigation }) => {
   const { item } = route.params;
@@ -125,7 +126,7 @@ const EditItemScreen = ({ route, navigation }) => {
     const result = await updateItem(item.id, {
       name: name.trim(),
       drawer,
-      quantity: parseInt(quantity) || 1,
+      quantity: parseQuantity(quantity) || 1,
       unit,
       frozen_date: frozenDate || null,
       expiry_date: expiryDate || null,
@@ -141,7 +142,7 @@ const EditItemScreen = ({ route, navigation }) => {
       // Correcting a price here is the most reliable signal we get about what
       // something actually costs, so it updates the remembered value too.
       if (parsedPrice !== null) {
-        rememberPrice(name.trim(), parsedPrice, parseInt(quantity) || 1, unit);
+        rememberPrice(name.trim(), parsedPrice, parseQuantity(quantity) || 1, unit);
       }
       Alert.alert(t('common.success'), t('editItem.itemUpdated'), [
         { text: t('common.ok'), onPress: () => navigation.goBack() },

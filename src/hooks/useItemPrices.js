@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../config/supabase';
 import { useHousehold } from '../context/HouseholdContext';
+import { parseQuantity } from '../utils/quantity';
 
 const nameKey = (n) => (n || '').trim().toLowerCase();
 
@@ -63,8 +64,8 @@ export const useItemPrices = () => {
   const priceFor = useCallback((name, quantity) => {
     const entry = cache.current[nameKey(name)];
     if (!entry) return null;
-    const qty = Number(quantity);
-    if (!entry.quantity || !isFinite(qty) || qty <= 0 || entry.quantity <= 0) return entry.price;
+    const qty = parseQuantity(quantity);
+    if (!entry.quantity || !qty || entry.quantity <= 0) return entry.price;
     if (qty === entry.quantity) return entry.price;
     return Math.round((entry.price / entry.quantity) * qty * 100) / 100;
   }, []);

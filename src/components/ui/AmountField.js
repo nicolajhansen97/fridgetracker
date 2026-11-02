@@ -15,6 +15,7 @@ import { colors, radii, spacing, typography } from '../../theme';
 import Icon from './Icon';
 import { useLanguage } from '../../i18n';
 import { useCustomUnits } from '../../hooks/useCustomUnits';
+import { parseQuantity } from '../../utils/quantity';
 
 const UNITS = ['pcs', 'kg', 'g', 'lbs', 'oz', 'portions'];
 
@@ -59,10 +60,11 @@ const AmountField = ({ quantity, setQuantity, unit, setUnit, disabled }) => {
     pick(existing || u);
   };
 
-  // Nudge the quantity with the -/+ buttons, never dropping below 1.
+  // Nudge the quantity with the -/+ buttons. Amounts can be fractional
+  // (2.5 kg), so step by one but never reach zero.
   const adjustQty = (delta) => {
-    const next = Math.max(1, (parseInt(quantity, 10) || 1) + delta);
-    setQuantity(String(next));
+    const next = Math.round(((parseQuantity(quantity) || 1) + delta) * 100) / 100;
+    if (next > 0) setQuantity(String(next));
   };
 
   return (
@@ -83,7 +85,7 @@ const AmountField = ({ quantity, setQuantity, unit, setUnit, disabled }) => {
             style={styles.stepVal}
             value={quantity}
             onChangeText={setQuantity}
-            keyboardType="number-pad"
+            keyboardType="decimal-pad"
             editable={!disabled}
             textAlign="center"
             placeholder="1"
