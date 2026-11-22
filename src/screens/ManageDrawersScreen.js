@@ -19,7 +19,7 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from '../components/ui';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, spacing, typography, frames } from '../theme';
 
 const ICON_OPTIONS = ['❄️', '🧊', '🥶', '📦', '🗄️', '🍦', '🥩', '🍕', '🌽', '🥦', '🍓', '🍔'];
 
@@ -169,7 +169,7 @@ const ManageDrawersScreen = ({ navigation }) => {
       />
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, frames.readable]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <Card style={styles.section}>

@@ -21,7 +21,7 @@ import {
   EmptyState,
   SectionTitle,
 } from '../components/ui';
-import { colors, gradients, radii, spacing, typography } from '../theme';
+import { colors, gradients, radii, spacing, typography, frames } from '../theme';
 import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
 import { useCategory } from '../hooks/useCategory';
 import { usePremium } from '../context/PremiumContext';
@@ -312,7 +312,7 @@ const FreezerStatsScreen = ({ navigation }) => {
   }, [activities, items, isPastFreezerWindow, getExpiryStatus, getCategory]);
 
   const goToInventory = () => {
-    navigation.navigate('FreezerTab', { screen: 'FridgeInventory' });
+    navigation.navigate('FreezerTab', { screen: 'FridgeInventory', pop: true });
   };
   const goToExpiring = () => navigation.navigate('ExpiringItems');
 
@@ -358,7 +358,7 @@ const FreezerStatsScreen = ({ navigation }) => {
       />
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, frames.readable]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }

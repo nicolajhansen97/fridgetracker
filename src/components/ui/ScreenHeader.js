@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from './Icon';
-import { colors, gradients, radii, spacing, typography } from '../../theme';
+import { colors, gradients, layout, radii, spacing, typography } from '../../theme';
 
 // Brand header: teal->blue gradient with a centered title. Equal-width side
 // slots keep the title optically centered whether or not a back chevron / right
@@ -78,6 +78,11 @@ const styles = StyleSheet.create({
     bottom: -6,
   },
   row: {
+    // On very wide windows (iPad, Duo landscape) keep back / title / action
+    // grouped over the content column instead of at the far screen edges.
+    width: '100%',
+    maxWidth: layout.wideWidth,
+    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: 44,

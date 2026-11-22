@@ -9,7 +9,7 @@ import {
   Pressable,
   ScrollView,
 } from 'react-native';
-import { colors, radii, spacing, typography } from '../../theme';
+import { colors, radii, spacing, typography, frames } from '../../theme';
 import Icon from './Icon';
 import { useLanguage } from '../../i18n';
 import { CATEGORY_ORDER, CATEGORY_ICON_MCI } from '../../utils/foodCategories';
@@ -123,6 +123,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
+    // Centred, capped width on the iPhone Duo inner screen / iPad.
+    ...frames.sheet,
     backgroundColor: colors.surface,
     borderTopLeftRadius: radii.lg,
     borderTopRightRadius: radii.lg,

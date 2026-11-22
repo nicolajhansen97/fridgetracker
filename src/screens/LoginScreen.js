@@ -15,7 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../i18n';
 import { Icon, FrostOverlay } from '../components/ui';
-import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
+import { colors, gradients, radii, shadows, spacing, typography, frames } from '../theme';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -57,7 +57,7 @@ const LoginScreen = ({ navigation }) => {
         style={styles.keyboardView}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, frames.form]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >

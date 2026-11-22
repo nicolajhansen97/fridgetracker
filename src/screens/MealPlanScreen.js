@@ -28,7 +28,7 @@ import {
   EmptyState,
   PrimaryButton,
 } from '../components/ui';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, spacing, typography, frames } from '../theme';
 
 // How far ahead an item can expire and still count as "worth planning around".
 // A week matches the planner's own horizon: anything later can wait for next
@@ -296,7 +296,7 @@ const MealPlanScreen = ({ navigation }) => {
       />
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, frames.readable]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
@@ -650,6 +650,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
+    // Centred, capped width on the iPhone Duo inner screen / iPad.
+    ...frames.sheet,
     backgroundColor: colors.surface,
     borderTopLeftRadius: radii.lg,
     borderTopRightRadius: radii.lg,

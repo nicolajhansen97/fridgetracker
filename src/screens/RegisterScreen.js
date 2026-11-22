@@ -15,7 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../i18n';
 import { Icon, FrostOverlay } from '../components/ui';
-import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
+import { colors, gradients, radii, shadows, spacing, typography, frames } from '../theme';
 
 const RegisterScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -53,7 +53,7 @@ const RegisterScreen = ({ navigation }) => {
 
     if (result.success) {
       Alert.alert(t('common.success'), result.message, [
-        { text: t('common.ok'), onPress: () => navigation.navigate('Login') },
+        { text: t('common.ok'), onPress: () => navigation.popTo('Login') },
       ]);
     } else {
       Alert.alert(t('register.registrationFailed'), result.error);
@@ -75,7 +75,7 @@ const RegisterScreen = ({ navigation }) => {
         style={styles.keyboardView}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, frames.form]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -187,7 +187,7 @@ const RegisterScreen = ({ navigation }) => {
           <View style={styles.loginRow}>
             <Text style={styles.loginText}>{t('register.alreadyHaveAccount')} </Text>
             <TouchableOpacity
-              onPress={() => navigation.navigate('Login')}
+              onPress={() => navigation.popTo('Login')}
               disabled={isLoading}
               hitSlop={6}
             >

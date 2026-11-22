@@ -10,14 +10,17 @@ import {
   RefreshControl,
   Alert,
   TextInput,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../config/supabase';
 import { useFridge } from '../context/FridgeContext';
 import { useShoppingList } from '../context/ShoppingListContext';
 import { useSavedRecipes } from '../context/SavedRecipesContext';
+import { usePremium } from '../context/PremiumContext';
 import { useLanguage } from '../i18n';
 import {
   Screen,
@@ -30,8 +33,21 @@ import {
   PrimaryButton,
   SectionTitle,
   EmptyState,
+  OptionSheet,
 } from '../components/ui';
+import PaywallModal from '../components/PaywallModal';
+import ScannedRecipeModal from '../components/ScannedRecipeModal';
+import {
+  formatQty,
+  MAX_SCAN_PAGES,
+  matchRecipeToInventory,
+  matchStats,
+  prepareScanImage,
+  scanRecipeImages,
+} from '../utils/scanRecipe';
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
+import useAdaptiveLayout from '../hooks/useAdaptiveLayout';
+import Grid from '../components/ui/Grid';
 import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
 
 const FAMILY_SIZE_KEY = 'freezely_family_size';
@@ -53,21 +69,6 @@ const iconForRecipe = (title = '') => {
   return FOOD_ICONS[hash % FOOD_ICONS.length];
 };
 
-const FRACTIONS = [
-  [0.125, '⅛'], [0.25, '¼'], [1 / 3, '⅓'], [0.5, '½'], [2 / 3, '⅔'], [0.75, '¾'],
-];
-
-const formatQty = (qty) => {
-  if (!qty && qty !== 0) return '';
-  const whole = Math.floor(qty);
-  const rest = qty - whole;
-  // Large amounts (grams, ml) read better as plain numbers.
-  if (rest < 0.02 || qty >= 20) return String(Math.round(qty * 10) / 10);
-  const near = FRACTIONS.find(([v]) => Math.abs(rest - v) < 0.02);
-  if (!near) return String(Math.round(qty * 100) / 100);
-  return whole > 0 ? `${whole} ${near[1]}` : near[1];
-};
-
 // Pantry staples (salt, oil, flour…) are assumed to be at home: they don't
 // count as missing and don't go on the shopping list.
 const ingredientStats = (ingredients = []) => {
@@ -81,10 +82,13 @@ const ingredientStats = (ingredients = []) => {
 
 const RecipeSuggestionsScreen = ({ navigation }) => {
   const { items, loadItems } = useFridge();
-  const { addItem: addToShoppingList } = useShoppingList();
-  const { savedRecipes, saveRecipe, unsaveRecipe, dbRowToRecipe } = useSavedRecipes();
+  const { items: shoppingItems, addItem: addToShoppingList } = useShoppingList();
+  const { savedRecipes, saveRecipe, updateRecipe, unsaveRecipe, dbRowToRecipe } = useSavedRecipes();
+  const { isPremium } = usePremium();
   const { getDaysUntilExpiry: getItemDaysUntilExpiry } = useFridgeExpiry();
   const { t, locale } = useLanguage();
+  // Recipe cards go two-up on the iPhone Duo inner screen / iPad.
+  const { columns, frame, isExpanded } = useAdaptiveLayout();
 
   // Wrap so items with no expiry sort to the bottom of the urgency list.
   const getDaysUntilExpiry = (item) => {
@@ -113,6 +117,13 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
   // they don't stare at an empty "select something" state. We only do it once
   // per session — after that, the user's manual selection is sacred.
   const [autoSelectedOnce, setAutoSelectedOnce] = useState(false);
+
+  // Recipe scanning (Pro): photo of a cookbook page / printout / card → AI
+  // reads it → saved to the household cookbook as a 'scan' recipe.
+  const [scanSourceOpen, setScanSourceOpen] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [paywallVisible, setPaywallVisible] = useState(false);
+  const [scannedOpenId, setScannedOpenId] = useState(null);
 
   useEffect(() => {
     AsyncStorage.getItem(FAMILY_SIZE_KEY).then((val) => {
@@ -372,6 +383,111 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
     }
   };
 
+  // ---------- Recipe scanning ----------
+
+  const startScan = () => {
+    if (!isPremium) {
+      setPaywallVisible(true);
+      return;
+    }
+    setScanSourceOpen(true);
+  };
+
+  // Resolves true for "add another page", false for "read it now".
+  const askAnotherPage = (count) =>
+    new Promise((resolve) => {
+      Alert.alert(
+        t('recipeScan.pageTaken', { count }),
+        t('recipeScan.anotherPageDesc'),
+        [
+          { text: t('recipeScan.addPage'), onPress: () => resolve(true) },
+          { text: t('recipeScan.readNow'), style: 'cancel', onPress: () => resolve(false) },
+        ],
+        { cancelable: true, onDismiss: () => resolve(false) }
+      );
+    });
+
+  // Recipes often run over two pages: keep taking photos until the user
+  // says that's all (Groq's vision model reads at most three).
+  const scanFromCamera = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(t('scan.cameraDenied'));
+      return;
+    }
+    const uris = [];
+    while (uris.length < MAX_SCAN_PAGES) {
+      const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
+      if (result.canceled || !result.assets?.[0]?.uri) break;
+      uris.push(result.assets[0].uri);
+      if (uris.length >= MAX_SCAN_PAGES || !(await askAnotherPage(uris.length))) break;
+    }
+    if (uris.length) await runScan(uris);
+  };
+
+  const scanFromLibrary = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: MAX_SCAN_PAGES,
+      orderedSelection: true,
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets?.length) return;
+    await runScan(result.assets.slice(0, MAX_SCAN_PAGES).map((a) => a.uri));
+  };
+
+  const onScanSource = (source) => {
+    setScanSourceOpen(false);
+    // Let the sheet's fade finish before the camera/picker presents on iOS.
+    setTimeout(() => (source === 'camera' ? scanFromCamera() : scanFromLibrary()), 350);
+  };
+
+  const runScan = async (uris) => {
+    setScanning(true);
+    try {
+      const images = [];
+      for (const uri of uris) images.push(await prepareScanImage(uri));
+      const res = await scanRecipeImages(images, { locale, inventory: allItemNames });
+      if (!res.ok) {
+        const msg =
+          res.reason === 'notFound'
+            ? t('recipeScan.notFoundDesc')
+            : res.reason === 'limit'
+            ? t('recipeScan.limitReached', { limit: res.limit ?? 10 })
+            : t('recipeScan.failedDesc');
+        setScanning(false);
+        Alert.alert(t('recipeScan.notFoundTitle'), msg);
+        return;
+      }
+      const saved = await saveRecipe(res.recipe);
+      setScanning(false);
+      if (!saved.success) {
+        Alert.alert(t('common.error'), t('recipeScan.saveFailed'));
+        return;
+      }
+      setActiveTab('saved');
+      // iOS won't present the recipe sheet while the "Reading…" overlay is
+      // still fading out, so open it once that's done.
+      setTimeout(() => setScannedOpenId(saved.row.id), 400);
+    } catch (e) {
+      console.warn('[scan-recipe] runScan failed:', e?.message);
+      setScanning(false);
+      Alert.alert(t('recipeScan.notFoundTitle'), t('recipeScan.failedDesc'));
+    }
+  };
+
+  const scannedOpen = useMemo(
+    () => (scannedOpenId ? savedAsRecipes.find((r) => r.id === scannedOpenId) || null : null),
+    [scannedOpenId, savedAsRecipes]
+  );
+
+  const deleteScanned = async () => {
+    const id = scannedOpenId;
+    setScannedOpenId(null);
+    if (id) await unsaveRecipe(id);
+  };
+
   const QUICK_REFINES = [
     t('recipes.refineVegetarian'),
     t('recipes.refineFaster'),
@@ -380,10 +496,252 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
     t('recipes.refineKidFriendly'),
   ];
 
+  const twoPane = isExpanded && activeTab === 'discover' && ingredientList.length > 0;
+
+  // Discover-tab blocks, defined once so the same JSX renders either stacked
+  // in one scroll (phones, Duo outer screen, Duo inner portrait) or split into
+  // two panes on wide windows (Duo inner landscape, iPad): what you cook with
+  // on the left, what comes back on the right, each scrolling on its own.
+  const familyRowEl = (
+    <>
+      <View style={styles.familyRow}>
+        {showFamilyEditor ? (
+          <View style={styles.familyEditor}>
+            <Icon name="people-outline" size={16} color={colors.textMuted} />
+            <Text style={styles.familyEditorLabel}>{t('recipes.familySize')}</Text>
+            <View style={styles.familyStepper}>
+              <TouchableOpacity style={styles.stepBtn} onPress={() => setFamily(familySize - 1)}>
+                <Text style={styles.stepBtnText}>−</Text>
+              </TouchableOpacity>
+              <Text style={styles.familyValue}>{familySize}</Text>
+              <TouchableOpacity style={styles.stepBtn} onPress={() => setFamily(familySize + 1)}>
+                <Text style={styles.stepBtnText}>+</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity onPress={() => setShowFamilyEditor(false)} hitSlop={8}>
+              <Icon name="checkmark" size={18} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.familyChip}
+            onPress={() => setShowFamilyEditor(true)}
+            activeOpacity={0.7}
+          >
+            <Icon name="people-outline" size={14} color={colors.textMuted} />
+            <Text style={styles.familyChipText}>
+              {t('recipes.servesSimple', { count: familySize })}
+            </Text>
+            <Icon name="chevron-down" size={14} color={colors.textMuted} />
+          </TouchableOpacity>
+        )}
+      </View>
+    </>
+  );
+
+  const discoverControls = (
+    <>
+      <View style={styles.sectionRow}>
+        <Text style={styles.sectionLabel}>{t('recipes.yourIngredients')}</Text>
+        <TouchableOpacity onPress={() => setPickerOpen(true)} hitSlop={8}>
+          <Text style={styles.linkText}>
+            {selectedIngredients.length === 0
+              ? t('recipes.openPicker')
+              : t('recipes.edit')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {selectedIngredients.length === 0 ? (
+        <TouchableOpacity
+          style={styles.emptySelection}
+          onPress={() => setPickerOpen(true)}
+          activeOpacity={0.8}
+        >
+          <Icon name="add-circle-outline" size={26} color={colors.primary} />
+          <Text style={styles.emptySelectionText}>
+            {t('recipes.tapToSelect')}
+          </Text>
+          <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          style={styles.selectionPreview}
+          onPress={() => setPickerOpen(true)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.selectionChips}>
+            {selectedIngredients.slice(0, 6).map((name) => (
+              <View key={name} style={styles.selChip}>
+                <Text style={styles.selChipText} numberOfLines={1}>
+                  {name}
+                </Text>
+              </View>
+            ))}
+            {selectedIngredients.length > 6 ? (
+              <View style={[styles.selChip, styles.selChipMore]}>
+                <Text style={styles.selChipMoreText}>
+                  +{selectedIngredients.length - 6}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+        </TouchableOpacity>
+      )}
+
+      <View style={styles.aiPromptBox}>
+        <Icon name="sparkles-outline" size={16} color={colors.primary} />
+        <TextInput
+          value={aiPrompt}
+          onChangeText={setAiPrompt}
+          placeholder={t('recipes.aiPromptPlaceholder')}
+          placeholderTextColor={colors.textMuted}
+          style={styles.aiPromptInput}
+          multiline
+        />
+        {aiPrompt ? (
+          <TouchableOpacity onPress={() => setAiPrompt('')} hitSlop={8}>
+            <Icon name="close-circle" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+        ) : null}
+      </View>
+
+      {(selectedIngredients.length > 0 || aiPrompt.trim().length > 0) && (
+        <PrimaryButton
+          title={
+            selectedIngredients.length > 0
+              ? t('recipes.findRecipes', { count: selectedIngredients.length })
+              : t('recipes.findFromPrompt')
+          }
+          onPress={searchRecipes}
+          loading={loading}
+          style={{ marginTop: spacing.md, marginBottom: spacing.sm }}
+        />
+      )}
+    </>
+  );
+
+  const discoverResults = (
+    <>
+      {loading && (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.subText}>{t('recipes.findingRecipes')}</Text>
+        </View>
+      )}
+
+      {!loading && error && (
+        <EmptyState icon="alert-circle-outline" title={t('common.error')} description={error} />
+      )}
+
+      {!loading && !error && hasSearched && recipes.length === 0 && (
+        <EmptyState
+          icon="search-outline"
+          title={t('recipes.noRecipesFoundMulti')}
+          description={t('recipes.tryDifferent')}
+        />
+      )}
+
+      {!loading && recipes.length > 0 && (
+        <>
+          <SectionTitle>
+            {t('recipes.recipeCount', { count: recipes.length })}
+            {familySize !== 4 ? `  ·  ${t('recipes.forPeople', { count: familySize })}` : ''}
+          </SectionTitle>
+          <Grid columns={twoPane ? 1 : columns} gap={spacing.md} rowGap={0}>
+          {recipes.map((recipe, idx) => {
+            const { matched, total, missing, allMatched } = ingredientStats(recipe.ingredients);
+            return (
+              <TouchableOpacity
+                key={idx}
+                onPress={() => setSelectedRecipeIdx(idx)}
+                style={styles.gridItem}
+                activeOpacity={0.85}
+              >
+                <Card style={[styles.recipeCard, styles.gridItem]} padded={false}>
+                  <LinearGradient
+                    colors={gradients.hero}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.recipeArt}
+                  >
+                    <Icon
+                      name={iconForRecipe(recipe.title)}
+                      size={32}
+                      color={colors.surface}
+                    />
+                  </LinearGradient>
+                  <View style={styles.recipeBody}>
+                    <Text style={styles.recipeTitle} numberOfLines={2}>
+                      {recipe.title}
+                    </Text>
+                    <View style={styles.recipeMetaRow}>
+                      {recipe.totalMinutes ? (
+                        <View style={styles.metaItem}>
+                          <Icon name="time-outline" size={13} color={colors.textMuted} />
+                          <Text style={styles.metaItemText}>{recipe.totalMinutes} min</Text>
+                        </View>
+                      ) : null}
+                      <View style={styles.metaItem}>
+                        <Icon
+                          name={allMatched ? 'checkmark-circle' : 'list-outline'}
+                          size={13}
+                          color={allMatched ? colors.success : colors.textMuted}
+                        />
+                        <Text
+                          style={[
+                            styles.metaItemText,
+                            allMatched && { color: colors.success, fontWeight: '700' },
+                          ]}
+                        >
+                          {matched}/{total}
+                        </Text>
+                      </View>
+                      {missing > 0 ? (
+                        <Text style={styles.metaMissing}>
+                          · {t('recipes.missingCount', { count: missing })}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+                  <View style={styles.recipeArrow}>
+                    <Icon name="chevron-forward" size={20} color={colors.textMuted} />
+                  </View>
+                </Card>
+              </TouchableOpacity>
+            );
+          })}
+          </Grid>
+        </>
+      )}
+
+      {/* Two panes: the results pane would otherwise sit empty until the
+          first search, so it says what will land there and points left. */}
+      {twoPane && !hasSearched && !loading && (
+        <EmptyState
+          icon="restaurant-outline"
+          title={t('recipes.resultsPaneTitle')}
+          description={t('recipes.selectIngredientsLeft')}
+        />
+      )}
+
+      {!twoPane && !hasSearched && selectedIngredients.length === 0 && (
+        <View style={styles.centered}>
+          <Icon name="hand-left-outline" size={32} color={colors.textMuted} />
+          <Text style={styles.subText}>{t('recipes.selectIngredients')}</Text>
+        </View>
+      )}
+    </>
+  );
+
   return (
     <Screen>
       <ScreenHeader
         title={t('recipes.title')}
+        // iOS uses the native tab bar, which can't show the BETA chip the
+        // Android tab bar has (see AppNavigator), so it lives here instead.
+        subtitle={Platform.OS === 'ios' ? 'BETA' : undefined}
         right={
           <IconButton
             name="calendar-outline"
@@ -395,6 +753,7 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
         }
       />
 
+      <View style={frame}>
       <View style={styles.tabRow}>
         <TouchableOpacity
           onPress={() => setActiveTab('discover')}
@@ -417,14 +776,62 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
           </Text>
         </TouchableOpacity>
       </View>
+      </View>
 
+      {twoPane ? (
+        <View style={[styles.panes, frame]}>
+          <ScrollView
+            style={styles.paneLeft}
+            contentContainerStyle={styles.paneContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {familyRowEl}
+            {discoverControls}
+          </ScrollView>
+          <ScrollView
+            style={styles.paneRight}
+            contentContainerStyle={styles.paneContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+            }
+          >
+            {discoverResults}
+          </ScrollView>
+        </View>
+      ) : (
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, frame]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       >
+        {activeTab === 'saved' && (
+          <TouchableOpacity
+            style={styles.scanCard}
+            onPress={startScan}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+          >
+            <View style={styles.scanIcon}>
+              <Icon name="camera-outline" size={22} color={colors.primaryDark} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.scanTitleRow}>
+                <Text style={styles.scanTitle}>{t('recipeScan.cta')}</Text>
+                {!isPremium && (
+                  <View style={styles.proTag}>
+                    <Text style={styles.proTagText}>PRO</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.scanSub}>{t('recipeScan.ctaDesc')}</Text>
+            </View>
+            <Icon name="chevron-forward" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+        )}
         {activeTab === 'saved' ? (
           savedAsRecipes.length === 0 ? (
             <EmptyState
@@ -437,18 +844,25 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
               <SectionTitle>
                 {t('recipes.savedCount', { count: savedAsRecipes.length })}
               </SectionTitle>
+              <Grid columns={twoPane ? 1 : columns} gap={spacing.md} rowGap={0}>
               {savedAsRecipes.map((recipe, idx) => {
                 // Re-compute inFridge against the current fridge so badges are
                 // accurate even if the recipe was saved a week ago.
-                const live = recipeWithLiveInFridge(recipe);
-                const { matched, total, missing, allMatched } = ingredientStats(live.ingredients);
+                // Scanned recipes use the same check their detail view shows.
+                const isScan = recipe.source === 'scan';
+                const live = isScan ? null : recipeWithLiveInFridge(recipe);
+                const { matched, total, missing } = isScan
+                  ? matchStats(matchRecipeToInventory(recipe.ingredients, items, shoppingItems))
+                  : ingredientStats(live.ingredients);
+                const allMatched = total > 0 && missing === 0;
                 return (
                   <TouchableOpacity
                     key={recipe.id || idx}
-                    onPress={() => setSelectedRecipeIdx(idx)}
+                    onPress={() => (isScan ? setScannedOpenId(recipe.id) : setSelectedRecipeIdx(idx))}
+                    style={styles.gridItem}
                     activeOpacity={0.85}
                   >
-                    <Card style={styles.recipeCard} padded={false}>
+                    <Card style={[styles.recipeCard, styles.gridItem]} padded={false}>
                       <LinearGradient
                         colors={gradients.hero}
                         start={{ x: 0, y: 0 }}
@@ -456,7 +870,7 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
                         style={styles.recipeArt}
                       >
                         <Icon
-                          name={iconForRecipe(recipe.title)}
+                          name={isScan ? 'document-text-outline' : iconForRecipe(recipe.title)}
                           size={32}
                           color={colors.surface}
                         />
@@ -466,6 +880,7 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
                           {recipe.title}
                         </Text>
                         <View style={styles.recipeMetaRow}>
+                          {isScan ? <Badge tone="primary">{t('recipeScan.scannedBadge')}</Badge> : null}
                           {recipe.totalMinutes ? (
                             <View style={styles.metaItem}>
                               <Icon name="time-outline" size={13} color={colors.textMuted} />
@@ -501,43 +916,12 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
                   </TouchableOpacity>
                 );
               })}
+              </Grid>
             </>
           )
         ) : (
         <>
-        <View style={styles.familyRow}>
-          {showFamilyEditor ? (
-            <View style={styles.familyEditor}>
-              <Icon name="people-outline" size={16} color={colors.textMuted} />
-              <Text style={styles.familyEditorLabel}>{t('recipes.familySize')}</Text>
-              <View style={styles.familyStepper}>
-                <TouchableOpacity style={styles.stepBtn} onPress={() => setFamily(familySize - 1)}>
-                  <Text style={styles.stepBtnText}>−</Text>
-                </TouchableOpacity>
-                <Text style={styles.familyValue}>{familySize}</Text>
-                <TouchableOpacity style={styles.stepBtn} onPress={() => setFamily(familySize + 1)}>
-                  <Text style={styles.stepBtnText}>+</Text>
-                </TouchableOpacity>
-              </View>
-              <TouchableOpacity onPress={() => setShowFamilyEditor(false)} hitSlop={8}>
-                <Icon name="checkmark" size={18} color={colors.primary} />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.familyChip}
-              onPress={() => setShowFamilyEditor(true)}
-              activeOpacity={0.7}
-            >
-              <Icon name="people-outline" size={14} color={colors.textMuted} />
-              <Text style={styles.familyChipText}>
-                {t('recipes.servesSimple', { count: familySize })}
-              </Text>
-              <Icon name="chevron-down" size={14} color={colors.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
-
+        {familyRowEl}
         {ingredientList.length === 0 ? (
           <EmptyState
             icon="restaurant-outline"
@@ -546,186 +930,15 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
           />
         ) : (
           <>
-            <View style={styles.sectionRow}>
-              <Text style={styles.sectionLabel}>{t('recipes.yourIngredients')}</Text>
-              <TouchableOpacity onPress={() => setPickerOpen(true)} hitSlop={8}>
-                <Text style={styles.linkText}>
-                  {selectedIngredients.length === 0
-                    ? t('recipes.openPicker')
-                    : t('recipes.edit')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {selectedIngredients.length === 0 ? (
-              <TouchableOpacity
-                style={styles.emptySelection}
-                onPress={() => setPickerOpen(true)}
-                activeOpacity={0.8}
-              >
-                <Icon name="add-circle-outline" size={26} color={colors.primary} />
-                <Text style={styles.emptySelectionText}>
-                  {t('recipes.tapToSelect')}
-                </Text>
-                <Icon name="chevron-forward" size={18} color={colors.textMuted} />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.selectionPreview}
-                onPress={() => setPickerOpen(true)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.selectionChips}>
-                  {selectedIngredients.slice(0, 6).map((name) => (
-                    <View key={name} style={styles.selChip}>
-                      <Text style={styles.selChipText} numberOfLines={1}>
-                        {name}
-                      </Text>
-                    </View>
-                  ))}
-                  {selectedIngredients.length > 6 ? (
-                    <View style={[styles.selChip, styles.selChipMore]}>
-                      <Text style={styles.selChipMoreText}>
-                        +{selectedIngredients.length - 6}
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-                <Icon name="chevron-forward" size={18} color={colors.textMuted} />
-              </TouchableOpacity>
-            )}
-
-            <View style={styles.aiPromptBox}>
-              <Icon name="sparkles-outline" size={16} color={colors.primary} />
-              <TextInput
-                value={aiPrompt}
-                onChangeText={setAiPrompt}
-                placeholder={t('recipes.aiPromptPlaceholder')}
-                placeholderTextColor={colors.textMuted}
-                style={styles.aiPromptInput}
-                multiline
-              />
-              {aiPrompt ? (
-                <TouchableOpacity onPress={() => setAiPrompt('')} hitSlop={8}>
-                  <Icon name="close-circle" size={18} color={colors.textMuted} />
-                </TouchableOpacity>
-              ) : null}
-            </View>
-
-            {(selectedIngredients.length > 0 || aiPrompt.trim().length > 0) && (
-              <PrimaryButton
-                title={
-                  selectedIngredients.length > 0
-                    ? t('recipes.findRecipes', { count: selectedIngredients.length })
-                    : t('recipes.findFromPrompt')
-                }
-                onPress={searchRecipes}
-                loading={loading}
-                style={{ marginTop: spacing.md, marginBottom: spacing.sm }}
-              />
-            )}
-
-            {loading && (
-              <View style={styles.centered}>
-                <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={styles.subText}>{t('recipes.findingRecipes')}</Text>
-              </View>
-            )}
-
-            {!loading && error && (
-              <EmptyState icon="alert-circle-outline" title={t('common.error')} description={error} />
-            )}
-
-            {!loading && !error && hasSearched && recipes.length === 0 && (
-              <EmptyState
-                icon="search-outline"
-                title={t('recipes.noRecipesFoundMulti')}
-                description={t('recipes.tryDifferent')}
-              />
-            )}
-
-            {!loading && recipes.length > 0 && (
-              <>
-                <SectionTitle>
-                  {t('recipes.recipeCount', { count: recipes.length })}
-                  {familySize !== 4 ? `  ·  ${t('recipes.forPeople', { count: familySize })}` : ''}
-                </SectionTitle>
-                {recipes.map((recipe, idx) => {
-                  const { matched, total, missing, allMatched } = ingredientStats(recipe.ingredients);
-                  return (
-                    <TouchableOpacity
-                      key={idx}
-                      onPress={() => setSelectedRecipeIdx(idx)}
-                      activeOpacity={0.85}
-                    >
-                      <Card style={styles.recipeCard} padded={false}>
-                        <LinearGradient
-                          colors={gradients.hero}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={styles.recipeArt}
-                        >
-                          <Icon
-                            name={iconForRecipe(recipe.title)}
-                            size={32}
-                            color={colors.surface}
-                          />
-                        </LinearGradient>
-                        <View style={styles.recipeBody}>
-                          <Text style={styles.recipeTitle} numberOfLines={2}>
-                            {recipe.title}
-                          </Text>
-                          <View style={styles.recipeMetaRow}>
-                            {recipe.totalMinutes ? (
-                              <View style={styles.metaItem}>
-                                <Icon name="time-outline" size={13} color={colors.textMuted} />
-                                <Text style={styles.metaItemText}>{recipe.totalMinutes} min</Text>
-                              </View>
-                            ) : null}
-                            <View style={styles.metaItem}>
-                              <Icon
-                                name={allMatched ? 'checkmark-circle' : 'list-outline'}
-                                size={13}
-                                color={allMatched ? colors.success : colors.textMuted}
-                              />
-                              <Text
-                                style={[
-                                  styles.metaItemText,
-                                  allMatched && { color: colors.success, fontWeight: '700' },
-                                ]}
-                              >
-                                {matched}/{total}
-                              </Text>
-                            </View>
-                            {missing > 0 ? (
-                              <Text style={styles.metaMissing}>
-                                · {t('recipes.missingCount', { count: missing })}
-                              </Text>
-                            ) : null}
-                          </View>
-                        </View>
-                        <View style={styles.recipeArrow}>
-                          <Icon name="chevron-forward" size={20} color={colors.textMuted} />
-                        </View>
-                      </Card>
-                    </TouchableOpacity>
-                  );
-                })}
-              </>
-            )}
-
-            {!hasSearched && selectedIngredients.length === 0 && (
-              <View style={styles.centered}>
-                <Icon name="hand-left-outline" size={32} color={colors.textMuted} />
-                <Text style={styles.subText}>{t('recipes.selectIngredients')}</Text>
-              </View>
-            )}
+            {discoverControls}
+            {discoverResults}
           </>
         )}
         </>
         )}
         <View style={{ height: spacing.xxxl }} />
       </ScrollView>
+      )}
 
       <Modal
         visible={pickerOpen}
@@ -978,12 +1191,59 @@ const RecipeSuggestionsScreen = ({ navigation }) => {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+
+      <OptionSheet
+        visible={scanSourceOpen}
+        title={t('recipeScan.sourceTitle')}
+        help={t('recipeScan.sourceHelp')}
+        options={[
+          {
+            value: 'camera',
+            label: t('recipeScan.takePhoto'),
+            icon: <Icon name="camera-outline" size={20} color={colors.primary} />,
+          },
+          {
+            value: 'library',
+            label: t('recipeScan.choosePhotos'),
+            hint: t('recipeScan.choosePhotosHint', { count: MAX_SCAN_PAGES }),
+            icon: <Icon name="images-outline" size={20} color={colors.primary} />,
+          },
+        ]}
+        onSelect={onScanSource}
+        onClose={() => setScanSourceOpen(false)}
+      />
+
+      <ScannedRecipeModal
+        recipe={scannedOpen}
+        visible={!!scannedOpen}
+        onClose={() => setScannedOpenId(null)}
+        onDelete={deleteScanned}
+        onSave={async (changes) => (await updateRecipe(scannedOpenId, changes)).success}
+      />
+
+      <PaywallModal visible={paywallVisible} onClose={() => setPaywallVisible(false)} />
+
+      <Modal visible={scanning} transparent animationType="fade" statusBarTranslucent>
+        <View style={styles.analyzeOverlay}>
+          <View style={styles.analyzeCard}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.analyzeText}>{t('recipeScan.reading')}</Text>
+            <Text style={styles.analyzeSub}>{t('recipeScan.readingHint')}</Text>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.lg },
+  panes: { flex: 1, flexDirection: 'row' },
+  // Controls column: fixed reading width so chips and the prompt don't
+  // stretch; results take the rest of the window.
+  paneLeft: { width: 380, flexGrow: 0, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: colors.border },
+  paneRight: { flex: 1 },
+  paneContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xxxl },
   tabRow: {
     flexDirection: 'row',
     marginHorizontal: spacing.lg,
@@ -1255,6 +1515,7 @@ const styles = StyleSheet.create({
   },
   centered: { alignItems: 'center', paddingVertical: spacing.xxxl },
   subText: { ...typography.body, color: colors.textMuted, marginTop: spacing.sm, textAlign: 'center' },
+  gridItem: { flexGrow: 1 },
   recipeCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1368,6 +1629,55 @@ const styles = StyleSheet.create({
   },
   stepNumber: { color: colors.surface, fontSize: 13, fontWeight: '700' },
   stepText: { flex: 1, ...typography.body, color: colors.text, lineHeight: 22 },
+
+  // Scan-a-recipe entry on the Saved tab (same card language as the
+  // ingredient picker row; PRO tag as on Add Item's autofill buttons).
+  scanCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  scanIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: radii.md,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  scanTitle: { ...typography.bodyStrong, color: colors.text },
+  scanSub: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
+  proTag: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.pill,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  proTagText: { color: colors.surface, fontSize: 9, fontWeight: '800', letterSpacing: 0.4 },
+  analyzeOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15,23,42,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  analyzeCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.xxl,
+    alignItems: 'center',
+    gap: spacing.md,
+    maxWidth: 320,
+  },
+  analyzeText: { ...typography.bodyStrong, color: colors.text },
+  analyzeSub: { ...typography.caption, color: colors.textMuted, textAlign: 'center' },
 
   refineHelp: {
     ...typography.caption,

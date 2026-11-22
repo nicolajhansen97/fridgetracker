@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { CURRENT_VERSION, CHANGELOG } from '../changelog';
 import { useLanguage } from '../i18n';
 import PrimaryButton from './ui/PrimaryButton';
-import { colors, gradients, radii, spacing, typography } from '../theme';
+import { colors, gradients, radii, spacing, typography, frames } from '../theme';
 
 const SEEN_KEY = 'freezely_seen_changelog';
 
@@ -83,6 +83,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
+    // Centred, capped width on the iPhone Duo inner screen / iPad.
+    ...frames.sheet,
     backgroundColor: colors.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,

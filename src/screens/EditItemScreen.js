@@ -27,7 +27,7 @@ import {
   Input,
   PrimaryButton,
 } from '../components/ui';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, spacing, typography, frames } from '../theme';
 import { useCategory } from '../hooks/useCategory';
 import { useFridgeExpiry } from '../hooks/useFridgeExpiry';
 import { DATE_SOURCE } from '../utils/freezerStorage';
@@ -170,7 +170,7 @@ const EditItemScreen = ({ route, navigation }) => {
       >
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, frames.readable]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >

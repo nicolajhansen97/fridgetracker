@@ -16,7 +16,7 @@ import {
   Modal,
   Animated,
   PanResponder,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useShoppingList } from '../context/ShoppingListContext';
@@ -33,7 +33,7 @@ import {
   Icon,
   CategoryPickerSheet,
 } from '../components/ui';
-import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
+import { colors, gradients, radii, shadows, spacing, typography, frames } from '../theme';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -273,7 +273,7 @@ const ShoppingListScreen = () => {
         keyboardVerticalOffset={0}
       >
         <ScrollView
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, frames.readable]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           showsVerticalScrollIndicator={false}
@@ -407,7 +407,8 @@ const ShoppingListScreen = () => {
 
         {/* Sticky bottom add bar */}
         <View style={styles.addBarWrap}>
-          <View style={styles.addBar}>
+          {/* Same column as the list above it on wide screens. */}
+          <View style={[styles.addBar, frames.readable]}>
             <Icon name="add" size={20} color={colors.textMuted} />
             <TextInput
               ref={inputRef}
@@ -561,10 +562,10 @@ const RowContent = ({ item, showAddedBy, category, onCategoryPress }) => {
   );
 };
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
 const DELETE_WIDTH = 84;
 const SWIPE_OPEN_THRESHOLD = 40;
-const SWIPE_FAR_THRESHOLD = SCREEN_WIDTH * 0.5;
+// "Far" swipe = past half the row's window width; read live (see widthRef)
+// because folding an iPhone Duo or resizing the window changes it mid-session.
 const SWIPE_VELOCITY_THRESHOLD = 0.5;
 
 // Wraps a row with swipe-to-delete:
@@ -575,6 +576,9 @@ const SWIPE_VELOCITY_THRESHOLD = 0.5;
 const SwipeableRow = ({ item, onToggle, onLongPress, onDelete, showAddedBy, category, onCategoryPress }) => {
   const translateX = useRef(new Animated.Value(0)).current;
   const isOpenRef = useRef(false);
+  const { width: windowWidth } = useWindowDimensions();
+  const widthRef = useRef(windowWidth);
+  widthRef.current = windowWidth;
 
   const close = () => {
     Animated.spring(translateX, {
@@ -598,7 +602,7 @@ const SwipeableRow = ({ item, onToggle, onLongPress, onDelete, showAddedBy, cate
 
   const animateAndDelete = () => {
     Animated.timing(translateX, {
-      toValue: -SCREEN_WIDTH,
+      toValue: -widthRef.current,
       duration: 220,
       useNativeDriver: true,
     }).start(() => {
@@ -629,7 +633,7 @@ const SwipeableRow = ({ item, onToggle, onLongPress, onDelete, showAddedBy, cate
         translateX.flattenOffset();
         const finalX = (isOpenRef.current ? -DELETE_WIDTH : 0) + g.dx;
         // Fast left flick or far swipe → auto-delete
-        if (g.vx < -SWIPE_VELOCITY_THRESHOLD || finalX < -SWIPE_FAR_THRESHOLD) {
+        if (g.vx < -SWIPE_VELOCITY_THRESHOLD || finalX < -widthRef.current * 0.5) {
           animateAndDelete();
           return;
         }
@@ -969,6 +973,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalSheet: {
+    // Centred, capped width on the iPhone Duo inner screen / iPad.
+    ...frames.sheet,
     backgroundColor: colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,

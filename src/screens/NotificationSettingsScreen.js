@@ -24,7 +24,7 @@ import {
   timeToDate,
 } from '../utils/notifications';
 import { Screen, ScreenHeader, Card, Icon, SectionTitle } from '../components/ui';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, spacing, typography, frames } from '../theme';
 
 // A row that is either live or locked behind Pro. Locked rows stay visible and
 // legible — hiding them would make the Pro tier invisible, and greying them out
@@ -176,7 +176,7 @@ const NotificationSettingsScreen = ({ navigation }) => {
         backLabel={t('common.back')}
       />
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, frames.readable]}>
         <Card style={styles.intro}>
           <Icon name="notifications-outline" size={20} color={colors.primary} />
           <Text style={styles.introText}>{t('notif.intro')}</Text>

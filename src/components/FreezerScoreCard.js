@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Card, Icon, PrimaryButton, SecondaryButton } from './ui';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, spacing, typography, frames } from '../theme';
 import { useLanguage } from '../i18n';
 import { useFreezerScore, scoreGrade } from '../hooks/useFreezerScore';
 
@@ -69,11 +69,11 @@ const FreezerScoreCard = () => {
             <Text style={[styles.ringValue, { color: tone.text }]}>{result.score}</Text>
           </View>
           <View style={styles.body}>
-            <Text style={styles.title} numberOfLines={1}>
+            <Text style={styles.title} numberOfLines={2}>
               {t('score.title')}
               <Text style={{ color: tone.text }}>{`  ${gradeLabel}`}</Text>
             </Text>
-            <Text style={styles.reason} numberOfLines={1}>{reason}</Text>
+            <Text style={styles.reason} numberOfLines={2}>{reason}</Text>
           </View>
           <Icon name="chevron-forward" size={18} color={colors.textSubtle} />
         </Card>
@@ -182,6 +182,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
+    // Centred, capped width on the iPhone Duo inner screen / iPad.
+    ...frames.sheet,
     backgroundColor: colors.surface,
     borderTopLeftRadius: radii.lg,
     borderTopRightRadius: radii.lg,

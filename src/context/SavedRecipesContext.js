@@ -65,17 +65,50 @@ export const SavedRecipesProvider = ({ children }) => {
         servings: recipe.servings ?? null,
         ingredients: recipe.ingredients || [],
         steps: recipe.steps || [],
+        source: recipe.source === 'scan' ? 'scan' : 'ai',
       };
-      const { data, error } = await supabase
-        .from('saved_recipes')
-        .insert(payload)
-        .select()
-        .single();
+      const insert = (row) =>
+        supabase.from('saved_recipes').insert(row).select().single();
+      let { data, error } = await insert(payload);
+      // Before ADD_SCANNED_RECIPES.sql has run there is no `source` column.
+      // Save anyway; the recipe just isn't labelled as scanned.
+      if (error && /source/i.test(error.message || '')) {
+        const { source, ...withoutSource } = payload;
+        ({ data, error } = await insert(withoutSource));
+      }
       if (error) throw error;
       setSavedRecipes((prev) => [data, ...prev]);
       return { success: true, row: data };
     } catch (e) {
       console.error('Error saving recipe:', e);
+      return { success: false, error: e.message };
+    }
+  };
+
+  // Save edits to a recipe's content (used to fix scanned recipes).
+  // RLS turns an UPDATE without a matching policy into a silent no-op, so
+  // "no row came back" is treated as a failure, not a success.
+  const updateRecipe = async (id, recipe) => {
+    try {
+      const changes = {
+        title: recipe.title || '',
+        description: recipe.description || null,
+        total_minutes: recipe.totalMinutes ?? null,
+        servings: recipe.servings ?? null,
+        ingredients: recipe.ingredients || [],
+        steps: recipe.steps || [],
+      };
+      const { data, error } = await supabase
+        .from('saved_recipes')
+        .update(changes)
+        .eq('id', id)
+        .select();
+      if (error) throw error;
+      if (!data?.length) throw new Error('Update not permitted (saved_recipes_update policy missing?)');
+      setSavedRecipes((prev) => prev.map((r) => (r.id === id ? data[0] : r)));
+      return { success: true, row: data[0] };
+    } catch (e) {
+      console.error('Error updating recipe:', e);
       return { success: false, error: e.message };
     }
   };
@@ -106,6 +139,9 @@ export const SavedRecipesProvider = ({ children }) => {
     servings: row.servings,
     ingredients: row.ingredients || [],
     steps: row.steps || [],
+    // 'scan' for recipes read from a photo. Rows saved before the column
+    // existed fall back to a marker in the ingredients (see scanRecipe.js).
+    source: row.source || (row.ingredients?.[0]?.scanned ? 'scan' : 'ai'),
     _savedId: row.id, // marker used to drive the bookmark toggle UI
   });
 
@@ -114,6 +150,7 @@ export const SavedRecipesProvider = ({ children }) => {
       savedRecipes,
       loading,
       saveRecipe,
+      updateRecipe,
       unsaveRecipe,
       loadSavedRecipes,
       dbRowToRecipe,

@@ -22,7 +22,7 @@ import {
   SecondaryButton,
   SectionTitle,
 } from '../components/ui';
-import { colors, radii, shadows, spacing, typography } from '../theme';
+import { colors, radii, shadows, spacing, typography, frames } from '../theme';
 
 const ManageHouseholdScreen = ({ navigation }) => {
   const {
@@ -166,7 +166,7 @@ const ManageHouseholdScreen = ({ navigation }) => {
       />
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, frames.readable]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         {invitations.length > 0 && (

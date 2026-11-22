@@ -25,7 +25,9 @@ import {
   Card,
   Icon,
   SectionTitle,
+  Grid,
 } from '../components/ui';
+import useAdaptiveLayout from '../hooks/useAdaptiveLayout';
 import { colors, gradients, radii, spacing, typography } from '../theme';
 
 const HomeScreen = ({ navigation }) => {
@@ -40,6 +42,9 @@ const HomeScreen = ({ navigation }) => {
   const lowCount = isPremium ? restock.length : lowBasic.length;
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
+  // Inner screen of the iPhone Duo (and iPad / landscape): "Use first" and
+  // "Recent activity" sit side by side, one per half of the fold.
+  const { columns, frame } = useAdaptiveLayout();
   const [refreshing, setRefreshing] = useState(false);
 
   // Compute summary
@@ -149,7 +154,7 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const goToInventory = () => {
-    navigation.navigate('FreezerTab', { screen: 'FridgeInventory' });
+    navigation.navigate('FreezerTab', { screen: 'FridgeInventory', pop: true });
   };
 
   const goToStats = () => {
@@ -204,6 +209,7 @@ const HomeScreen = ({ navigation }) => {
         <Icon name="snow" size={64} color="rgba(255,255,255,0.10)" style={styles.snowSmall} />
         <Icon name="snow" size={38} color="rgba(255,255,255,0.09)" style={styles.snowTiny} />
 
+        <View style={frame}>
         <View style={styles.headerTopRow}>
           <View style={styles.headerLeft}>
             <View style={styles.greetingRow}>
@@ -264,10 +270,11 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </TouchableOpacity>
         </View>
+        </View>
       </LinearGradient>
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, frame]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
@@ -313,9 +320,11 @@ const HomeScreen = ({ navigation }) => {
 
         <FreezerScoreCard />
 
+        {/* Split only when both lists are present; a lone list keeps full width. */}
+        <Grid columns={summary.expiringList.length > 0 && recentActivities.length > 0 ? columns : 1}>
         {/* Expiring soon list — "use first" */}
         {summary.expiringList.length > 0 && (
-          <>
+          <View>
             <SectionTitle
               icon={<Icon name="time-outline" size={14} color={colors.textMuted} />}
               action={
@@ -341,7 +350,7 @@ const HomeScreen = ({ navigation }) => {
                     <Icon name="snow-outline" size={14} color={expiryTone(item)} />
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={styles.expiringName} numberOfLines={1}>{item.name}</Text>
+                    <Text style={styles.expiringName} numberOfLines={2}>{item.name}</Text>
                     <View style={styles.expiringMetaRow}>
                       <Icon name="cube-outline" size={12} color={colors.textMuted} />
                       <Text style={styles.expiringMeta}>{item.drawer}</Text>
@@ -353,12 +362,12 @@ const HomeScreen = ({ navigation }) => {
                 </View>
               ))}
             </Card>
-          </>
+          </View>
         )}
 
         {/* Recent activity */}
         {recentActivities.length > 0 && (
-          <>
+          <View>
             <SectionTitle
               action={
                 <TouchableOpacity
@@ -398,8 +407,9 @@ const HomeScreen = ({ navigation }) => {
                 </View>
               ))}
             </Card>
-          </>
+          </View>
         )}
+        </Grid>
 
         {/* Empty state when fully empty */}
         {summary.totalItems === 0 && (
@@ -631,6 +641,10 @@ const styles = StyleSheet.create({
   expiringStatus: {
     fontSize: 13,
     fontWeight: '700',
+    // In a half-width column (iPhone Duo inner screen) or on the narrow outer
+    // screen, "Past best before" may wrap rather than squeeze the name.
+    maxWidth: '42%',
+    textAlign: 'right',
   },
 
   activityRow: {

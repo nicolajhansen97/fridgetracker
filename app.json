@@ -2,8 +2,8 @@
   "expo": {
     "name": "Freezely",
     "slug": "fridgetracker",
-    "version": "1.2.0",
-    "orientation": "portrait",
+    "version": "1.3.0",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
@@ -37,13 +37,13 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Freezely uses your photos so you can add a picture to a freezer item."
+          "photosPermission": "Freezely uses your photos so you can add a picture to a freezer item or scan a recipe."
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "Freezely uses your camera to scan barcodes and take photos of items."
+          "cameraPermission": "Freezely uses your camera to scan barcodes, take photos of items and scan recipes."
         }
       ],
       [
@@ -61,7 +61,9 @@
           "backgroundColor": "#667eea",
           "enableFullScreenImage_legacy": true
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-status-bar"
     ],
     "updates": {
       "url": "https://u.expo.dev/11a9bd44-499c-4a15-b141-bfdfe8837f9d",

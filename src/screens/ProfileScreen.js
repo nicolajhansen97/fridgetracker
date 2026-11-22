@@ -26,7 +26,7 @@ import {
   SecondaryButton,
 } from '../components/ui';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
+import { colors, gradients, radii, shadows, spacing, typography, frames } from '../theme';
 
 const ProfileScreen = ({ navigation }) => {
   const {
@@ -102,7 +102,7 @@ const ProfileScreen = ({ navigation }) => {
       </LinearGradient>
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, frames.readable]}
       >
         <SectionTitle>{t('home.familySharing')}</SectionTitle>
         <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('ManageHousehold')}>

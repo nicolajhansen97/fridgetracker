@@ -16,3 +16,4 @@ export { default as Input } from './Input';
 export { default as Badge } from './Badge';
 export { default as SectionTitle } from './SectionTitle';
 export { default as EmptyState } from './EmptyState';
+export { default as Grid } from './Grid';

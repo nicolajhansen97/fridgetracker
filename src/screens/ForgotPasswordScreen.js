@@ -15,7 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../i18n';
 import { Icon, FrostOverlay } from '../components/ui';
-import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
+import { colors, gradients, radii, shadows, spacing, typography, frames } from '../theme';
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -34,7 +34,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
     setIsLoading(false);
     if (result.success) {
       Alert.alert(t('common.success'), result.message, [
-        { text: t('common.ok'), onPress: () => navigation.navigate('Login') },
+        { text: t('common.ok'), onPress: () => navigation.popTo('Login') },
       ]);
     } else {
       Alert.alert(t('common.error'), result.error);
@@ -55,7 +55,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
         style={styles.keyboardView}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, frames.form]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -106,7 +106,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
           </View>
 
           <TouchableOpacity
-            onPress={() => navigation.navigate('Login')}
+            onPress={() => navigation.popTo('Login')}
             disabled={isLoading}
             hitSlop={8}
             style={styles.backRow}

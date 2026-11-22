@@ -140,6 +140,7 @@ const PaywallModal = ({ visible, onClose }) => {
 
             <View style={styles.benefits}>
               <Benefit text={t('premium.benefitScan')} />
+              <Benefit text={t('premium.benefitRecipeScan')} />
               <Benefit text={t('premium.benefitCalendar')} />
               <Benefit text={t('premium.benefitExpiry')} />
               <Benefit text={t('premium.benefitSupport')} />

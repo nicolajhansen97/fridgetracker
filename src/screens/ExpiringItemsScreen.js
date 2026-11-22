@@ -25,7 +25,7 @@ import {
   IconButton,
   EmptyState,
 } from '../components/ui';
-import { colors, radii, shadows, spacing, typography } from '../theme';
+import { colors, radii, shadows, spacing, typography, frames } from '../theme';
 import ItemActionSheet from '../components/ItemActionSheet';
 
 // The two ways the list can be read: each item's own date, or the freezer
@@ -210,7 +210,7 @@ const ExpiringItemsScreen = ({ navigation }) => {
       </Modal>
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, frames.readable]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         {loading && expiringItems.length === 0 ? (

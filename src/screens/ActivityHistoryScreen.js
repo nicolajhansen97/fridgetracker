@@ -16,7 +16,7 @@ import {
   Icon,
   EmptyState,
 } from '../components/ui';
-import { colors, spacing, typography } from '../theme';
+import { colors, spacing, typography, frames } from '../theme';
 
 const actionIconName = (action) => {
   switch (action) {
@@ -102,7 +102,7 @@ const ActivityHistoryScreen = ({ navigation }) => {
       />
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, frames.readable]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         {loading && activities.length === 0 ? (

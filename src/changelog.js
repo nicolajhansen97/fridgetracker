@@ -5,11 +5,22 @@
 // The app shows the "What's New" popup once per version.
 // ─────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.2.2';
+export const CURRENT_VERSION = '1.3.0';
 
 // Features use translation keys — add the matching keys to each language file.
 // The i18n system falls back to English automatically if a language is missing a key.
 export const CHANGELOG = [
+  {
+    // Store release, not an OTA: new native runtime (Expo SDK 58, React
+    // Navigation 7 with native iOS tabs), so app.json moves to 1.3.0 too.
+    version: '1.3.0',
+    date: '2026-11-22',
+    features: [
+      { icon: '📸', titleKey: 'changelog.v130_scan_title',   descKey: 'changelog.v130_scan_desc' },
+      { icon: '🛒', titleKey: 'changelog.v130_cook_title',   descKey: 'changelog.v130_cook_desc' },
+      { icon: '📱', titleKey: 'changelog.v130_screens_title', descKey: 'changelog.v130_screens_desc' },
+    ],
+  },
   {
     // OTA on top of the 1.2.0 store build, like 1.2.1. app.json stays at
     // 1.2.0 (runtimeVersion follows it) so the update reaches that runtime.

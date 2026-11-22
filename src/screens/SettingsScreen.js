@@ -23,7 +23,7 @@ import {
   OptionSheet,
   SectionTitle,
 } from '../components/ui';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, spacing, typography, frames } from '../theme';
 
 const FAMILY_SIZE_KEY = 'freezely_family_size';
 const USE_PACKAGE_NUMBERS_KEY = 'freezely_use_package_numbers';
@@ -126,7 +126,7 @@ const SettingsScreen = ({ navigation }) => {
       />
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, frames.readable]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <SectionTitle>{t('settings.groupFreezer')}</SectionTitle>

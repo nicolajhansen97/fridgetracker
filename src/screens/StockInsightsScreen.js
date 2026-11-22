@@ -25,7 +25,7 @@ import {
   Badge,
   EmptyState,
 } from '../components/ui';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, spacing, typography, frames } from '../theme';
 
 const STATUS_TONE = { low: 'warning', over: 'info', ok: 'success' };
 
@@ -224,7 +224,7 @@ const StockInsightsScreen = ({ navigation }) => {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, frames.readable]}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         >
@@ -585,6 +585,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
+    // Centred, capped width on the iPhone Duo inner screen / iPad.
+    ...frames.sheet,
     backgroundColor: colors.surface,
     borderTopLeftRadius: radii.lg,
     borderTopRightRadius: radii.lg,

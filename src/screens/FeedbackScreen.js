@@ -22,7 +22,7 @@ import {
   Icon,
   PrimaryButton,
 } from '../components/ui';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, spacing, typography, frames } from '../theme';
 
 const APP_VERSION = CURRENT_VERSION;
 
@@ -89,7 +89,7 @@ const FeedbackScreen = ({ navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, frames.readable]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >

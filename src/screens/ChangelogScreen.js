@@ -8,7 +8,7 @@ import {
   Card,
   Badge,
 } from '../components/ui';
-import { colors, spacing, typography } from '../theme';
+import { colors, spacing, typography, frames } from '../theme';
 
 const ChangelogScreen = ({ navigation }) => {
   const { t } = useLanguage();
@@ -21,7 +21,7 @@ const ChangelogScreen = ({ navigation }) => {
         backLabel={t('common.back')}
       />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, frames.readable]} showsVerticalScrollIndicator={false}>
         {CHANGELOG.map((release) => (
           <View key={release.version} style={styles.release}>
             <View style={styles.releaseHeader}>

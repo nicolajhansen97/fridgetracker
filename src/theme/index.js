@@ -163,3 +163,35 @@ export const typography = {
   caption: { fontSize: 12, fontWeight: '400' },
   button: { fontSize: 16, fontWeight: '700', letterSpacing: 0.1 },
 };
+
+// Adaptive layout — iPhone Duo, iPad, Android foldables and resized windows.
+//
+// Width decides the layout, never the device model: iOS 27 makes iPhone apps
+// resizable, so the same phone can hand us 466pt (Duo outer screen), ~626pt
+// (Duo inner screen) or anything in between while a window is dragged.
+//   - regularWidth: from here up we switch to two columns. 600 is the
+//     compact/regular size-class line; the Duo's inner display (~626pt) is
+//     past it, its outer display and every slab iPhone are below it.
+//   - readableWidth: single-column content never stretches past this, so
+//     lines and rows stay readable in landscape and on iPad.
+//   - sheetWidth: bottom sheets and dialogs centre at this width on wide
+//     screens instead of running edge to edge (iOS form-sheet behaviour).
+//   - formWidth: auth forms, which read worst when stretched.
+export const layout = {
+  regularWidth: 600,
+  regularHeight: 500,
+  expandedWidth: 800,
+  readableWidth: 720,
+  wideWidth: 1040,
+  sheetWidth: 560,
+  formWidth: 440,
+};
+
+// Ready-made frames built from `layout`. Spread onto a ScrollView's
+// contentContainerStyle (or a sheet) to cap and centre it; below the cap they
+// do nothing, so phones render exactly as before.
+export const frames = {
+  readable: { width: '100%', maxWidth: layout.readableWidth, alignSelf: 'center' },
+  form: { width: '100%', maxWidth: layout.formWidth, alignSelf: 'center' },
+  sheet: { width: '100%', maxWidth: layout.sheetWidth, alignSelf: 'center' },
+};

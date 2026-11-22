@@ -22,7 +22,7 @@ import {
   SectionTitle,
   SecondaryButton,
 } from '../components/ui';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, spacing, typography, frames } from '../theme';
 
 // Renders a single editable row: label, default-value hint, numeric input,
 // optional reset arrow when the value differs from the default. Save-on-blur
@@ -131,7 +131,7 @@ const FreezerStorageSettingsScreen = ({ navigation }) => {
         backLabel={t('common.back')}
       />
 
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.content, frames.readable]} keyboardShouldPersistTaps="handled">
         <Card style={styles.intro}>
           <Icon name="information-circle-outline" size={20} color={colors.primary} />
           <Text style={styles.introText}>{t('freezerSettings.intro')}</Text>

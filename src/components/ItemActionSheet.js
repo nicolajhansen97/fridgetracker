@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../i18n';
 import Icon from './ui/Icon';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, spacing, typography, frames } from '../theme';
 
 // Bottom-sheet for acting on a freezer item. Three outcomes:
 //   - Used it      → fully consumed (caller removes the item)
@@ -148,6 +148,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
+    // Centred, capped width on the iPhone Duo inner screen / iPad.
+    ...frames.sheet,
     backgroundColor: colors.surface,
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,

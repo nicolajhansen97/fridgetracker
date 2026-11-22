@@ -35,7 +35,7 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from '../components/ui';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, spacing, typography, frames } from '../theme';
 import BarcodeScannerModal from '../components/BarcodeScannerModal';
 import PaywallModal from '../components/PaywallModal';
 import { usePremium } from '../context/PremiumContext';
@@ -256,7 +256,7 @@ const AddItemScreen = ({ navigation, route }) => {
   const dismiss = useCallback(() => {
     if (fromHome) {
       navigation.goBack();
-      navigation.navigate('HomeTab', { screen: 'Home' });
+      navigation.navigate('HomeTab', { screen: 'Home', pop: true });
     } else {
       navigation.goBack();
     }
@@ -364,7 +364,7 @@ const AddItemScreen = ({ navigation, route }) => {
       >
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, frames.readable]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >

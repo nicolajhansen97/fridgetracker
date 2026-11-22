@@ -524,11 +524,19 @@ async function countTodayUsage(userId) {
   if (!supabaseAdmin) return 0;
   const startOfDay = new Date();
   startOfDay.setUTCHours(0, 0, 0, 0);
-  const { count, error } = await supabaseAdmin
-    .from("recipe_generation_log")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .gte("created_at", startOfDay.toISOString());
+  const countSince = (onlyRecipes) => {
+    let q = supabaseAdmin
+      .from("recipe_generation_log")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", startOfDay.toISOString());
+    // Recipe scans (scan-recipe) log kind = 'scan' and have their own cap.
+    if (onlyRecipes) q = q.eq("kind", "recipes");
+    return q;
+  };
+  let { count, error } = await countSince(true);
+  // Before ADD_SCANNED_RECIPES.sql there is no kind column: count every row.
+  if (error) ({ count, error } = await countSince(false));
   if (error) {
     console.error("rate-limit count failed:", error);
     return 0;

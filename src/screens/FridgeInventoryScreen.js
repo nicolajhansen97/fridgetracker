@@ -26,7 +26,10 @@ import {
   EmptyState,
   PrimaryButton,
 } from '../components/ui';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, gradients, radii, shadows, spacing, typography } from '../theme';
+import useAdaptiveLayout from '../hooks/useAdaptiveLayout';
+import Grid from '../components/ui/Grid';
 import ItemActionSheet from '../components/ItemActionSheet';
 
 // Dark amber for the "Use first" tag — high contrast on the amber fill.
@@ -38,6 +41,8 @@ const FridgeInventoryScreen = ({ navigation }) => {
   const { drawers: drawerDefs } = useDrawers();
   const { getEffectiveExpiry, isExpiringSoon: isItemExpiringSoon } = useFridgeExpiry();
   const { t, formatDate } = useLanguage();
+  // Two item columns per compartment on the iPhone Duo inner screen / iPad.
+  const { columns, frame } = useAdaptiveLayout();
   const hasDrawers = (drawerDefs?.length || 0) > 0;
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -146,7 +151,7 @@ const FridgeInventoryScreen = ({ navigation }) => {
         }
       />
 
-      <View style={styles.searchRow}>
+      <View style={[styles.searchRow, frame]}>
         <View style={styles.searchInputWrapper}>
           <Icon name="search" size={16} color={colors.textMuted} />
           <TextInput
@@ -175,6 +180,7 @@ const FridgeInventoryScreen = ({ navigation }) => {
       {/* Pinned above the list so the item to grab first stays visible while
           scrolling — no hunting through results. Tapping opens its actions. */}
       {useFirstItem ? (
+        <View style={frame}>
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => setActionItem(useFirstItem)}
@@ -194,10 +200,11 @@ const FridgeInventoryScreen = ({ navigation }) => {
           </View>
           <Icon name="chevron-forward" size={18} color={USE_FIRST_FG} />
         </TouchableOpacity>
+        </View>
       ) : null}
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, frame]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         {items.length === 0 && !hasDrawers ? (
@@ -237,6 +244,7 @@ const FridgeInventoryScreen = ({ navigation }) => {
                 <Icon name="cube-outline" size={18} color={colors.textMuted} />
                 <Text style={styles.drawerTitle}>{drawer}</Text>
               </View>
+              <Grid columns={columns} gap={spacing.sm} rowGap={0}>
               {grouped[drawer].map((item) => {
                 const effectiveExpiry = getEffectiveExpiry(item);
                 const expiringSoon = isItemExpiringSoon(item);
@@ -244,7 +252,7 @@ const FridgeInventoryScreen = ({ navigation }) => {
                 return (
                   <Card
                     key={item.id}
-                    style={[styles.itemCard, isUseFirst && styles.itemCardUseFirst]}
+                    style={[styles.itemCard, styles.gridItem, isUseFirst && styles.itemCardUseFirst]}
                     padded={false}
                   >
                     <View style={styles.itemRow}>
@@ -300,6 +308,7 @@ const FridgeInventoryScreen = ({ navigation }) => {
                   </Card>
                 );
               })}
+              </Grid>
             </View>
           ))
         )}
@@ -307,6 +316,12 @@ const FridgeInventoryScreen = ({ navigation }) => {
         <View style={{ height: 96 }} />
       </ScrollView>
 
+      {/* The FAB lives in its own safe-area overlay: absolute children ignore
+          the Screen's safe-area padding, and with native tabs that padding is
+          what keeps content clear of the tab bar - at the bottom on a phone,
+          or the strip down the right edge on the iPhone Duo. The native
+          SafeAreaView measures this view's real insets, tab bar included. */}
+      <SafeAreaView edges={['right', 'bottom']} style={styles.fabLayer} pointerEvents="box-none">
       <TouchableOpacity
         activeOpacity={0.85}
         onPress={() => navigation.navigate('AddItem')}
@@ -321,6 +336,7 @@ const FridgeInventoryScreen = ({ navigation }) => {
           <Icon name="add" size={28} color={colors.surface} />
         </LinearGradient>
       </TouchableOpacity>
+      </SafeAreaView>
 
       <ItemActionSheet
         visible={!!actionItem}
@@ -378,6 +394,8 @@ const styles = StyleSheet.create({
     ...typography.h3,
     color: colors.text,
   },
+  // Fill the grid cell so cards in a two-column row share one height.
+  gridItem: { flexGrow: 1 },
   itemCard: {
     marginBottom: 6,
     overflow: 'hidden',
@@ -475,10 +493,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
   },
+  fabLayer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-end',
+    alignItems: 'flex-end',
+    // Added to the safe-area insets by SafeAreaView.
+    paddingRight: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
   fab: {
-    position: 'absolute',
-    right: spacing.lg,
-    bottom: spacing.xl,
     borderRadius: radii.lg + 2,
     ...shadows.fab,
   },

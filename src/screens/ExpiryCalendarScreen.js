@@ -20,7 +20,7 @@ import {
   SectionTitle,
   EmptyState,
 } from '../components/ui';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, spacing, typography, frames } from '../theme';
 
 const MS_PER_DAY = 86400000;
 const FREE_DAYS_AHEAD = 14;
@@ -158,7 +158,7 @@ const ExpiryCalendarScreen = ({ navigation }) => {
       />
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, frames.readable]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
